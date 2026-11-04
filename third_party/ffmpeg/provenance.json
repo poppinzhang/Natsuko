@@ -1,0 +1,46 @@
+{
+  "ffmpeg": {
+    "version": "9.0.1",
+    "url": "https://ffmpeg.org/releases/ffmpeg-9.0.1.tar.xz",
+    "sha256": "cf38e0e28c7e5605942c4a77755349b0145804a397af37eb1fb4c77cb237f635",
+    "signature_url": "https://ffmpeg.org/releases/ffmpeg-9.0.1.tar.xz.asc",
+    "signing_key_url": "https://ffmpeg.org/ffmpeg-devel.asc",
+    "verified_signing_key_fingerprint": "FCF986EA15E6E293A5644F10B4322F04D67658D8",
+    "license": "LGPL-2.1-or-later",
+    "gpl_enabled": false,
+    "nonfree_enabled": false,
+    "patches": []
+  },
+  "dav1d": {
+    "version": "1.5.4",
+    "url": "https://download.videolan.org/pub/videolan/dav1d/1.5.4/dav1d-1.5.4.tar.xz",
+    "sha256": "686616b7c69eb88d44459391ab25cac13b6647a3b288835c5784e71c1514a5c5",
+    "checksum_url": "https://download.videolan.org/pub/videolan/dav1d/1.5.4/dav1d-1.5.4.tar.xz.sha256",
+    "license": "BSD-2-Clause",
+    "patches": []
+  },
+  "build": {
+    "script": "scripts/build-ffmpeg.sh",
+    "verification_script": "scripts/verify-ffmpeg.py",
+    "host": "macOS arm64",
+    "android_ndk": "r28c (28.2.13676358)",
+    "android_ndk_url": "https://dl.google.com/android/repository/android-ndk-r28c-darwin.zip",
+    "android_ndk_sha1": "fc20a6bf15a30fb3428c9b60a7308793a362dc6d",
+    "android_ndk_checksum_source": "https://dl.google.com/android/repository/repository2-1.xml",
+    "clang": "19.0.1 (Android r530567e)",
+    "meson": "1.8.2",
+    "ninja": "1.13.1",
+    "nasm": "2.16.03",
+    "nasm_url": "https://www.nasm.us/pub/nasm/releasebuilds/2.16.03/nasm-2.16.03.tar.xz",
+    "nasm_sha256": "1412a1c760bbd05db026b6c0d1657affd6631cd0a63cddb6f73cc6d4aa616148",
+    "native_api_level": 35,
+    "app_minimum_api_level": 36,
+    "abis": ["arm64-v8a", "x86_64"],
+    "elf_page_alignment": 16384,
+    "static_components": ["FFmpeg", "dav1d"],
+    "system_shared_dependencies": ["libc.so", "libm.so", "libz.so"],
+    "runtime_downloads": false,
+    "network_protocols_enabled": false,
+    "source_date_epoch": 1786492800
+  }
+}

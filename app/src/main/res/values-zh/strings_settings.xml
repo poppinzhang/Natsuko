@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">设置</string>
+    <string name="settings_back">返回</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_system">跟随系统</string>
+    <string name="settings_language_chinese">中文</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_hint">默认跟随系统语言，也可单独指定 Natsuko 的语言。系统语言不受支持时使用英文。</string>
+    <string name="settings_language_cancel">取消</string>
+    <string name="settings_output_storage">成品存储</string>
+    <string name="settings_storage_description">开启后，图片、PDF、GIF 和视频成品将自动保存到下方目录</string>
+    <string name="settings_storage_directory">用户存储目录</string>
+    <string name="settings_storage_grouping">成品按功能和处理时间存放，方便查找。</string>
+    <string name="settings_storage_change">更改存储目录</string>
+    <string name="settings_storage_restore">恢复默认目录 Download/Natsuko</string>
+    <string name="settings_storage_help">默认目录无需额外存储权限。选择其他目录时，请在系统选择器中允许访问。关闭开关不会删除已保存的成品。</string>
+    <string name="settings_storage_retry">查看处理结果并重试</string>
+    <string name="settings_storage_save">保存至用户存储目录</string>
+    <plurals name="settings_storage_failures">
+        <item quantity="other">本次有 %1$d 个成品未能保存至用户存储目录，应用专属副本已保留。</item>
+    </plurals>
+</resources>

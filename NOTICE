@@ -1,0 +1,15 @@
+Natsuko
+Copyright 2026 Natsuko contributors
+
+Natsuko's original source code, build scripts and documentation are licensed
+under the Apache License, Version 2.0. See LICENSE for the full terms.
+
+Third-party components retain their own copyrights and licenses. See
+THIRD_PARTY_NOTICES.md, third_party/licenses/, third_party/ffmpeg/notices/,
+and the application's About screen for their notices and license texts.
+FFmpeg is licensed under LGPL-2.1-or-later; it is not relicensed under Apache-2.0.
+
+The character artwork in natsuko.png and its resized app-icon derivatives is
+excluded from the Apache-2.0 grant. The character Natsuko Hirose and ZENSHU
+names/artwork belong to their respective rights holders. This repository does
+not establish permission to redistribute that artwork or grant trademark rights.

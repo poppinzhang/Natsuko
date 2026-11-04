@@ -1,0 +1,157 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.util.zip.ZipInputStream
+
+// Reviewed, exact coordinates: new or upgraded dependencies require a license review.
+// Generate separately for each variant so debug-only tools never appear in release.
+['debug', 'release'].each { variant ->
+    def runtime = providers.provider { configurations.getByName("${variant}RuntimeClasspath") }
+    def destination = layout.buildDirectory.dir("generated/openSource/${variant}/assets")
+    def generate = tasks.register("generate${variant.capitalize()}OpenSourceNotices") {
+        inputs.files(runtime)
+        inputs.files(rootProject.files('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md',
+            'third_party/open-source-components.json', 'third_party/ffmpeg/provenance.json'))
+        inputs.dir(rootProject.file('third_party/licenses'))
+        inputs.dir(rootProject.file('third_party/ffmpeg/notices'))
+        inputs.property('versionName', android.defaultConfig.versionName)
+        inputs.property('versionSuffix', android.buildTypes[variant].versionNameSuffix ?: '')
+        outputs.dir(destination)
+        doLast {
+            def catalog = new JsonSlurper().parse(rootProject.file('third_party/open-source-components.json'))
+            if (!(catalog.projects instanceof List) || !catalog.projects || !(catalog.components instanceof Map)) {
+                throw new GradleException('Invalid license catalog schema')
+            }
+            catalog.projects.each { validateNoticeEntry(it, 'licenseFiles') }
+            if (!catalog.projects.collect { it.id }.containsAll(['natsuko', 'ffmpeg', 'dav1d', 'llvm'])) {
+                throw new GradleException('Missing application/native license project')
+            }
+            def provenance = new JsonSlurper().parse(rootProject.file('third_party/ffmpeg/provenance.json'))
+            ['ffmpeg', 'dav1d'].each { id ->
+                checkVersion(catalog.projects.find { it.id == id }.version, provenance[id].version, id)
+            }
+            def out = destination.get().asFile
+            delete(out)
+            def write = { String path, byte[] bytes ->
+                if (!bytes.length) throw new GradleException("Empty license: $path")
+                def file = new File(out, path)
+                if (file.exists() && !Arrays.equals(file.bytes, bytes)) {
+                    throw new GradleException("Conflicting license assets: $path")
+                }
+                file.parentFile.mkdirs()
+                file.bytes = bytes
+            }
+            ['LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'].each {
+                write("open_source/$it", rootProject.file(it).bytes)
+            }
+            def projects = catalog.projects.collect { new LinkedHashMap(it) }
+            projects.find { it.id == 'natsuko' }.version = android.defaultConfig.versionName +
+                (android.buildTypes[variant].versionNameSuffix ?: '')
+            def coordinates = []
+            def resolved = runtime.get().resolvedConfiguration.resolvedArtifacts
+            def reviewedFiles = resolved.collect { it.file.canonicalFile }.toSet()
+            def localFiles = runtime.get().files.collect { it.canonicalFile }.toSet() - reviewedFiles
+            if (localFiles) {
+                throw new GradleException("License review required for local file dependencies: $localFiles; see docs/about.md")
+            }
+            resolved.groupBy {
+                it.moduleVersion.id.toString()
+            }.sort().each { coordinate, artifacts ->
+                def reviewed = catalog.components[coordinate]
+                if (!reviewed) throw new GradleException("License review required for $coordinate; see docs/about.md")
+                validateNoticeEntry(reviewed, 'noticeFiles')
+                coordinates.add(coordinate)
+                def id = coordinate.replace(':', '_')
+                def licenseFiles = reviewed.license.startsWith('Apache-2.0') ? ['open_source/LICENSE'] : []
+                reviewed.noticeFiles.each { path ->
+                    def asset = "open_source/licenses/${new File(path).name}"
+                    write(asset, rootProject.file(path).bytes)
+                    licenseFiles.add(asset)
+                }
+                // Preserve every original license/NOTICE, including those inside an AAR's JARs.
+                def found = new TreeMap<String, byte[]>()
+                Closure scan
+                scan = { InputStream input, String prefix ->
+                    new ZipInputStream(input).withCloseable { zip ->
+                        def entry
+                        while ((entry = zip.nextEntry) != null) {
+                            if (entry.directory) continue
+                            def name = entry.name
+                            if (name.toLowerCase(Locale.ROOT).endsWith('.jar')) {
+                                scan(new ByteArrayInputStream(zip.readAllBytes()), prefix + name + '!/')
+                            } else if (name.tokenize('/').last().toUpperCase(Locale.ROOT) =~ /^(LICENSE|NOTICE|COPYING|COPYRIGHT|AL2\.0|LGPL2\.1)([._-].*)?$/) {
+                                def bytes = zip.readAllBytes()
+                                if (bytes.length) found[prefix + name] = bytes
+                            }
+                        }
+                    }
+                }
+                artifacts.sort { it.file.name }.each { artifact ->
+                    artifact.file.withInputStream { scan(it, artifact.file.name + '!/') }
+                }
+                found.eachWithIndex { name, bytes, index ->
+                    def asset = "open_source/dependencies/$id/${index}.txt"
+                    write(asset, bytes)
+                    licenseFiles.add(asset)
+                }
+                projects.add([
+                    id: id, name: reviewed.name, version: coordinate.tokenize(':').last(),
+                    license: reviewed.license, url: reviewed.url,
+                    description: "Maven: $coordinate", licenseFiles: licenseFiles.unique(),
+                ])
+            }
+            if (projects.collect { it.id }.toSet().size() != projects.size()) {
+                throw new GradleException('Duplicate license project id')
+            }
+            projects.each { project ->
+                project.licenseFiles.each { path ->
+                    def file = new File(out, path)
+                    def nativeNotice = rootProject.file("third_party/ffmpeg/notices/$path")
+                    if (!(file.isFile() && file.length() > 0) &&
+                        !(nativeNotice.isFile() && nativeNotice.length() > 0)) {
+                        throw new GradleException("Missing license asset: $path")
+                    }
+                }
+            }
+            write('open_source/index.json', (JsonOutput.prettyPrint(JsonOutput.toJson([
+                projects: projects, dependencies: coordinates,
+            ])) + '\n').getBytes('UTF-8'))
+        }
+    }
+    android.sourceSets[variant].assets.srcDir(destination)
+    // Lint reads source assets directly, without going through mergeAssets.
+    // Its analysis and model tasks need the generated notices as well.
+    def assetConsumers = [
+        "merge${variant.capitalize()}Assets",
+        "lintAnalyze${variant.capitalize()}",
+        "lintVitalAnalyze${variant.capitalize()}",
+        "generate${variant.capitalize()}LintReportModel",
+        "generate${variant.capitalize()}LintVitalReportModel",
+    ].collect { it.toString() }
+    tasks.matching { it.name in assetConsumers }.configureEach {
+        dependsOn(generate)
+    }
+}
+
+static void checkVersion(Object actual, Object expected, String name) {
+    if (actual != expected) throw new GradleException("License catalog version mismatch: $name")
+}
+
+static void validateNoticeEntry(Object entry, String pathKey) {
+    def fields = ['name', 'license'] + (pathKey == 'licenseFiles' ? ['id', 'version'] : [])
+    if (!(entry instanceof Map) || fields.any { !(entry[it] instanceof String) || !entry[it].trim() }) {
+        throw new GradleException('Missing name, version, license or source URL in license catalog')
+    }
+    if (!(entry.url instanceof String)) throw new GradleException('Missing source URL field')
+    // The application has no confirmed public repository yet; dependencies require upstream URLs.
+    if (pathKey != 'licenseFiles' || entry.id != 'natsuko' || entry.url) {
+        def uri = new URI(entry.url)
+        if (uri.scheme != 'https' || !uri.host) throw new GradleException("Invalid source URL: ${entry.url}")
+    }
+    def paths = entry[pathKey]
+    if (!(paths instanceof List) || !paths || paths.any { path ->
+        !(path instanceof String) || !path.trim() || path.startsWith('/') || path.contains('\\') ||
+            path.split('/', -1).any { it in ['', '.', '..'] }
+    }) {
+        throw new GradleException("Invalid license file paths for ${entry.name}")
+    }
+}

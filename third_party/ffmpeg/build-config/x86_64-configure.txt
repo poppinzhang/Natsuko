@@ -1,0 +1,118 @@
+install prefix            /Users/poppinzhang/github/Natsuko/build/ffmpeg/x86_64/prefix
+source path               ./src
+C compiler                /Users/poppinzhang/github/Natsuko/build/ffmpeg/toolchains/android-ndk-r28c/toolchains/llvm/prebuilt/darwin-x86_64/bin/x86_64-linux-android35-clang
+C library                 bionic
+host C compiler           gcc
+host C library            
+ARCH                      x86 (generic)
+version string suffix     natsuko
+big-endian                no
+runtime cpu detection     yes
+standalone assembly       yes
+x86 assembler             nasm
+MMX enabled               yes
+MMXEXT enabled            yes
+SSE enabled               yes
+SSSE3 enabled             yes
+AESNI enabled             yes
+CLMUL enabled             yes
+AVX enabled               yes
+AVX2 enabled              yes
+AVX-512 enabled           yes
+AVX-512ICL enabled        yes
+XOP enabled               yes
+FMA3 enabled              yes
+FMA4 enabled              yes
+i686 features enabled     yes
+CMOV is fast              yes
+EBX available             yes
+EBP available             yes
+debug symbols             no
+strip symbols             yes
+optimize for size         no
+optimizations             yes
+static                    yes
+shared                    no
+network support           no
+threading support         pthreads
+safe bitstream reader     yes
+texi2html enabled         no
+perl enabled              yes
+pod2man enabled           yes
+makeinfo enabled          no
+makeinfo supports HTML    no
+experimental features     yes
+xmllint enabled           yes
+
+External libraries:
+iconv                   libdav1d                zlib
+
+External libraries providing hardware acceleration:
+
+Libraries:
+avcodec                 avformat                swresample
+avfilter                avutil                  swscale
+
+Programs:
+ffmpeg                  ffprobe
+
+Enabled decoders:
+bmp                     hevc                    png
+gif                     libdav1d                rawvideo
+h263                    mjpeg                   vp8
+h264                    mpeg4                   vp9
+
+Enabled encoders:
+gif                     rawvideo
+png                     wrapped_avframe
+
+Enabled hwaccels:
+
+Enabled parsers:
+av1                     mpeg4video              vp9
+h264                    png
+hevc                    vp8
+
+Enabled demuxers:
+avi                     hevc                    ivf
+gif                     image2                  matroska
+h264                    image2pipe              mov
+
+Enabled muxers:
+gif                     image2pipe              rawvideo
+image2                  null
+
+Enabled protocols:
+file                    pipe
+
+Enabled filters:
+aformat                 null                    settb
+anull                   palettegen              split
+atrim                   paletteuse              transpose
+crop                    rotate                  trim
+format                  scale                   vflip
+fps                     setpts
+hflip                   setsar
+
+Enabled bsfs:
+av1_frame_merge         extract_extradata       hevc_mp4toannexb
+av1_frame_split         h264_mp4toannexb        vp9_superframe_split
+
+Enabled indevs:
+
+Enabled outdevs:
+
+License: LGPL version 2.1 or later
+config.asm is unchanged
+checkasm_config_generated.h is unchanged
+checkasm_header_config_generated.h is unchanged
+checkasm_config_generated.asm is unchanged
+libavutil/avconfig.h is unchanged
+libavcodec/codec_list.c is unchanged
+libavcodec/parser_list.c is unchanged
+libavcodec/bsf_list.c is unchanged
+libavformat/demuxer_list.c is unchanged
+libavformat/muxer_list.c is unchanged
+libavdevice/indev_list.c is unchanged
+libavdevice/outdev_list.c is unchanged
+libavformat/protocol_list.c is unchanged

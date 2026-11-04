@@ -1,0 +1,36 @@
+Natsuko includes FFmpeg 9.0.1 (https://ffmpeg.org/) and dav1d 1.5.4
+(https://code.videolan.org/videolan/dav1d).
+
+FFmpeg copyright (c) 2000-2026 the FFmpeg developers.
+FFmpeg is licensed under the GNU Lesser General Public License, version 2.1
+or later. This build disables GPL and nonfree components. See
+FFmpeg-LGPL-2.1.txt and FFmpeg-LICENSE.md for its license terms.
+
+dav1d copyright (c) 2018-2025, VideoLAN and dav1d authors.
+dav1d uses the BSD 2-Clause license; see dav1d-BSD-2-Clause.txt.
+
+LLVM compiler runtime notices are in LLVM-NOTICE.txt.
+Android NDK startup/header notices are in Android-NDK-SYSROOT-NOTICE.txt.
+Additional source-level copyrights and license terms are retained in
+FFmpeg-THIRD-PARTY.txt and dav1d-THIRD-PARTY.txt.
+
+This software is based in part on the work of the Independent JPEG Group.
+Natsuko has not modified FFmpeg's IJG-derived jfdctfst.c,
+jfdctint_template.c or jrevdct.c files.
+
+The complete unmodified FFmpeg and dav1d source archives, source checksums,
+signature verification material and build provenance are distributed with
+Natsuko's source under third_party/ffmpeg/. The corresponding build script is
+scripts/build-ffmpeg.sh. These executables run as separate child processes; no
+FFmpeg library is linked into the application's Kotlin code.
+
+The corresponding native source archive must accompany each Natsuko release
+at its download location. It includes both source archives, build scripts,
+configuration reports, checksums and notices. See docs/native_licenses.md in
+Natsuko's source for rebuilding and replacing the executables. Upstream source
+links below identify the originals and do not replace this source delivery.
+Natsuko's own Apache 2.0 license does not relicense these dependencies.
+
+Upstream source archives:
+https://ffmpeg.org/releases/ffmpeg-9.0.1.tar.xz
+https://download.videolan.org/pub/videolan/dav1d/1.5.4/dav1d-1.5.4.tar.xz

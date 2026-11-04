@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">Follow system</string>
+    <string name="settings_language_chinese">中文</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_hint">Follow the system language, or choose a language for Natsuko. Unsupported system languages use English.</string>
+    <string name="settings_language_cancel">Cancel</string>
+    <string name="settings_output_storage">Output storage</string>
+    <string name="settings_storage_description">Automatically save finished images, PDFs, GIFs, and videos to the directory below.</string>
+    <string name="settings_storage_directory">User storage directory</string>
+    <string name="settings_storage_grouping">Outputs are organized by feature and processing time.</string>
+    <string name="settings_storage_change">Change directory</string>
+    <string name="settings_storage_restore">Restore default: Download/Natsuko</string>
+    <string name="settings_storage_help">The default directory needs no additional storage permission. When choosing another directory, allow access in the system picker. Turning this off keeps previously saved outputs.</string>
+    <string name="settings_storage_retry">View results and retry</string>
+    <string name="settings_storage_save">Save to user storage</string>
+    <plurals name="settings_storage_failures">
+        <item quantity="one">%1$d output could not be saved to user storage. The app copy is retained.</item>
+        <item quantity="other">%1$d outputs could not be saved to user storage. The app copies are retained.</item>
+    </plurals>
+</resources>

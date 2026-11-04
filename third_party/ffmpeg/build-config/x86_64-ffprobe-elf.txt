@@ -1,0 +1,59 @@
+
+Elf file type is DYN (Shared object file)
+Entry point 0x1758e0
+There are 11 program headers, starting at offset 64
+
+Program Headers:
+  Type           Offset   VirtAddr           PhysAddr           FileSiz  MemSiz   Flg Align
+  PHDR           0x000040 0x0000000000000040 0x0000000000000040 0x000268 0x000268 R   0x8
+  INTERP         0x0002a8 0x00000000000002a8 0x00000000000002a8 0x000015 0x000015 R   0x1
+      [Requesting program interpreter: /system/bin/linker64]
+  LOAD           0x000000 0x0000000000000000 0x0000000000000000 0x1718dc 0x1718dc R   0x4000
+  LOAD           0x1718e0 0x00000000001758e0 0x00000000001758e0 0x835b30 0x835b30 R E 0x4000
+  LOAD           0x9a7410 0x00000000009af410 0x00000000009af410 0x041510 0x044bf0 RW  0x4000
+  LOAD           0x9e8920 0x00000000009f4920 0x00000000009f4920 0x000700 0x16fb20 RW  0x4000
+  DYNAMIC        0x9e8188 0x00000000009f0188 0x00000000009f0188 0x000170 0x000170 RW  0x8
+  GNU_RELRO      0x9a7410 0x00000000009af410 0x00000000009af410 0x041510 0x044bf0 R   0x1
+  GNU_EH_FRAME   0x0d5730 0x00000000000d5730 0x00000000000d5730 0x012404 0x012404 R   0x4
+  GNU_STACK      0x000000 0x0000000000000000 0x0000000000000000 0x000000 0x000000 RW  0x0
+  NOTE           0x0002c0 0x00000000000002c0 0x00000000000002c0 0x000098 0x000098 R   0x4
+
+ Section to Segment mapping:
+  Segment Sections...
+   00     
+   01     .interp 
+   02     .interp .note.android.ident .dynsym .gnu.version .gnu.version_r .gnu.hash .dynstr .rela.dyn .rela.plt .rodata .eh_frame_hdr .eh_frame 
+   03     .text .plt 
+   04     .data.rel.ro .dynamic .got .got.plt .relro_padding 
+   05     .data .bss 
+   06     .dynamic 
+   07     .data.rel.ro .dynamic .got .got.plt .relro_padding 
+   08     .eh_frame_hdr 
+   09     
+   10     .note.android.ident 
+   None   .shstrtab 
+Dynamic section at offset 0x9e8188 contains 23 entries:
+  Tag                Type         Name/Value
+  0x0000000000000001 (NEEDED)     Shared library: [libm.so]
+  0x0000000000000001 (NEEDED)     Shared library: [libz.so]
+  0x0000000000000001 (NEEDED)     Shared library: [libc.so]
+  0x000000000000001e (FLAGS)      BIND_NOW 
+  0x000000006ffffffb (FLAGS_1)    NOW PIE 
+  0x0000000000000015 (DEBUG)      0x0
+  0x0000000000000007 (RELA)       0x1840
+  0x0000000000000008 (RELASZ)     253320 (bytes)
+  0x0000000000000009 (RELAENT)    24 (bytes)
+  0x000000006ffffff9 (RELACOUNT)  10541
+  0x0000000000000017 (JMPREL)     0x3f5c8
+  0x0000000000000002 (PLTRELSZ)   3312 (bytes)
+  0x0000000000000003 (PLTGOT)     0x9f04b8
+  0x0000000000000014 (PLTREL)     RELA
+  0x0000000000000006 (SYMTAB)     0x358
+  0x000000000000000b (SYMENT)     24 (bytes)
+  0x0000000000000005 (STRTAB)     0x12ec
+  0x000000000000000a (STRSZ)      1358 (bytes)
+  0x000000006ffffef5 (GNU_HASH)   0x12d0
+  0x000000006ffffff0 (VERSYM)     0x1150
+  0x000000006ffffffe (VERNEED)    0x127c
+  0x000000006fffffff (VERNEEDNUM) 2
+  0x0000000000000000 (NULL)       0x0

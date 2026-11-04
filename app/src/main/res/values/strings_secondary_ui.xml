@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="secondary_back">Back</string>
+    <string name="about_title">About</string>
+    <string name="about_notices_title">Open source notices</string>
+    <string name="about_app_version">Version %1$s (%2$d)</string>
+    <string name="about_project_version">Version %1$s</string>
+    <string name="about_projects_title">Open source projects and licenses</string>
+    <string name="about_projects_description">Thanks to these open source projects. Select a project to read its full licenses, copyright notices, and other information offline.</string>
+    <string name="about_view_notices">View open source notices</string>
+    <string name="about_link_error">Could not open the project link</string>
+    <string name="about_open_source_url">Open project source</string>
+    <string name="about_load_error">Could not read the bundled open source notices. Please try again.</string>
+    <string name="about_retry">Retry</string>
+    <string name="about_project_natsuko_description">Original application code is licensed under Apache 2.0. See the notices for rights information about third-party components and character artwork.</string>
+    <string name="about_project_ffmpeg_description">Bundled video processing backend with GPL and nonfree components disabled. Corresponding source code and rebuild materials are included in the release archive natsuko-third-party-sources-&lt;version&gt;.tar.gz.</string>
+    <string name="about_project_dav1d_description">AV1 decoder used by the bundled FFmpeg backend. Source code is included with each release.</string>
+    <string name="about_project_llvm_description">Compiler runtime and NDK components used by the bundled native executables. See the original notices for each component\'s license.</string>
+    <string name="twitter_download_start">Start download</string>
+    <string name="twitter_link_title">Paste a post link</string>
+    <string name="twitter_link_description">Enter a public X / Twitter post link to download its videos or GIFs.</string>
+    <string name="twitter_link_label">Post link</string>
+    <string name="twitter_link_placeholder">https://x.com/username/status/post_id</string>
+    <string name="twitter_gif_title">Convert downloads to GIF</string>
+    <string name="twitter_gif_description">GIFs on X are usually provided as MP4 videos. The download keeps the video file. Select “Video to GIF” on the results screen to choose a frame rate and size, then convert it.</string>
+    <string name="twitter_storage_description">Downloads use the app\'s output storage settings. If automatic saving is enabled, they are also saved to your selected storage folder.</string>
+</resources>

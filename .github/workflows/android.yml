@@ -1,0 +1,113 @@
+name: Android CI
+
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.package-release.outputs.version || steps.package-unsigned.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android 16 SDK
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Test packaging and attribution safeguards
+        run: |
+          ./scripts/test-package.sh
+          python3 scripts/test_verify_open_source.py
+          python3 scripts/test_verify_ffmpeg.py
+
+      - name: Test, lint and package signed release
+        id: package-release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          KEYSTORE_BASE64: ${{ secrets.NATSUKO_KEYSTORE_BASE64 }}
+          NATSUKO_STORE_PASSWORD: ${{ secrets.NATSUKO_STORE_PASSWORD }}
+          NATSUKO_KEY_ALIAS: ${{ secrets.NATSUKO_KEY_ALIAS }}
+          NATSUKO_KEY_PASSWORD: ${{ secrets.NATSUKO_KEY_PASSWORD }}
+        run: |
+          [[ -n "$KEYSTORE_BASE64" ]] || { echo "Tag releases require NATSUKO_KEYSTORE_BASE64." >&2; exit 1; }
+          umask 077
+          keystore_path="$RUNNER_TEMP/natsuko-release.jks"
+          trap 'rm -f "$keystore_path"' EXIT
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          export NATSUKO_KEYSTORE="$keystore_path"
+          ./scripts/package.sh --tag "$GITHUB_REF_NAME"
+
+      - name: Test, lint and package unsigned verification build
+        id: package-unsigned
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        run: ./scripts/package.sh --unsigned
+
+      - name: Upload build artifacts, license notices and corresponding sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: natsuko-${{ steps.package-release.outputs.version || steps.package-unsigned.outputs.version }}
+          path: dist/${{ steps.package-release.outputs.version || steps.package-unsigned.outputs.version }}/*
+          if-no-files-found: error
+
+  instrumentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Run Android 16 device tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: aosp_atd
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: ./gradlew connectedDebugAndroidTest
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, instrumentation]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: natsuko-${{ needs.build.outputs.version }}
+          path: release
+
+      - name: Publish verified tagged release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cd release
+          shasum -a 256 -c SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" ./* --verify-tag --title "$GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md

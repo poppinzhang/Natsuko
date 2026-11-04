@@ -1,0 +1,6 @@
+AndroidX / Android Jetpack (including Compose and Material icons)
+Copyright The Android Open Source Project and respective contributors.
+Source: https://android.googlesource.com/platform/frameworks/support/
+License: Apache-2.0, except separately identified third-party portions.
+The original license/notice files supplied in each resolved AAR/JAR are also
+retained verbatim in the generated application assets.

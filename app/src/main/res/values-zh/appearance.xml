@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="appearance_title">外观</string>
+    <string name="appearance_color_mode">颜色模式</string>
+    <string name="appearance_color_mode_hint">随时切换，选择后立即生效。</string>
+    <string name="appearance_system">跟随系统</string>
+    <string name="appearance_light">浅色（Light）</string>
+    <string name="appearance_dark">深色（Dark）</string>
+</resources>

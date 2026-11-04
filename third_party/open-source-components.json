@@ -1,0 +1,754 @@
+{
+  "projects": [
+    {
+      "id": "natsuko",
+      "name": "Natsuko",
+      "version": "build",
+      "license": "Apache-2.0",
+      "url": "",
+      "description": "应用原创代码采用 Apache 2.0；第三方组件及角色图像的权利说明见声明。",
+      "licenseFiles": [
+        "open_source/LICENSE",
+        "open_source/NOTICE",
+        "open_source/THIRD_PARTY_NOTICES.md"
+      ]
+    },
+    {
+      "id": "ffmpeg",
+      "name": "FFmpeg / FFprobe",
+      "version": "9.0.1",
+      "license": "LGPL-2.1-or-later",
+      "url": "https://ffmpeg.org/",
+      "description": "内置视频处理后端，未启用 GPL 或 nonfree 组件。对应源码和重建资料随发行版的 natsuko-third-party-sources-<版本>.tar.gz 提供。",
+      "licenseFiles": [
+        "FFmpeg-NOTICE.txt",
+        "FFmpeg-LGPL-2.1.txt",
+        "FFmpeg-LICENSE.md",
+        "FFmpeg-THIRD-PARTY.txt"
+      ]
+    },
+    {
+      "id": "dav1d",
+      "name": "dav1d",
+      "version": "1.5.4",
+      "license": "BSD-2-Clause",
+      "url": "https://code.videolan.org/videolan/dav1d",
+      "description": "内置 FFmpeg 使用的 AV1 解码器，源码随发行版提供。",
+      "licenseFiles": [
+        "dav1d-BSD-2-Clause.txt",
+        "dav1d-THIRD-PARTY.txt"
+      ]
+    },
+    {
+      "id": "llvm",
+      "name": "LLVM / Android NDK runtime",
+      "version": "NDK r28c · Clang 19.0.1",
+      "license": "Apache-2.0 WITH LLVM-exception / NDK component licenses",
+      "url": "https://android.googlesource.com/toolchain/llvm-project/",
+      "description": "内置原生可执行文件使用的编译器运行时及 NDK 组件；具体许可见各组件原文。",
+      "licenseFiles": [
+        "LLVM-NOTICE.txt",
+        "Android-NDK-SYSROOT-NOTICE.txt"
+      ]
+    }
+  ],
+  "components": {
+    "androidx.activity:activity-compose:1.12.4": {
+      "name": "androidx.activity:activity-compose",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.activity:activity-ktx:1.12.4": {
+      "name": "androidx.activity:activity-ktx",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.activity:activity:1.12.4": {
+      "name": "androidx.activity:activity",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.annotation:annotation-experimental:1.4.1": {
+      "name": "androidx.annotation:annotation-experimental",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.annotation:annotation-jvm:1.9.1": {
+      "name": "androidx.annotation:annotation-jvm",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.arch.core:core-common:2.2.0": {
+      "name": "androidx.arch.core:core-common",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.arch.core:core-runtime:2.2.0": {
+      "name": "androidx.arch.core:core-runtime",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.autofill:autofill:1.0.0": {
+      "name": "androidx.autofill:autofill",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.collection:collection-jvm:1.5.0": {
+      "name": "androidx.collection:collection-jvm",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.collection:collection-ktx:1.5.0": {
+      "name": "androidx.collection:collection-ktx",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.animation:animation-android:1.11.4": {
+      "name": "androidx.compose.animation:animation-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.animation:animation-core-android:1.11.4": {
+      "name": "androidx.compose.animation:animation-core-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.foundation:foundation-android:1.11.4": {
+      "name": "androidx.compose.foundation:foundation-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.foundation:foundation-layout-android:1.11.4": {
+      "name": "androidx.compose.foundation:foundation-layout-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.material3:material3-android:1.4.0": {
+      "name": "androidx.compose.material3:material3-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.material:material-icons-core-android:1.7.8": {
+      "name": "androidx.compose.material:material-icons-core-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.material:material-ripple-android:1.11.4": {
+      "name": "androidx.compose.material:material-ripple-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.runtime:runtime-android:1.11.4": {
+      "name": "androidx.compose.runtime:runtime-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.runtime:runtime-annotation-android:1.11.4": {
+      "name": "androidx.compose.runtime:runtime-annotation-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.runtime:runtime-retain-android:1.11.4": {
+      "name": "androidx.compose.runtime:runtime-retain-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.runtime:runtime-saveable-android:1.11.4": {
+      "name": "androidx.compose.runtime:runtime-saveable-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.ui:ui-android:1.11.4": {
+      "name": "androidx.compose.ui:ui-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.ui:ui-geometry-android:1.11.4": {
+      "name": "androidx.compose.ui:ui-geometry-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.ui:ui-graphics-android:1.11.4": {
+      "name": "androidx.compose.ui:ui-graphics-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.ui:ui-test-manifest:1.11.4": {
+      "name": "androidx.compose.ui:ui-test-manifest",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.ui:ui-text-android:1.11.4": {
+      "name": "androidx.compose.ui:ui-text-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.ui:ui-tooling-android:1.11.4": {
+      "name": "androidx.compose.ui:ui-tooling-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.ui:ui-tooling-data-android:1.11.4": {
+      "name": "androidx.compose.ui:ui-tooling-data-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.ui:ui-tooling-preview-android:1.11.4": {
+      "name": "androidx.compose.ui:ui-tooling-preview-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.ui:ui-unit-android:1.11.4": {
+      "name": "androidx.compose.ui:ui-unit-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.compose.ui:ui-util-android:1.11.4": {
+      "name": "androidx.compose.ui:ui-util-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.concurrent:concurrent-futures:1.1.0": {
+      "name": "androidx.concurrent:concurrent-futures",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.core:core-ktx:1.17.0": {
+      "name": "androidx.core:core-ktx",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.core:core-viewtree:1.0.0": {
+      "name": "androidx.core:core-viewtree",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.core:core:1.17.0": {
+      "name": "androidx.core:core",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.customview:customview-poolingcontainer:1.0.0": {
+      "name": "androidx.customview:customview-poolingcontainer",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.documentfile:documentfile:1.0.0": {
+      "name": "androidx.documentfile:documentfile",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.dynamicanimation:dynamicanimation:1.0.0": {
+      "name": "androidx.dynamicanimation:dynamicanimation",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.emoji2:emoji2:1.4.0": {
+      "name": "androidx.emoji2:emoji2",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.graphics:graphics-path:1.0.1": {
+      "name": "androidx.graphics:graphics-path",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt",
+        "third_party/licenses/AndroidX-Graphics-Path-NOTICE.txt"
+      ]
+    },
+    "androidx.interpolator:interpolator:1.0.0": {
+      "name": "androidx.interpolator:interpolator",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.legacy:legacy-support-core-utils:1.0.0": {
+      "name": "androidx.legacy:legacy-support-core-utils",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-common-java8:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-common-java8",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-common-jvm:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-common-jvm",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-livedata-core-ktx:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-livedata-core-ktx",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-livedata-core:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-livedata-core",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-livedata:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-livedata",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-process:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-process",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-runtime-android:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-runtime-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-runtime-compose-android:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-runtime-compose-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-runtime-ktx-android:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-runtime-ktx-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-viewmodel-android:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-viewmodel-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-viewmodel-compose-android:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-viewmodel-compose-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-viewmodel-ktx",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-viewmodel-savedstate-android:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-viewmodel-savedstate-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.lifecycle:lifecycle-viewmodel:2.10.0": {
+      "name": "androidx.lifecycle:lifecycle-viewmodel",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.loader:loader:1.0.0": {
+      "name": "androidx.loader:loader",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.localbroadcastmanager:localbroadcastmanager:1.0.0": {
+      "name": "androidx.localbroadcastmanager:localbroadcastmanager",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.navigationevent:navigationevent-android:1.0.2": {
+      "name": "androidx.navigationevent:navigationevent-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.navigationevent:navigationevent-compose-android:1.0.2": {
+      "name": "androidx.navigationevent:navigationevent-compose-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.print:print:1.0.0": {
+      "name": "androidx.print:print",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.profileinstaller:profileinstaller:1.4.0": {
+      "name": "androidx.profileinstaller:profileinstaller",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.savedstate:savedstate-android:1.4.0": {
+      "name": "androidx.savedstate:savedstate-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.savedstate:savedstate-compose-android:1.4.0": {
+      "name": "androidx.savedstate:savedstate-compose-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.savedstate:savedstate-ktx:1.4.0": {
+      "name": "androidx.savedstate:savedstate-ktx",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.startup:startup-runtime:1.1.1": {
+      "name": "androidx.startup:startup-runtime",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.tracing:tracing:1.2.0": {
+      "name": "androidx.tracing:tracing",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.transition:transition:1.6.0": {
+      "name": "androidx.transition:transition",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.versionedparcelable:versionedparcelable:1.1.1": {
+      "name": "androidx.versionedparcelable:versionedparcelable",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.window:window-core-android:1.5.0": {
+      "name": "androidx.window:window-core-android",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "androidx.window:window:1.5.0": {
+      "name": "androidx.window:window",
+      "license": "Apache-2.0",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "noticeFiles": [
+        "third_party/licenses/AndroidX-LICENSE.txt",
+        "third_party/licenses/AndroidX-NOTICE.txt"
+      ]
+    },
+    "com.google.guava:listenablefuture:1.0": {
+      "name": "com.google.guava:listenablefuture",
+      "license": "Apache-2.0",
+      "url": "https://github.com/google/guava",
+      "noticeFiles": [
+        "third_party/licenses/Guava-NOTICE.txt"
+      ]
+    },
+    "org.jetbrains.kotlin:kotlin-stdlib:2.2.21": {
+      "name": "org.jetbrains.kotlin:kotlin-stdlib",
+      "license": "Apache-2.0",
+      "url": "https://github.com/JetBrains/kotlin/tree/v2.2.21",
+      "noticeFiles": [
+        "third_party/licenses/Kotlin-LICENSE.txt",
+        "third_party/licenses/Kotlin-NOTICE.txt"
+      ]
+    },
+    "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2": {
+      "name": "org.jetbrains.kotlinx:kotlinx-coroutines-android",
+      "license": "Apache-2.0",
+      "url": "https://github.com/Kotlin/kotlinx.coroutines/tree/1.10.2",
+      "noticeFiles": [
+        "third_party/licenses/Coroutines-LICENSE.txt"
+      ]
+    },
+    "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2": {
+      "name": "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm",
+      "license": "Apache-2.0",
+      "url": "https://github.com/Kotlin/kotlinx.coroutines/tree/1.10.2",
+      "noticeFiles": [
+        "third_party/licenses/Coroutines-LICENSE.txt"
+      ]
+    },
+    "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.7.3": {
+      "name": "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm",
+      "license": "Apache-2.0",
+      "url": "https://github.com/Kotlin/kotlinx.serialization/tree/v1.7.3",
+      "noticeFiles": [
+        "third_party/licenses/Serialization-LICENSE.txt"
+      ]
+    },
+    "org.jetbrains:annotations:23.0.0": {
+      "name": "org.jetbrains:annotations",
+      "license": "Apache-2.0",
+      "url": "https://github.com/JetBrains/java-annotations/tree/23.0.0",
+      "noticeFiles": [
+        "third_party/licenses/JetBrains-Annotations-LICENSE.txt"
+      ]
+    },
+    "org.jspecify:jspecify:1.0.0": {
+      "name": "org.jspecify:jspecify",
+      "license": "Apache-2.0",
+      "url": "https://github.com/jspecify/jspecify/tree/v1.0.0",
+      "noticeFiles": [
+        "third_party/licenses/JSpecify-LICENSE.txt"
+      ]
+    }
+  }
+}

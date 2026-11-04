@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Natsuko</string>
+    <string name="share_crop_black_border">Remove black borders · Natsuko</string>
+    <string name="share_image_merge">Natsuko · Merge images</string>
+    <string name="share_images_to_pdf">Natsuko · Images to PDF</string>
+    <string name="share_pdf_to_images">Natsuko · PDF to images</string>
+    <string name="share_video_to_gif">Natsuko · Video to GIF</string>
+    <string name="share_download_twitter_video">Download Twitter videos (GIFs) · Natsuko</string>
+    <string name="share_image_adjustment">Natsuko · Adjust image</string>
+</resources>
