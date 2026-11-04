@@ -124,8 +124,8 @@ class ImageAdjustmentGeometryTest {
         val horizontal = AdjustmentEditing.flip(turned, 40, 20, horizontal = true)
 
         // The visible left and right swap: the frame point near the visible left edge holds what was at the right.
-        val before = AdjustmentGeometry.frameTransform(40, 20, turned.quarterTurns, turned.mirrored, 0)
-        val after = AdjustmentGeometry.frameTransform(40, 20, horizontal.quarterTurns, horizontal.mirrored, 0)
+        val before = AdjustmentGeometry.outputTransform(AdjustmentGeometry.resolve(40, 20, turned.copy(straightenTenths = 0)))
+        val after = AdjustmentGeometry.outputTransform(AdjustmentGeometry.resolve(40, 20, horizontal.copy(straightenTenths = 0)))
         assertEquals(20 - before.mapX(3.5, 7.5), after.mapX(3.5, 7.5), 1e-9)
         assertEquals(before.mapY(3.5, 7.5), after.mapY(3.5, 7.5), 1e-9)
         assertEquals(-25, horizontal.straightenTenths)
@@ -161,6 +161,137 @@ class ImageAdjustmentGeometryTest {
         assertNull(uncropped.crop)
         assertEquals(edits.quarterTurns, uncropped.quarterTurns)
         assertEquals(edits.scale, uncropped.scale, 0.0)
+    }
+
+    @Test
+    fun resettingVerticalMirrorRestoresOriginalPixelsWithoutAddingRotation() {
+        val flipped = AdjustmentEditing.flip(AdjustmentEdits(), 40, 20, horizontal = false)
+        val vertical = AdjustmentGeometry.outputTransform(AdjustmentGeometry.resolve(40, 20, flipped))
+        assertEquals(0.5, vertical.mapX(0.5, 0.5), 1e-9)
+        assertEquals(19.5, vertical.mapY(0.5, 0.5), 1e-9)
+        assertTrue(flipped.hasMirrorEdits)
+        assertEquals("A mirror does not activate the rotation tool", 0, flipped.quarterTurns)
+
+        val reset = AdjustmentEditing.resetMirror(flipped, 40, 20)
+        val output = AdjustmentGeometry.outputTransform(AdjustmentGeometry.resolve(40, 20, reset))
+        assertEquals(AffineTransform.IDENTITY, output)
+        assertFalse(reset.hasMirrorEdits)
+        assertEquals(flipped, AdjustmentEditing.resetRotation(flipped, 40, 20))
+    }
+
+    @Test
+    fun mirrorResetPreservesEveryRotationCropAngleAndReduction() {
+        val original = AdjustmentEdits(
+            crop = PixelRect(4, 5, 27, 16),
+            straightenTenths = 25,
+            scale = 0.5,
+            aspect = CropAspect.RATIO_4_3,
+        )
+        for (turns in 0..3) {
+            var rotated = original
+            repeat(turns) { rotated = AdjustmentEditing.rotate(rotated, 40, 20, clockwise = true) }
+            for (flips in listOf(listOf(true), listOf(false), listOf(true, false), listOf(false, true))) {
+                var changed = rotated
+                flips.forEach { changed = AdjustmentEditing.flip(changed, 40, 20, horizontal = it) }
+                assertTrue("Both-axis mirrors must still be resettable: $turns / $flips", changed.hasMirrorEdits)
+                val reset = AdjustmentEditing.resetMirror(changed, 40, 20)
+
+                // The former canonical orientation pair lost the rotation's direction here.
+                assertEquals("$turns / $flips", rotated, reset)
+                assertEquals(
+                    AdjustmentGeometry.outputTransform(AdjustmentGeometry.resolve(40, 20, rotated)),
+                    AdjustmentGeometry.outputTransform(AdjustmentGeometry.resolve(40, 20, reset)),
+                )
+                assertEquals(sourceRegion(40, 20, changed), sourceRegion(40, 20, reset))
+            }
+        }
+    }
+
+    @Test
+    fun rotationResetPreservesEachMirrorAndItsSelectedContent() {
+        val original = AdjustmentEdits(crop = PixelRect(4, 5, 27, 16), straightenTenths = 25, scale = 0.5)
+        for (flips in listOf(listOf(true), listOf(false), listOf(true, false))) {
+            var mirrored = original
+            flips.forEach { mirrored = AdjustmentEditing.flip(mirrored, 40, 20, horizontal = it) }
+            for (turns in 0..3) {
+                var changed = mirrored
+                repeat(turns) { changed = AdjustmentEditing.rotate(changed, 40, 20, clockwise = true) }
+                val reset = AdjustmentEditing.resetRotation(changed, 40, 20)
+
+                assertEquals("$turns / $flips", mirrored, reset)
+                assertEquals(sourceRegion(40, 20, changed), sourceRegion(40, 20, reset))
+            }
+        }
+    }
+
+    @Test
+    fun mixedRotationsAndMirrorsFollowTheVisibleAxes() {
+        // Check all four-step sequences against independently moving a source pixel in the
+        // displayed image. This also covers flips performed between two rotations.
+        for (sequence in 0 until 256) {
+            var edits = AdjustmentEdits()
+            var x = 7.5
+            var y = 4.5
+            var width = 40
+            var height = 20
+            var rotationSteps = 0
+            repeat(4) { step ->
+                when ((sequence shr (step * 2)) and 3) {
+                    0 -> {
+                        edits = AdjustmentEditing.rotate(edits, 40, 20, clockwise = true)
+                        val oldX = x
+                        x = height - y
+                        y = oldX
+                        val oldWidth = width
+                        width = height
+                        height = oldWidth
+                        rotationSteps++
+                    }
+                    1 -> {
+                        edits = AdjustmentEditing.rotate(edits, 40, 20, clockwise = false)
+                        val oldX = x
+                        x = y
+                        y = width - oldX
+                        val oldWidth = width
+                        width = height
+                        height = oldWidth
+                        rotationSteps--
+                    }
+                    2 -> {
+                        edits = AdjustmentEditing.flip(edits, 40, 20, horizontal = true)
+                        x = width - x
+                    }
+                    3 -> {
+                        edits = AdjustmentEditing.flip(edits, 40, 20, horizontal = false)
+                        y = height - y
+                    }
+                }
+                val resolved = AdjustmentGeometry.resolve(40, 20, edits)
+                val output = AdjustmentGeometry.outputTransform(resolved)
+                assertEquals("$sequence / $step x", x, output.mapX(7.5, 4.5), 1e-9)
+                assertEquals("$sequence / $step y", y, output.mapY(7.5, 4.5), 1e-9)
+                assertEquals(width to height, resolved.outputWidth to resolved.outputHeight)
+            }
+            val resetMirror = AdjustmentEditing.resetMirror(edits, 40, 20)
+            val rotationOnly = AdjustmentGeometry.orientation(40, 20, rotationSteps, false)
+            assertEquals(rotationOnly, AdjustmentGeometry.outputTransform(AdjustmentGeometry.resolve(40, 20, resetMirror)))
+            val resetBoth = AdjustmentEditing.resetRotation(resetMirror, 40, 20)
+            assertEquals(AdjustmentEdits(), resetBoth)
+        }
+    }
+
+    @Test
+    fun mirrorResetIsOneUndoableStepEvenWhenBothAxesAreFlipped() {
+        val horizontal = AdjustmentEditing.flip(AdjustmentEdits(), 40, 20, horizontal = true)
+        val both = AdjustmentEditing.flip(horizontal, 40, 20, horizontal = false)
+        val reset = AdjustmentEditing.resetMirror(both, 40, 20)
+        val history = com.poppinzhang.natsuko.model.AdjustmentHistory()
+            .record(horizontal).record(both).record(reset)
+
+        assertEquals(AdjustmentEdits(), history.present)
+        assertEquals(both, history.undo().present)
+        assertTrue(history.undo().present.hasMirrorEdits)
+        assertEquals(reset, history.undo().redo().present)
     }
 
     @Test

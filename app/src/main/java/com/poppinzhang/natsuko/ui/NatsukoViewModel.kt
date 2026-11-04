@@ -127,8 +127,13 @@ class NatsukoViewModel @JvmOverloads constructor(
     private var adjustmentSession: ImageAdjustmentSession? = null
     private var adjustmentLoadJob: Job? = null
     private var estimateJob: Job? = null
+    private sealed interface PendingImport {
+        data class Files(val feature: Feature, val uris: List<Uri>) : PendingImport
+        data class TwitterLink(val text: String) : PendingImport
+    }
+
     /** An import that arrived while unexported adjustments were open; it waits for confirmation. */
-    private var pendingImport: Pair<Feature, List<Uri>>? = null
+    private var pendingImport: PendingImport? = null
 
     private fun freshState() = NatsukoUiState(storageSettings = storagePreferences.read())
 
@@ -148,11 +153,7 @@ class NatsukoViewModel @JvmOverloads constructor(
             mutableState.update { it.copy(errorMessage = text(R.string.backend_wait_before_import)) }
             return
         }
-        if (hasUnexportedAdjustment()) {
-            pendingImport = feature to uris
-            mutableState.update { it.copy(adjustment = it.adjustment?.copy(confirmDiscard = true)) }
-            return
-        }
+        if (deferImportForAdjustment(PendingImport.Files(feature, uris))) return
         importJob?.cancel()
         twitterDownloadResult = null
         importJob = viewModelScope.launch {
@@ -211,8 +212,7 @@ class NatsukoViewModel @JvmOverloads constructor(
             }
             try {
                 TwitterStatusLink.parse(text)
-                openTwitterDownload()
-                updateTwitterLink(text)
+                openTwitterDownload(text)
             } catch (error: IllegalArgumentException) {
                 mutableState.update { it.copy(errorMessage = error.userMessage(R.string.backend_share_valid_post_link)) }
             }
@@ -226,12 +226,14 @@ class NatsukoViewModel @JvmOverloads constructor(
         }
     }
 
-    fun openTwitterDownload() {
+    fun openTwitterDownload() = openTwitterDownload(mutableState.value.twitterLink)
+
+    private fun openTwitterDownload(link: String) {
         if (isBusy()) return
+        if (deferImportForAdjustment(PendingImport.TwitterLink(link))) return
         importJob?.cancel()
         twitterDownloadResult = null
         discardAdjustment()
-        val link = mutableState.value.twitterLink
         mutableState.value = freshState().copy(
             screen = AppScreen.TWITTER_DOWNLOAD,
             feature = Feature.DOWNLOAD_TWITTER_VIDEO,
@@ -759,12 +761,23 @@ class NatsukoViewModel @JvmOverloads constructor(
         twitterDownloadResult = null
         discardAdjustment()
         mutableState.value = freshState()
-        pending?.let { (feature, uris) -> acceptSelection(feature, uris) }
+        when (pending) {
+            is PendingImport.Files -> acceptSelection(pending.feature, pending.uris)
+            is PendingImport.TwitterLink -> openTwitterDownload(pending.text)
+            null -> Unit
+        }
     }
 
     fun dismissDiscardAdjustment() {
         pendingImport = null
         mutableState.update { it.copy(adjustment = it.adjustment?.copy(confirmDiscard = false)) }
+    }
+
+    private fun deferImportForAdjustment(request: PendingImport): Boolean {
+        if (!hasUnexportedAdjustment()) return false
+        pendingImport = request
+        mutableState.update { it.copy(adjustment = it.adjustment?.copy(confirmDiscard = true)) }
+        return true
     }
 
     private fun hasUnexportedAdjustment(): Boolean = mutableState.value.let {

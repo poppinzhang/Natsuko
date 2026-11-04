@@ -120,13 +120,15 @@ object AdjustmentGeometry {
 
     fun resolve(sourceWidth: Int, sourceHeight: Int, edits: AdjustmentEdits): ResolvedAdjustment {
         require(sourceWidth > 0 && sourceHeight > 0) { "Invalid source size" }
-        val turns = normalizedTurns(edits.quarterTurns)
+        // Rendering needs only one reflection and a turn, but editing keeps the two mirror axes
+        // independent of the rotation tool. A vertical mirror equals a horizontal mirror + 180°.
+        val turns = normalizedTurns(edits.quarterTurns + if (edits.mirroredVertically) 2 else 0)
         val tenths = edits.straightenTenths.coerceIn(-MAX_STRAIGHTEN_TENTHS, MAX_STRAIGHTEN_TENTHS)
         val frame = frameSize(sourceWidth, sourceHeight, turns)
         val crop = effectiveCrop(frame.width, frame.height, edits.crop, tenths)
         val output = scaledSize(crop.width, crop.height, edits.scale)
         return ResolvedAdjustment(
-            sourceWidth, sourceHeight, turns, edits.mirrored, tenths,
+            sourceWidth, sourceHeight, turns, edits.mirrored xor edits.mirroredVertically, tenths,
             frame.width, frame.height, crop, output.width, output.height,
         )
     }
@@ -459,12 +461,12 @@ object AdjustmentEditing {
                 PixelRect(rect.left, frame.height - rect.bottom, rect.right, frame.height - rect.top)
             }
         }
-        // Reflection reverses rotation: flip ∘ turn(k) = turn(-k) ∘ flip, and a vertical flip is a
-        // horizontal one followed by a half turn.
-        val turns = if (horizontal) -edits.quarterTurns else 2 - edits.quarterTurns
+        // The visible axes swap after an odd quarter turn. Keep mirror edits in source axes so
+        // either tool can later be reset without mistaking a mirror for a rotation.
+        val sourceHorizontal = horizontal == (AdjustmentGeometry.normalizedTurns(edits.quarterTurns) % 2 == 0)
         return edits.copy(
-            quarterTurns = AdjustmentGeometry.normalizedTurns(turns),
-            mirrored = !edits.mirrored,
+            mirrored = if (sourceHorizontal) !edits.mirrored else edits.mirrored,
+            mirroredVertically = if (sourceHorizontal) edits.mirroredVertically else !edits.mirroredVertically,
             straightenTenths = -edits.straightenTenths,
             crop = crop,
         )
@@ -483,11 +485,14 @@ object AdjustmentEditing {
         return result
     }
 
-    /** Removes the mirror while keeping the current quarter turns. */
-    fun resetMirror(edits: AdjustmentEdits, sourceWidth: Int, sourceHeight: Int): AdjustmentEdits =
-        if (!edits.mirrored) edits else {
-            flip(edits, sourceWidth, sourceHeight, horizontal = AdjustmentGeometry.normalizedTurns(edits.quarterTurns) % 2 == 0)
-        }
+    /** Removes both source-axis mirrors, preserving rotation and the selected picture content. */
+    fun resetMirror(edits: AdjustmentEdits, sourceWidth: Int, sourceHeight: Int): AdjustmentEdits {
+        val evenTurns = AdjustmentGeometry.normalizedTurns(edits.quarterTurns) % 2 == 0
+        var result = edits
+        if (edits.mirrored) result = flip(result, sourceWidth, sourceHeight, horizontal = evenTurns)
+        if (edits.mirroredVertically) result = flip(result, sourceWidth, sourceHeight, horizontal = !evenTurns)
+        return result
+    }
 
     fun resetScale(edits: AdjustmentEdits) = edits.copy(scale = 1.0)
 

@@ -27,10 +27,12 @@ enum class CropAspect(val ratioWidth: Int, val ratioHeight: Int) {
  * source with these values, so no intermediate bitmap is ever resampled again.
  */
 data class AdjustmentEdits(
-    /** Clockwise quarter turns, applied after [mirrored]. View flips are folded into this pair. */
+    /** Quarter turns from the rotation tool, applied after the two source-axis mirrors. */
     val quarterTurns: Int = 0,
     /** Mirrors the oriented source horizontally before [quarterTurns]. */
     val mirrored: Boolean = false,
+    /** Kept separately so resetting mirrors never removes or introduces a rotation-tool edit. */
+    val mirroredVertically: Boolean = false,
     /** Straighten angle in tenths of a degree; positive values rotate the picture clockwise. */
     val straightenTenths: Int = 0,
     /** Crop chosen in the rotated frame; null keeps the full frame. */
@@ -40,7 +42,9 @@ data class AdjustmentEdits(
     val aspectSwapped: Boolean = false,
     /** Proportional reduction after geometry edits, in (0, 1]; 1 keeps the edited size. */
     val scale: Double = 1.0,
-)
+) {
+    val hasMirrorEdits: Boolean get() = mirrored || mirroredVertically
+}
 
 /** Lightweight parameter history: no bitmap is retained per step. */
 data class AdjustmentHistory(

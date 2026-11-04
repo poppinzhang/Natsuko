@@ -374,7 +374,7 @@ private fun ToolPanel(
                         viewModel.flipAdjustment(horizontal = false)
                     }
                 }
-                HintWithReset(R.string.adjust_mirror_hint, R.string.adjust_reset_mirror, edits.mirrored) {
+                HintWithReset(R.string.adjust_mirror_hint, R.string.adjust_reset_mirror, edits.hasMirrorEdits) {
                     viewModel.resetAdjustmentTool(AdjustmentTool.MIRROR)
                 }
             }

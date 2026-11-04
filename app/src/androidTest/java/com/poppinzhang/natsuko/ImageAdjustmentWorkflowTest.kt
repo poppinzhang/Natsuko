@@ -14,6 +14,8 @@ import android.provider.MediaStore
 import android.text.format.Formatter
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -271,6 +273,62 @@ class ImageAdjustmentWorkflowTest {
     }
 
     @Test
+    fun mirrorResetRestoresOriginalPixelsAfterVerticalAndCombinedFlips() = runBlocking {
+        for (alsoFlipHorizontally in listOf(false, true)) {
+            val viewModel = newViewModel()
+            open(viewModel, fixtureUri(quadrantImage()))
+            onMain {
+                viewModel.flipAdjustment(horizontal = false)
+                if (alsoFlipHorizontally) viewModel.flipAdjustment(horizontal = true)
+                viewModel.resetAdjustmentTool(AdjustmentTool.MIRROR)
+            }
+
+            val bitmap = decode(export(viewModel))
+            try {
+                assertQuadrants(bitmap, 40, 20, RED, GREEN, BLUE, YELLOW)
+            } finally {
+                bitmap.recycle()
+            }
+        }
+    }
+
+    @Test
+    fun mirrorResetKeepsClockwiseRotationInExportedPixels() = runBlocking {
+        val viewModel = newViewModel()
+        open(viewModel, fixtureUri(quadrantImage()))
+        onMain {
+            viewModel.rotateAdjustment(clockwise = true)
+            viewModel.flipAdjustment(horizontal = true)
+            viewModel.resetAdjustmentTool(AdjustmentTool.MIRROR)
+        }
+
+        val bitmap = decode(export(viewModel))
+        try {
+            assertQuadrants(bitmap, 20, 40, BLUE, RED, YELLOW, GREEN)
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    @Test
+    fun rotationResetKeepsVerticalMirrorInExportedPixels() = runBlocking {
+        val viewModel = newViewModel()
+        open(viewModel, fixtureUri(quadrantImage()))
+        onMain {
+            viewModel.flipAdjustment(horizontal = false)
+            viewModel.rotateAdjustment(clockwise = true)
+            viewModel.resetAdjustmentTool(AdjustmentTool.ROTATE)
+        }
+
+        val bitmap = decode(export(viewModel))
+        try {
+            assertQuadrants(bitmap, 40, 20, BLUE, YELLOW, RED, GREEN)
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    @Test
     fun straighteningTrimsUncoveredCornersAndZeroRestoresTheCrop() = runBlocking {
         val viewModel = newViewModel()
         open(viewModel, fixtureUri(noiseImage(400, 300, Bitmap.CompressFormat.PNG)))
@@ -484,6 +542,97 @@ class ImageAdjustmentWorkflowTest {
     }
 
     @Test
+    fun dismissingLinkSharePreservesEditingAndExportSessions() = runBlocking {
+        for (fromExport in listOf(false, true)) {
+            val viewModel = newViewModel()
+            open(viewModel, fixtureUri(quadrantImage()))
+            onMain {
+                viewModel.rotateAdjustment(clockwise = true)
+                if (fromExport) viewModel.openAdjustmentExport()
+            }
+            if (fromExport) awaitReadyEstimate(viewModel)
+            val before = viewModel.state.value
+
+            onMain { viewModel.handleShareIntent(twitterShareIntent("https://x.com/example/status/123")) }
+            val asking = viewModel.state.value
+            assertEquals(before.screen, asking.screen)
+            assertEquals(before.adjustment!!.copy(confirmDiscard = true), asking.adjustment)
+            assertFalse(asking.isProcessing)
+            assertEquals(before.twitterLink, asking.twitterLink)
+
+            onMain { viewModel.dismissDiscardAdjustment() }
+            assertEquals(before.adjustment, viewModel.state.value.adjustment)
+            // The retained session remains usable, including a previously measured export.
+            val bitmap = decode(export(viewModel))
+            try {
+                assertQuadrants(bitmap, 20, 40, BLUE, RED, YELLOW, GREEN)
+            } finally {
+                bitmap.recycle()
+            }
+
+            onMain {
+                viewModel.continueAdjustmentEditing()
+                viewModel.rotateAdjustment(clockwise = true)
+                viewModel.back()
+            }
+            assertTrue(viewModel.state.value.adjustment!!.confirmDiscard)
+            onMain { viewModel.confirmDiscardAdjustment() }
+            assertEquals("A dismissed link must not be imported by a later discard", AppScreen.HOME, viewModel.state.value.screen)
+        }
+    }
+
+    @Test
+    fun confirmingLinkShareUsesLatestValidImportWithoutStartingDownload() = runBlocking {
+        val viewModel = newViewModel()
+        open(viewModel, fixtureUri(quadrantImage()))
+        onMain {
+            viewModel.rotateAdjustment(clockwise = true)
+            viewModel.openAdjustmentExport()
+        }
+        val edited = viewModel.state.value.adjustment!!.history
+        val nextImage = fixtureUri(quadrantImage(width = 16, height = 16))
+        val latestLink = "A shared video https://twitter.com/example/status/456"
+        onMain {
+            viewModel.handleShareIntent(shareIntent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_STREAM, nextImage))
+            viewModel.handleShareIntent(twitterShareIntent("https://x.com/example/status/123"))
+            viewModel.handleShareIntent(twitterShareIntent().apply { clipData = ClipData.newPlainText("Video", latestLink) })
+            // Invalid payloads must neither discard edits nor replace the valid pending link.
+            viewModel.handleShareIntent(twitterShareIntent("https://example.com/not-a-tweet"))
+        }
+        val waiting = viewModel.state.value
+        assertEquals(AppScreen.ADJUST_EXPORT, waiting.screen)
+        assertTrue(waiting.adjustment!!.confirmDiscard)
+        assertEquals(edited, waiting.adjustment.history)
+        assertFalse(waiting.isProcessing)
+
+        onMain { viewModel.confirmDiscardAdjustment() }
+        val imported = viewModel.state.value
+        assertEquals(AppScreen.TWITTER_DOWNLOAD, imported.screen)
+        assertEquals(Feature.DOWNLOAD_TWITTER_VIDEO, imported.feature)
+        assertEquals(latestLink, imported.twitterLink)
+        assertNull(imported.adjustment)
+        assertNull(imported.errorMessage)
+        assertNull(imported.outcome)
+        assertFalse(imported.isProcessing)
+    }
+
+    @Test
+    fun invalidLinkSharesLeaveUnexportedEditsWithoutADiscardPrompt() = runBlocking {
+        val viewModel = newViewModel()
+        open(viewModel, fixtureUri(quadrantImage()))
+        onMain { viewModel.rotateAdjustment(clockwise = true) }
+        val original = viewModel.state.value.adjustment
+        for (payload in listOf(null, "", "not a link", "https://example.com/user/status/123")) {
+            onMain { viewModel.handleShareIntent(twitterShareIntent(payload)) }
+            val rejected = viewModel.state.value
+            assertEquals(AppScreen.ADJUST_EDIT, rejected.screen)
+            assertEquals(original, rejected.adjustment)
+            assertFalse(rejected.adjustment!!.confirmDiscard)
+            assertTrue(rejected.errorMessage != null)
+        }
+    }
+
+    @Test
     fun rapidSettingChangesSaveOnlyTheLatestParameters() = runBlocking {
         val viewModel = newViewModel()
         open(viewModel, fixtureUri(noiseImage(256, 192, Bitmap.CompressFormat.PNG)))
@@ -609,6 +758,14 @@ class ImageAdjustmentWorkflowTest {
         composeRule.onNodeWithTag("adjust-tool-rotate").performClick()
         composeRule.onNodeWithTag("adjust-rotate-right").performClick()
         composeRule.onNodeWithTag("adjust-output-size").assertTextEquals(context.getString(R.string.adjust_output_size, 20, 40))
+        val rotated = viewModel.state.value.adjustment!!.history.present
+        composeRule.onNodeWithTag("adjust-tool-mirror").performClick()
+        composeRule.onNodeWithTag("adjust-reset-tool").assertIsNotEnabled()
+        composeRule.onNodeWithTag("adjust-flip-horizontal").performClick()
+        composeRule.onNodeWithTag("adjust-flip-vertical").performClick()
+        composeRule.onNodeWithTag("adjust-reset-tool").assertIsEnabled().performClick()
+        composeRule.onNodeWithTag("adjust-reset-tool").assertIsNotEnabled()
+        assertEquals("Resetting both mirror axes preserves the rotation", rotated, viewModel.state.value.adjustment!!.history.present)
         composeRule.onNodeWithTag("adjust-tool-straighten").performClick()
         composeRule.onNodeWithTag("adjust-straighten-up").performClick()
         composeRule.onNodeWithTag("adjust-straighten-value").assertTextEquals(context.getString(R.string.adjust_angle_value, 0.1))
@@ -685,6 +842,11 @@ class ImageAdjustmentWorkflowTest {
         .setType("image/png")
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
+    private fun twitterShareIntent(text: String? = null) = Intent(Intent.ACTION_SEND)
+        .setComponent(ComponentName(context, "com.poppinzhang.natsuko.share.DownloadTwitterVideoShare"))
+        .setType("text/plain")
+        .apply { text?.let { putExtra(Intent.EXTRA_TEXT, it) } }
+
     /** Red, green, blue, and yellow quadrants in reading order. */
     private fun quadrantImage(width: Int = 40, height: Int = 20, format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG): File {
         val pixels = IntArray(width * height) { index ->
@@ -736,6 +898,14 @@ class ImageAdjustmentWorkflowTest {
         val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.absolutePath, options)
         return options.outWidth to options.outHeight
+    }
+
+    private fun assertQuadrants(bitmap: Bitmap, width: Int, height: Int, vararg colors: Int) {
+        assertEquals(width to height, bitmap.width to bitmap.height)
+        assertEquals(colors[0], bitmap.getPixel(width / 4, height / 4))
+        assertEquals(colors[1], bitmap.getPixel(width * 3 / 4, height / 4))
+        assertEquals(colors[2], bitmap.getPixel(width / 4, height * 3 / 4))
+        assertEquals(colors[3], bitmap.getPixel(width * 3 / 4, height * 3 / 4))
     }
 
     private fun assertNear(expected: Int, actual: Int, tolerance: Int = 40) {
