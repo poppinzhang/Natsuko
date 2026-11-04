@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="secondary_back">返回</string>
+    <string name="about_title">關於</string>
+    <string name="about_notices_title">開放原始碼聲明</string>
+    <string name="about_app_version">版本 %1$s（%2$d）</string>
+    <string name="about_project_version">版本 %1$s</string>
+    <string name="about_projects_title">開放原始碼專案與授權</string>
+    <string name="about_projects_description">感謝以下開放原始碼專案。點選專案可離線查看完整授權條款、著作權聲明及相關說明。</string>
+    <string name="about_view_notices">查看開放原始碼聲明</string>
+    <string name="about_link_error">無法開啟專案連結</string>
+    <string name="about_open_source_url">開啟專案原始碼連結</string>
+    <string name="about_load_error">無法讀取應用程式內的開放原始碼聲明，請重試。</string>
+    <string name="about_retry">重試</string>
+    <string name="about_project_natsuko_description">應用程式原創程式碼採用 Apache 2.0；第三方元件及角色圖像的權利說明見聲明。</string>
+    <string name="about_project_ffmpeg_description">內建影片處理後端，未啟用 GPL 或 nonfree 元件。對應原始碼和重建資料隨發行版的 natsuko-third-party-sources-&lt;版本&gt;.tar.gz 提供。</string>
+    <string name="about_project_dav1d_description">內建 FFmpeg 使用的 AV1 解碼器，原始碼隨發行版提供。</string>
+    <string name="about_project_llvm_description">內建原生執行檔使用的編譯器執行階段及 NDK 元件；詳細授權條款請參閱各元件的聲明原文。</string>
+    <string name="twitter_download_start">開始下載</string>
+    <string name="twitter_link_title">貼上推文連結</string>
+    <string name="twitter_link_description">輸入公開的 X / Twitter 推文連結，下載其中的影片或動畫圖片。</string>
+    <string name="twitter_link_label">推文連結</string>
+    <string name="twitter_link_placeholder">https://x.com/使用者名稱/status/推文編號</string>
+    <string name="twitter_gif_title">下載後可直接轉 GIF</string>
+    <string name="twitter_gif_description">X 上的 GIF 通常以 MP4 影片提供。下載後會保留影片檔案，可在結果頁選擇「影片轉 GIF」，設定影格率和尺寸後轉換。</string>
+    <string name="twitter_storage_description">下載檔案使用應用程式的成品儲存設定；開啟自動儲存後，也會儲存至使用者儲存資料夾。</string>
+</resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Natsuko</string>
+    <string name="share_crop_black_border">검은 테두리 제거 · Natsuko</string>
+    <string name="share_image_merge">Natsuko · 이미지 합치기</string>
+    <string name="share_images_to_pdf">Natsuko · 이미지를 PDF로</string>
+    <string name="share_pdf_to_images">Natsuko · PDF를 이미지로</string>
+    <string name="share_video_to_gif">Natsuko · 동영상을 GIF로</string>
+    <string name="share_download_twitter_video">Twitter 동영상(GIF) 다운로드 · Natsuko</string>
+    <string name="share_image_adjustment">Natsuko · 이미지 조정</string>
+</resources>

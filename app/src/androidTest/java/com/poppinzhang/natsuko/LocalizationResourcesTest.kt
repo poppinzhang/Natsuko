@@ -17,7 +17,7 @@ class LocalizationResourcesTest {
     fun supportedLanguagesAndEnglishFallbackAreDeclared() {
         val config = LocaleConfig.fromContextIgnoringOverride(context)
         assertEquals(LocaleConfig.STATUS_SUCCESS, config.status)
-        assertEquals("en,zh", config.supportedLocales!!.toLanguageTags())
+        assertEquals(setOf("en", "zh", "zh-Hant", "ko"), config.supportedLocales!!.toLanguageTags().split(',').toSet())
         assertEquals("en", config.defaultLocale!!.language)
     }
 
@@ -31,11 +31,29 @@ class LocalizationResourcesTest {
     }
 
     @Test
-    fun chineseLocalesUseTheChineseTranslation() {
-        for (tag in listOf("zh", "zh-CN", "zh-SG", "zh-TW", "zh-HK", "zh-Hans", "zh-Hant")) {
+    fun simplifiedChineseLocalesUseTheSimplifiedTranslation() {
+        for (tag in listOf("zh", "zh-CN", "zh-SG", "zh-Hans", "zh-Hans-TW")) {
             val localized = localizedContext(tag)
             assertEquals(tag, "设置", localized.getString(R.string.settings_title))
             assertEquals(tag, "去除黑边 · Natsuko", localized.getString(R.string.share_crop_black_border))
+        }
+    }
+
+    @Test
+    fun traditionalChineseScriptsAndRegionsUseTheTraditionalTranslation() {
+        for (tag in listOf("zh-Hant", "zh-TW", "zh-HK", "zh-MO", "zh-Hant-CN")) {
+            val localized = localizedContext(tag)
+            assertEquals(tag, "設定", localized.getString(R.string.settings_title))
+            assertEquals(tag, "去除黑邊 · Natsuko", localized.getString(R.string.share_crop_black_border))
+        }
+    }
+
+    @Test
+    fun koreanLocalesUseTheKoreanTranslation() {
+        for (tag in listOf("ko", "ko-KR", "ko-KP")) {
+            val localized = localizedContext(tag)
+            assertEquals(tag, "설정", localized.getString(R.string.settings_title))
+            assertEquals(tag, "검은 테두리 제거 · Natsuko", localized.getString(R.string.share_crop_black_border))
         }
     }
 

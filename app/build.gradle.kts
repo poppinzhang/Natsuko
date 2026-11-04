@@ -1,25 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.security.MessageDigest
 
-abstract class GenerateChineseScriptResources : DefaultTask() {
-    @get:InputDirectory
-    @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val chineseResources: DirectoryProperty
-
-    @get:OutputDirectory
-    abstract val outputDirectory: DirectoryProperty
-
-    @TaskAction
-    fun generate() {
-        val output = outputDirectory.get().asFile
-        output.deleteRecursively()
-        val traditionalScript = output.resolve("values-b+zh+Hant").apply { mkdirs() }
-        chineseResources.get().asFile.listFiles().orEmpty()
-            .filter { it.extension == "xml" }
-            .forEach { it.copyTo(traditionalScript.resolve(it.name)) }
-    }
-}
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -130,7 +111,7 @@ android {
         versionName = configuredVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        resourceConfigurations += listOf("en", "zh", "b+zh+Hant")
+        resourceConfigurations += listOf("en", "zh", "b+zh+Hant", "ko")
         vectorDrawables.useSupportLibrary = true
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
     }
@@ -172,7 +153,7 @@ android {
         buildConfig = true
     }
 
-    // Both languages remain available when switching without a network connection.
+    // All supported languages remain available when switching without a network connection.
     bundle { language { enableSplit = false } }
 
     packaging {
@@ -199,17 +180,11 @@ kotlin {
     }
 }
 
-// Android does not match values-zh (Hans) to zh-TW/zh-HK (Hant).
-// Reuse our one Chinese translation for both scripts without maintaining duplicate catalogs.
-val generateChineseScriptResources = tasks.register<GenerateChineseScriptResources>("generateChineseScriptResources") {
-    chineseResources.set(layout.projectDirectory.dir("src/main/res/values-zh"))
-    outputDirectory.set(layout.buildDirectory.dir("generated/chineseScriptResources/res"))
-}
-androidComponents.onVariants { variant ->
-    variant.sources.res?.addGeneratedSourceDirectory(
-        generateChineseScriptResources,
-        GenerateChineseScriptResources::outputDirectory,
-    )
+// Source-catalog tests must rerun even when only a translation value changes.
+tasks.withType<Test>().configureEach {
+    inputs.files(fileTree("src/main/res") {
+        include("values*/**/*.xml", "xml/locale_config.xml")
+    }).withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 dependencies {

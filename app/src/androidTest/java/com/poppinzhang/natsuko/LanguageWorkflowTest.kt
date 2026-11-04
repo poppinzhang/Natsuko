@@ -9,38 +9,46 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.lifecycle.ViewModelProvider
+import androidx.test.platform.app.InstrumentationRegistry
 import com.poppinzhang.natsuko.i18n.AppLanguage
 import com.poppinzhang.natsuko.i18n.AppLanguages
 import com.poppinzhang.natsuko.ui.AppScreen
 import com.poppinzhang.natsuko.ui.NatsukoViewModel
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExternalResource
+import org.junit.rules.RuleChain
 
 class LanguageWorkflowTest {
-    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    private val compose = createAndroidComposeRule<MainActivity>()
     private lateinit var originalLocales: LocaleList
 
-    @Before
-    fun startInEnglish() {
-        compose.activityRule.scenario.onActivity {
-            originalLocales = it.getSystemService(LocaleManager::class.java).applicationLocales
-            AppLanguages.select(it, AppLanguage.ENGLISH)
+    private val languageOverride = object : ExternalResource() {
+        override fun before() {
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            originalLocales = context.getSystemService(LocaleManager::class.java).applicationLocales
+            // Set the override before launch so initial Compose synchronization cannot race recreation.
+            AppLanguages.select(context, AppLanguage.ENGLISH)
         }
-        waitForLanguage(AppLanguage.ENGLISH)
+
+        override fun after() {
+            // The inner Activity rule has already closed its Activity before this override is restored.
+            InstrumentationRegistry.getInstrumentation().targetContext
+                .getSystemService(LocaleManager::class.java).applicationLocales = originalLocales
+        }
     }
 
-    @After
-    fun restoreLanguage() {
-        compose.activityRule.scenario.onActivity {
-            it.getSystemService(LocaleManager::class.java).applicationLocales = originalLocales
-        }
-        compose.waitForIdle()
+    @get:Rule val rules: RuleChain = RuleChain.outerRule(languageOverride).around(compose)
+
+    @Before
+    fun waitForInitialLanguage() {
+        waitForLanguage(AppLanguage.ENGLISH)
     }
 
     @Test
@@ -52,17 +60,20 @@ class LanguageWorkflowTest {
             retainedViewModel.updateTwitterLink("https://x.com/example/status/1234567890")
             retainedViewModel.openSettings()
         }
-        choose(AppLanguage.CHINESE)
-        waitForLanguage(AppLanguage.CHINESE)
-        compose.onNodeWithTag("language-picker").assertTextEquals("中文")
-        compose.activityRule.scenario.recreate()
-        waitForLanguage(AppLanguage.CHINESE)
-        compose.activityRule.scenario.onActivity {
-            val current = ViewModelProvider(it)[NatsukoViewModel::class.java]
-            assertSame(retainedViewModel, current)
-            assertEquals(AppScreen.SETTINGS, current.state.value.screen)
-            assertEquals("https://x.com/example/status/1234567890", current.state.value.twitterLink)
-            assertEquals("设置", it.getString(R.string.settings_title))
+        for (language in listOf(AppLanguage.CHINESE, AppLanguage.TRADITIONAL_CHINESE, AppLanguage.KOREAN)) {
+            choose(language)
+            waitForLanguage(language)
+            compose.onNodeWithTag("language-picker").assertTextEquals(nativeLabel(language))
+            compose.activityRule.scenario.recreate()
+            waitForLanguage(language)
+            compose.onNodeWithTag("language-picker").assertTextEquals(nativeLabel(language))
+            compose.activityRule.scenario.onActivity {
+                val current = ViewModelProvider(it)[NatsukoViewModel::class.java]
+                assertSame(retainedViewModel, current)
+                assertEquals(AppScreen.SETTINGS, current.state.value.screen)
+                assertEquals("https://x.com/example/status/1234567890", current.state.value.twitterLink)
+                assertEquals(language.languageTag, it.getSystemService(LocaleManager::class.java).applicationLocales.toLanguageTags())
+            }
         }
         choose(AppLanguage.ENGLISH)
         waitForLanguage(AppLanguage.ENGLISH)
@@ -76,12 +87,19 @@ class LanguageWorkflowTest {
     @Test
     fun nativeApplicationLanguageChangesUpdateThePicker() {
         compose.onNodeWithTag("home-settings").performClick()
-        compose.activityRule.scenario.onActivity {
-            // The same framework preference is changed by Android's App languages screen.
-            it.getSystemService(LocaleManager::class.java).applicationLocales = LocaleList.forLanguageTags("zh")
+        for ((tag, language) in listOf(
+            "zh" to AppLanguage.CHINESE,
+            "zh-Hant" to AppLanguage.TRADITIONAL_CHINESE,
+            "zh-TW" to AppLanguage.TRADITIONAL_CHINESE,
+            "ko-KR" to AppLanguage.KOREAN,
+        )) {
+            compose.activityRule.scenario.onActivity {
+                // The same framework preference is changed by Android's App languages screen.
+                it.getSystemService(LocaleManager::class.java).applicationLocales = LocaleList.forLanguageTags(tag)
+            }
+            waitForLanguage(language)
+            compose.onNodeWithTag("language-picker").assertTextEquals(nativeLabel(language))
         }
-        waitForLanguage(AppLanguage.CHINESE)
-        compose.onNodeWithTag("language-picker").assertTextEquals("中文")
         compose.activityRule.scenario.onActivity { AppLanguages.select(it, AppLanguage.SYSTEM) }
         waitForLanguage(AppLanguage.SYSTEM)
         compose.activityRule.scenario.onActivity {
@@ -92,7 +110,7 @@ class LanguageWorkflowTest {
     private fun choose(language: AppLanguage) {
         compose.onNodeWithTag("settings-list").performScrollToNode(hasTestTag("language-picker"))
         compose.onNodeWithTag("language-picker").performClick()
-        compose.onNodeWithTag("language-${language.name.lowercase(java.util.Locale.ROOT)}").performClick()
+        compose.onNodeWithTag("language-${language.name.lowercase(java.util.Locale.ROOT)}").performScrollTo().performClick()
     }
 
     private fun waitForLanguage(language: AppLanguage) {
@@ -101,6 +119,8 @@ class LanguageWorkflowTest {
             compose.activityRule.scenario.onActivity {
                 val expectedText = when (language) {
                     AppLanguage.CHINESE -> "设置"
+                    AppLanguage.TRADITIONAL_CHINESE -> "設定"
+                    AppLanguage.KOREAN -> "설정"
                     AppLanguage.ENGLISH -> "Settings"
                     AppLanguage.SYSTEM -> it.createConfigurationContext(
                         Configuration(it.resources.configuration).apply {
@@ -113,5 +133,13 @@ class LanguageWorkflowTest {
             matches
         }
         compose.waitForIdle()
+    }
+
+    private fun nativeLabel(language: AppLanguage): String = when (language) {
+        AppLanguage.CHINESE -> "简体中文"
+        AppLanguage.TRADITIONAL_CHINESE -> "繁體中文"
+        AppLanguage.KOREAN -> "한국어"
+        AppLanguage.ENGLISH -> "English"
+        AppLanguage.SYSTEM -> error("The system option has a localized label")
     }
 }

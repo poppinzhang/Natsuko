@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -225,7 +227,7 @@ private fun LanguageSetting() {
             onDismissRequest = { showPicker = false },
             title = { Text(stringResource(R.string.settings_language)) },
             text = {
-                Column(Modifier.selectableGroup()) {
+                Column(Modifier.verticalScroll(rememberScrollState()).selectableGroup()) {
                     Text(stringResource(R.string.settings_language_hint), style = MaterialTheme.typography.bodyMedium)
                     AppLanguage.entries.forEach { language ->
                         Row(

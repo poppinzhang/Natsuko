@@ -5,10 +5,13 @@ import android.content.Context
 import android.os.LocaleList
 import androidx.annotation.StringRes
 import com.poppinzhang.natsuko.R
+import java.util.Locale
 
 enum class AppLanguage(val languageTag: String, @param:StringRes val labelRes: Int) {
     SYSTEM("", R.string.settings_language_system),
     CHINESE("zh", R.string.settings_language_chinese),
+    TRADITIONAL_CHINESE("zh-Hant", R.string.settings_language_traditional_chinese),
+    KOREAN("ko", R.string.settings_language_korean),
     ENGLISH("en", R.string.settings_language_english),
 }
 
@@ -16,11 +19,19 @@ enum class AppLanguage(val languageTag: String, @param:StringRes val labelRes: I
 object AppLanguages {
     fun current(context: Context): AppLanguage {
         val locales = context.getSystemService(LocaleManager::class.java).applicationLocales
-        return if (locales.isEmpty) AppLanguage.SYSTEM else when (locales[0].language) {
-            "zh" -> AppLanguage.CHINESE
-            "en" -> AppLanguage.ENGLISH
-            else -> AppLanguage.SYSTEM
+        return fromLocale(if (locales.isEmpty) null else locales[0])
+    }
+
+    internal fun fromLocale(locale: Locale?): AppLanguage = when (locale?.language) {
+        "zh" -> {
+            // Explicit scripts take priority over regions, including legacy system selections.
+            val traditional = locale.script == "Hant" ||
+                (locale.script.isEmpty() && locale.country in setOf("TW", "HK", "MO"))
+            if (traditional) AppLanguage.TRADITIONAL_CHINESE else AppLanguage.CHINESE
         }
+        "ko" -> AppLanguage.KOREAN
+        "en" -> AppLanguage.ENGLISH
+        else -> AppLanguage.SYSTEM
     }
 
     fun select(context: Context, language: AppLanguage) {

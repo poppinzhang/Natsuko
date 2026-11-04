@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">設定</string>
+    <string name="settings_back">返回</string>
+    <string name="settings_language">語言</string>
+    <string name="settings_language_system">依照系統</string>
+    <string name="settings_language_chinese">简体中文</string>
+    <string name="settings_language_traditional_chinese">繁體中文</string>
+    <string name="settings_language_korean">한국어</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_hint">預設依照系統語言，也可個別指定 Natsuko 的語言。系統語言不受支援時使用英文。</string>
+    <string name="settings_language_cancel">取消</string>
+    <string name="settings_output_storage">成品儲存</string>
+    <string name="settings_storage_description">開啟後，圖片、PDF、GIF 和影片成品將自動儲存到下方資料夾</string>
+    <string name="settings_storage_directory">使用者儲存資料夾</string>
+    <string name="settings_storage_grouping">成品按功能和處理時間存放，方便尋找。</string>
+    <string name="settings_storage_change">更改儲存資料夾</string>
+    <string name="settings_storage_restore">還原預設資料夾 Download/Natsuko</string>
+    <string name="settings_storage_help">預設資料夾無需額外儲存權限。選擇其他資料夾時，請在系統選擇器中允許存取。關閉此選項不會刪除已儲存的成品。</string>
+    <string name="settings_storage_retry">查看處理結果並重試</string>
+    <string name="settings_storage_save">儲存至使用者儲存資料夾</string>
+    <plurals name="settings_storage_failures">
+        <item quantity="other">本次有 %1$d 個成品未能儲存至使用者儲存資料夾，應用程式專屬副本已保留。</item>
+    </plurals>
+</resources>

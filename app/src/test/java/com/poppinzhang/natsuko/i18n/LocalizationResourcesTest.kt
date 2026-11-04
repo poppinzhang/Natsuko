@@ -10,21 +10,27 @@ import org.w3c.dom.Element
 
 /** Checks the source catalogs, including resources added after this test was written. */
 class LocalizationResourcesTest {
+    private val catalogDirectories = linkedMapOf(
+        "en" to "values",
+        "zh" to "values-zh",
+        "zh-Hant" to "values-b+zh+Hant",
+        "ko" to "values-ko",
+    )
     private val resources = listOf(File("src/main/res"), File("app/src/main/res"))
         .firstOrNull { it.isDirectory }
         ?: error("Cannot find the app resource directory")
 
     @Test
-    fun englishFallbackAndChineseAreBothDeclaredAndHaveCatalogs() {
+    fun allSupportedLanguagesAreDeclaredAndHaveCatalogs() {
         val localeConfig = parse(File(resources, "xml/locale_config.xml"))
         val namespace = "http://schemas.android.com/apk/res/android"
         assertEquals("en", localeConfig.getAttributeNS(namespace, "defaultLocale"))
         assertEquals(
-            setOf("en", "zh"),
+            catalogDirectories.keys,
             localeConfig.children().map { it.getAttributeNS(namespace, "name") }.toSet(),
         )
         // English lives in values, making it the fallback for any unsupported language.
-        for (directory in listOf("values", "values-zh")) {
+        for (directory in catalogDirectories.values) {
             val catalog = readCatalog(directory)
             assertFalse("$directory must contain translated app strings", catalog.isEmpty())
             assertTrue("$directory must contain an application name", "string/app_name" in catalog)
@@ -32,16 +38,16 @@ class LocalizationResourcesTest {
     }
 
     @Test
-    fun everyAppStringHasBothEnglishAndChineseTranslations() {
+    fun everyAppStringHasTranslationsInAllSupportedLanguages() {
         val english = readCatalog("values")
-        val chinese = readCatalog("values-zh")
-        assertEquals(
-            "Missing Chinese translations: ${english.keys - chinese.keys}; " +
-                "missing English fallbacks: ${chinese.keys - english.keys}",
-            english.keys,
-            chinese.keys,
-        )
-        for ((language, catalog) in listOf("en" to english, "zh" to chinese)) {
+        for ((language, directory) in catalogDirectories) {
+            val catalog = readCatalog(directory)
+            assertEquals(
+                "Missing $language translations: ${english.keys - catalog.keys}; " +
+                    "missing English fallbacks: ${catalog.keys - english.keys}",
+                english.keys,
+                catalog.keys,
+            )
             for ((key, entry) in catalog) {
                 assertTrue("$language/$key must contain text", entry.variants.isNotEmpty())
                 entry.variants.forEach { (variant, value) ->
@@ -54,29 +60,29 @@ class LocalizationResourcesTest {
     @Test
     fun translationsPreserveFormatArgumentPositionsAndTypes() {
         val english = readCatalog("values")
-        val chinese = readCatalog("values-zh")
-        for ((key, source) in english) {
-            val translated = chinese[key] ?: error("Missing Chinese translation: $key")
-            when (source.type) {
-                "plurals" -> {
-                    assertTrue("$key needs an English other quantity", "other" in source.variants)
-                    assertTrue("$key needs a Chinese other quantity", "other" in translated.variants)
-                    val arguments = formatArguments(source.variants.getValue("other"))
-                    // Chinese only needs 'other'; check every branch present in either language.
-                    for ((language, entry) in listOf("en" to source, "zh" to translated)) {
-                        entry.variants.forEach { (quantity, value) ->
+        for ((language, directory) in catalogDirectories) {
+            val catalog = readCatalog(directory)
+            for ((key, source) in english) {
+                val translated = catalog[key] ?: error("Missing $language translation: $key")
+                when (source.type) {
+                    "plurals" -> {
+                        assertTrue("$key needs an English other quantity", "other" in source.variants)
+                        assertTrue("$key needs a $language other quantity", "other" in translated.variants)
+                        val arguments = formatArguments(source.variants.getValue("other"))
+                        // Chinese and Korean only need 'other'; validate every available branch.
+                        translated.variants.forEach { (quantity, value) ->
                             assertEquals("$key ($language/$quantity) format arguments", arguments, formatArguments(value))
                         }
                     }
-                }
-                else -> {
-                    assertEquals("$key must preserve array items", source.variants.keys, translated.variants.keys)
-                    source.variants.forEach { (variant, value) ->
-                        assertEquals(
-                            "$key ($variant) format arguments",
-                            formatArguments(value),
-                            formatArguments(translated.variants.getValue(variant)),
-                        )
+                    else -> {
+                        assertEquals("$language/$key must preserve array items", source.variants.keys, translated.variants.keys)
+                        source.variants.forEach { (variant, value) ->
+                            assertEquals(
+                                "$key ($language/$variant) format arguments",
+                                formatArguments(value),
+                                formatArguments(translated.variants.getValue(variant)),
+                            )
+                        }
                     }
                 }
             }

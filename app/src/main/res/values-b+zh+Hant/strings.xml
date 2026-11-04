@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Natsuko</string>
+    <string name="share_crop_black_border">去除黑邊 · Natsuko</string>
+    <string name="share_image_merge">Natsuko · 圖片拼接</string>
+    <string name="share_images_to_pdf">Natsuko · 圖片轉 PDF</string>
+    <string name="share_pdf_to_images">Natsuko · PDF 轉圖片</string>
+    <string name="share_video_to_gif">Natsuko · 影片轉 GIF</string>
+    <string name="share_download_twitter_video">下載推特影片（GIF） · Natsuko</string>
+    <string name="share_image_adjustment">Natsuko · 圖片調整</string>
+</resources>

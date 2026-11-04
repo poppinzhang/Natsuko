@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">설정</string>
+    <string name="settings_back">뒤로</string>
+    <string name="settings_language">언어</string>
+    <string name="settings_language_system">시스템 설정 따르기</string>
+    <string name="settings_language_chinese">简体中文</string>
+    <string name="settings_language_traditional_chinese">繁體中文</string>
+    <string name="settings_language_korean">한국어</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_hint">시스템 언어를 따르거나 Natsuko에서 사용할 언어를 선택하세요. 시스템 언어를 지원하지 않는 경우 영어가 사용됩니다.</string>
+    <string name="settings_language_cancel">취소</string>
+    <string name="settings_output_storage">결과물 저장</string>
+    <string name="settings_storage_description">완성된 이미지, PDF, GIF, 동영상을 아래 폴더에 자동으로 저장합니다.</string>
+    <string name="settings_storage_directory">사용자 저장 폴더</string>
+    <string name="settings_storage_grouping">결과물은 기능과 처리 시간별로 정리됩니다.</string>
+    <string name="settings_storage_change">폴더 변경</string>
+    <string name="settings_storage_restore">기본 폴더로 복원: Download/Natsuko</string>
+    <string name="settings_storage_help">기본 폴더에는 추가 저장소 권한이 필요하지 않습니다. 다른 폴더를 선택할 때는 시스템 선택 화면에서 접근을 허용하세요. 자동 저장을 꺼도 이전에 저장한 결과물은 유지됩니다.</string>
+    <string name="settings_storage_retry">결과 보기 및 다시 시도</string>
+    <string name="settings_storage_save">사용자 저장소에 저장</string>
+    <plurals name="settings_storage_failures">
+        <item quantity="other">결과물 %1$d개를 사용자 저장소에 저장하지 못했습니다. 앱 내 사본은 유지됩니다.</item>
+    </plurals>
+</resources>

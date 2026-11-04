@@ -3,4 +3,6 @@
     android:defaultLocale="en">
     <locale android:name="en" />
     <locale android:name="zh" />
+    <locale android:name="zh-Hant" />
+    <locale android:name="ko" />
 </locale-config>
