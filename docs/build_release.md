@@ -120,6 +120,8 @@ NATSUKO_KEY_PASSWORD=replace-with-your-key-password
 
 `.github/workflows/android.yml` 在 main 分支 push、pull request 和手动触发时执行构建验证，另在启用 KVM 的 Android 16 AOSP ATD 模拟器上运行仪器测试。普通 CI 使用显式未签名构建；推送 `v<版本号>` tag 时，必须与 `version.properties` 一致且提供完整发布签名。单元测试、Lint、构建和仪器测试全部通过后才创建 GitHub Release，发布说明来自对应 CHANGELOG 条目。
 
+Android SDK 初始化显式设置 `packages: 'platform-tools'`，避免 `setup-android@v3` 的默认配置尝试安装已从 Google 仓库移除的旧 `tools` 包。随后单独安装 Android 36 平台和 Build Tools 36.0.0，模拟器及系统镜像由设备测试步骤安装。
+
 构建和设备测试报告无论成功或失败都会尝试保存为 Actions 附件。同一分支的新运行取消旧运行，tag 发布运行不自动取消。发布任务先核验所有文件的 SHA-256、版本、签名状态、tag 和构建提交，再创建草稿并上传完整产物，最后公开为最新版本。失败的草稿允许重试上传；已公开的版本拒绝覆盖，后续修复应使用新版本。
 
 在仓库 Secrets 配置：

@@ -27,6 +27,7 @@
 
 - 移除误提交的 Python 字节码缓存，并忽略 Python 与 Kotlin 本地缓存，避免运行验证后再次将生成文件纳入版本控制。
 - 完善 GitHub Actions 发布流程：补齐 Android 16 模拟器的 KVM 配置、保留测试与 Lint 报告；版本标签通过构建和设备测试后，校验签名状态、提交及校验和，上传完整附件后公开 GitHub Release，避免覆盖已发布产物。
+- 修复 GitHub Actions 初始化 Android SDK 时请求已下架的旧 `tools` 包导致构建和设备测试提前失败的问题。
 
 ## 1.3.0
 
