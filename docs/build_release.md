@@ -122,6 +122,8 @@ NATSUKO_KEY_PASSWORD=replace-with-your-key-password
 
 Android SDK 初始化显式设置 `packages: 'platform-tools'`，避免 `setup-android@v3` 的默认配置尝试安装已从 Google 仓库移除的旧 `tools` 包。随后单独安装 Android 36 平台和 Build Tools 36.0.0，模拟器及系统镜像由设备测试步骤安装。
 
+`TwitterLoginViewportTest` 在测试开始前临时设置 `show_ime_with_hard_keyboard=1`，确保即使设备提供硬件输入，也会显示实际占用屏幕空间的屏幕键盘；测试结束后恢复原设置。写入设置时仅由仪器测试临时取得 Shell 权限，随即释放，应用本身不增加权限。WebView 键盘测试要求 IME 可见且底部遮挡高度大于零，再验证网页缩放和滚动；不能只凭键盘窗口的可见标记判断表单应当缩小。
+
 构建和设备测试报告无论成功或失败都会尝试保存为 Actions 附件。同一分支的新运行取消旧运行，tag 发布运行不自动取消。发布任务先核验所有文件的 SHA-256、版本、签名状态、tag 和构建提交，再创建草稿并上传发布附件，最后公开为最新版本。失败的草稿允许重试上传；已公开的版本拒绝覆盖，后续修复应使用新版本。
 
 GitHub Release 只发布以下三个附件，由发布任务按文件名逐一上传：

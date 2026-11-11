@@ -1,9 +1,11 @@
 package com.poppinzhang.natsuko
 
+import android.Manifest
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.http.SslError
 import android.os.SystemClock
+import android.provider.Settings
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
@@ -30,6 +32,7 @@ import java.util.concurrent.TimeUnit
 import org.json.JSONObject
 import org.json.JSONTokener
 import org.junit.After
+import org.junit.Before
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -43,11 +46,47 @@ class TwitterLoginViewportTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val visible = mutableStateOf(true)
     @Volatile private var browser: WebView? = null
+    private val keyboardSettingKey = "show_ime_with_hard_keyboard"
+    private var previousKeyboardSetting: String? = null
+    private var keyboardSettingCaptured = false
+
+    @Before fun enableOnscreenKeyboard() {
+        withSecureSettingsPermission {
+            val resolver = instrumentation.targetContext.contentResolver
+            previousKeyboardSetting = Settings.Secure.getString(resolver, keyboardSettingKey)
+            keyboardSettingCaptured = true
+            check(Settings.Secure.putString(resolver, keyboardSettingKey, "1")) {
+                "Could not enable the on-screen keyboard for the viewport test"
+            }
+        }
+    }
 
     @After fun closeDialog() {
-        compose.runOnIdle {
-            browser?.windowInsetsController?.hide(WindowInsets.Type.ime())
-            visible.value = false
+        try {
+            compose.runOnIdle {
+                browser?.windowInsetsController?.hide(WindowInsets.Type.ime())
+                visible.value = false
+            }
+        } finally {
+            if (keyboardSettingCaptured) {
+                withSecureSettingsPermission {
+                    // Restore absence as null, rather than creating a setting that was not present.
+                    check(Settings.Secure.putString(
+                        instrumentation.targetContext.contentResolver, keyboardSettingKey, previousKeyboardSetting,
+                    )) { "Could not restore the previous on-screen keyboard setting" }
+                    keyboardSettingCaptured = false
+                }
+            }
+        }
+    }
+
+    private fun withSecureSettingsPermission(action: () -> Unit) {
+        val automation = instrumentation.uiAutomation
+        automation.adoptShellPermissionIdentity(Manifest.permission.WRITE_SECURE_SETTINGS)
+        try {
+            action()
+        } finally {
+            automation.dropShellPermissionIdentity()
         }
     }
 
@@ -82,8 +121,11 @@ class TwitterLoginViewportTest {
         instrumentation.runOnMainSync {
             checkNotNull(browser).windowInsetsController?.show(WindowInsets.Type.ime())
         }
-        waitForKeyboardViewport(15_000, "IME shown and fixture input focused", initialNative, initialPage) {
-            nativeMetrics().imeVisible && metrics().activeElement == "username"
+        // An attached hardware keyboard can leave the IME marked visible with no occluding area.
+        // This regression exercises a full software keyboard that actually reduces usable space.
+        waitForKeyboardViewport(15_000, "Occluding IME shown and fixture input focused", initialNative, initialPage) {
+            val native = nativeMetrics()
+            native.imeVisible && native.imeBottom > 0 && metrics().activeElement == "username"
         }
         waitForKeyboardViewport(10_000, "Native and CSS viewport resized", initialNative, initialPage) {
             val native = nativeMetrics()
@@ -281,6 +323,8 @@ class TwitterLoginViewportTest {
                 insets?.getInsets(WindowInsets.Type.ime())?.bottom ?: 0,
                 insets?.getInsets(WindowInsets.Type.systemBars())?.bottom ?: 0,
                 view.rootView.height,
+                view.resources.configuration.keyboard,
+                view.resources.configuration.hardKeyboardHidden,
             )
         }
         return result
@@ -335,6 +379,7 @@ class TwitterLoginViewportTest {
     private data class NativeMetrics(
         val left: Int, val top: Int, val width: Int, val height: Int, val density: Double, val imeVisible: Boolean,
         val imeBottom: Int, val systemBarsBottom: Int, val rootHeight: Int,
+        val configurationKeyboard: Int, val hardKeyboardHidden: Int,
     )
 
     private data class CssRect(val left: Double, val top: Double, val right: Double, val bottom: Double) {
