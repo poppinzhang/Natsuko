@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="twitter_access_login_required">このメディアを表示するにはXへのログインが必要です。</string>
+    <string name="twitter_access_session_expired">Xのログイン情報が失効しました。再度ログインしてからお試しください。</string>
+    <string name="twitter_access_deleted">Xによると、この投稿は削除されたか存在しません。</string>
+    <string name="twitter_access_protected">投稿者がこの投稿の公開範囲を制限しています。ログインするだけではアクセス権は得られません。</string>
+    <string name="twitter_access_age_restricted">Xがアカウントの年齢またはコンテンツ設定に基づいて、このメディアを制限しています。Xでアカウント設定を確認してください。</string>
+    <string name="twitter_access_withheld">Xがお住まいの地域でこの投稿の表示を制限しています。ログインしてもこの制限は解除できません。</string>
+    <string name="twitter_access_unavailable">Xによると、この投稿または投稿者は現在利用できません。</string>
+    <string name="twitter_access_unknown">Xから十分な情報が提供されていないため、この投稿を利用できない理由を確認できません。制限、削除、または一時的なアクセス障害の可能性があります。</string>
+</resources>

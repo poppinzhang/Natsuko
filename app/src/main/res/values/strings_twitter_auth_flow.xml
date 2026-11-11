@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="twitter_auth_consent_title">Sign in to view this video?</string>
+    <string name="twitter_auth_consent_message">X requires login to view this post. Sign in on the official X page to let Natsuko retrieve its videos. Your password is entered directly on X. Natsuko keeps the login session until you disconnect it or the app process ends. Signing in does not remove age or account restrictions.</string>
+    <string name="twitter_auth_sign_in">Sign in to X</string>
+    <string name="twitter_auth_session_active">An X login session is available for this app session.</string>
+    <string name="twitter_auth_sign_out">Disconnect X login</string>
+    <string name="twitter_auth_manual_hint">You can also sign in before retrying a post whose availability could not be determined. Signing in does not guarantee access.</string>
+</resources>

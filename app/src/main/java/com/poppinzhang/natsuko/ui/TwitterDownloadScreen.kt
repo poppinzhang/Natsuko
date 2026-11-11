@@ -47,6 +47,26 @@ import com.poppinzhang.natsuko.data.twitter.TwitterVideoSelection
 import com.poppinzhang.natsuko.model.Feature
 
 @Composable
+internal fun TwitterLoginConsentDialog(onLogin: () -> Unit, onCancel: () -> Unit) {
+    AlertDialog(
+        modifier = Modifier.testTag("twitter-login-consent"),
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(R.string.twitter_auth_consent_title)) },
+        text = { Text(stringResource(R.string.twitter_auth_consent_message)) },
+        confirmButton = {
+            TextButton(onClick = onLogin, modifier = Modifier.testTag("twitter-login-accept")) {
+                Text(stringResource(R.string.twitter_auth_sign_in))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel, modifier = Modifier.testTag("twitter-login-decline")) {
+                Text(stringResource(R.string.main_cancel))
+            }
+        },
+    )
+}
+
+@Composable
 internal fun TwitterVideoSelectionDialog(
     selection: TwitterVideoSelection,
     onChoose: (TwitterDownloadScope) -> Unit,
@@ -85,6 +105,9 @@ internal fun TwitterDownloadScreen(
     onLinkChange: (String) -> Unit,
     onDownload: () -> Unit,
     onBack: () -> Unit,
+    sessionActive: Boolean = false,
+    onSignOut: () -> Unit = {},
+    onSignIn: () -> Unit = {},
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
     val canDownload = link.isNotBlank() && !isBusy
@@ -149,6 +172,25 @@ internal fun TwitterDownloadScreen(
                     ),
                     keyboardActions = KeyboardActions(onGo = { startDownload() }),
                 )
+            }
+            if (sessionActive) {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(stringResource(R.string.twitter_auth_session_active), style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = onSignOut, enabled = !isBusy, modifier = Modifier.testTag("twitter-sign-out")) {
+                            Text(stringResource(R.string.twitter_auth_sign_out))
+                        }
+                    }
+                }
+            } else {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(stringResource(R.string.twitter_auth_manual_hint), style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = onSignIn, enabled = !isBusy, modifier = Modifier.testTag("twitter-sign-in")) {
+                            Text(stringResource(R.string.twitter_auth_sign_in))
+                        }
+                    }
+                }
             }
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {

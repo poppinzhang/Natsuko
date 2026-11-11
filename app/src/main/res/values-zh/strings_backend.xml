@@ -58,7 +58,7 @@
     <string name="backend_merged_image">拼接图片</string>
     <string name="backend_no_downloadable_mp4">没有可下载的 MP4 视频</string>
     <string name="backend_post_invalid_response">X 返回了无法识别的推文信息，请稍后重试</string>
-    <string name="backend_post_unavailable">无法读取这条推文：可能已删除、受保护、需要登录或暂时不可访问</string>
+    <string name="backend_post_unavailable">无法读取此推文。X 未提供足够信息，无法确认其不可用的原因。</string>
     <string name="backend_video_mp4_unavailable">该视频没有可直接下载的 MP4，或公开接口未提供完整媒体信息</string>
     <string name="backend_post_no_media">这条推文没有可下载的视频或 GIF，或公开接口未提供该媒体</string>
     <string name="backend_video_cache_failed">无法创建视频临时目录</string>
@@ -90,8 +90,8 @@
     <string name="backend_download_url_unsupported">下载地址不是受支持的 X 官方 HTTPS 地址</string>
     <string name="backend_download_redirect_limit">X 下载地址重定向次数过多</string>
     <string name="backend_download_redirect_invalid">X 返回了无效的下载重定向</string>
-    <string name="backend_x_access_denied">X 拒绝访问：该推文可能需要登录、受保护或下载地址已失效</string>
-    <string name="backend_x_media_missing">推文或视频不存在，可能已被删除</string>
+    <string name="backend_x_access_denied">X 拒绝了此请求。该响应无法确认登录后是否能够访问。</string>
+    <string name="backend_x_media_missing">X 在此地址找不到请求的推文或视频。</string>
     <string name="backend_x_rate_limited">X 请求过于频繁，请稍后重试</string>
     <string name="backend_x_server_error">X 服务暂时不可用（HTTP %1$s），请稍后重试</string>
     <string name="backend_x_http_error">X 下载请求失败（HTTP %1$s）</string>

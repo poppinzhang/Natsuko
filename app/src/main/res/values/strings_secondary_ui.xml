@@ -18,7 +18,7 @@
     <string name="about_project_llvm_description">Compiler runtime and NDK components used by the bundled native executables. See the original notices for each component\'s license.</string>
     <string name="twitter_download_start">Start download</string>
     <string name="twitter_link_title">Paste a post link</string>
-    <string name="twitter_link_description">Enter a public X / Twitter post link to download its videos or GIFs.</string>
+    <string name="twitter_link_description">Enter an X / Twitter post link to download its videos or GIFs. If X explicitly requires sign-in, you can choose to sign in and retry.</string>
     <string name="twitter_link_label">Post link</string>
     <string name="twitter_link_placeholder">https://x.com/username/status/post_id</string>
     <string name="twitter_gif_title">Convert downloads to GIF</string>

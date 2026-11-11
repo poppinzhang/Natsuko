@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="twitter_auth_consent_title">登录后查看此视频？</string>
+    <string name="twitter_auth_consent_message">X 要求登录后才能查看此推文。登录 X 官方页面，允许 Natsuko 获取其中的视频。密码直接在 X 页面输入。Natsuko 会保留登录态，直到你主动清除或应用进程结束。登录不会解除年龄或账号限制。</string>
+    <string name="twitter_auth_sign_in">登录 X</string>
+    <string name="twitter_auth_session_active">本次应用会话已取得 X 登录态。</string>
+    <string name="twitter_auth_sign_out">清除 X 登录态</string>
+    <string name="twitter_auth_manual_hint">如果无法确认推文不可用的原因，也可以主动登录后重试。登录不保证能够访问。</string>
+</resources>

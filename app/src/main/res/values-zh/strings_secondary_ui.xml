@@ -18,7 +18,7 @@
     <string name="about_project_llvm_description">内置原生可执行文件使用的编译器运行时及 NDK 组件；具体许可见各组件原文。</string>
     <string name="twitter_download_start">开始下载</string>
     <string name="twitter_link_title">粘贴推文链接</string>
-    <string name="twitter_link_description">输入公开的 X / Twitter 推文链接，下载其中的视频或动图。</string>
+    <string name="twitter_link_description">输入 X / Twitter 推文链接，下载其中的视频或动图。X 明确要求登录时，可选择登录后重试。</string>
     <string name="twitter_link_label">推文链接</string>
     <string name="twitter_link_placeholder">https://x.com/用户名/status/推文编号</string>
     <string name="twitter_gif_title">下载后可直接转 GIF</string>

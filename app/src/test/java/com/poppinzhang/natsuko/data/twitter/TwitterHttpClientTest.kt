@@ -123,6 +123,65 @@ class TwitterHttpClientTest {
         assertFalse(target.exists())
     }
 
+    @Test
+    fun authenticatedMetadataNeverFollowsRedirectsOrLeaksSessionToOtherOrigins() = runBlocking {
+        val session = checkNotNull(TwitterSession.fromCookieHeader("auth_token=test-session; ct0=test-csrf"))
+        val graphUrl = "https://x.com${TwitterWebMetadata.GRAPHQL_PATH}?variables=fixture"
+        var opened = 0
+        val redirect = FakeConnection(ByteArray(0)).apply { code = 302; location = "https://video.twimg.com/file.mp4" }
+        val client = TwitterHttpClient({ opened++; redirect })
+        assertNotNull(runCatching { client.webMetadata(graphUrl, session = session) }.exceptionOrNull())
+        assertEquals(1, opened)
+        assertEquals("auth_token=test-session; ct0=test-csrf", redirect.getRequestProperty("Cookie"))
+        assertEquals("test-csrf", redirect.getRequestProperty("x-csrf-token"))
+        assertFalse(redirect.instanceFollowRedirects)
+        for (url in listOf(
+            "https://x.com.evil.test${TwitterWebMetadata.GRAPHQL_PATH}",
+            "https://x.com@evil.test${TwitterWebMetadata.GRAPHQL_PATH}",
+            "http://x.com${TwitterWebMetadata.GRAPHQL_PATH}",
+            "https://x.com:8443${TwitterWebMetadata.GRAPHQL_PATH}",
+            "https://x.com/i/api/graphql/other/TweetResultByRestId",
+            "https://api.x.com/1.1/guest/activate.json", "https://video.twimg.com/file.mp4",
+        )) {
+            assertNotNull(runCatching { client.webMetadata(url, session = session) }.exceptionOrNull())
+        }
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun publicPostRedirectsStayOnSamePostAndCarryNoSessionHeaders() = runBlocking {
+        var opened = 0
+        val redirect = FakeConnection(ByteArray(0)).apply { code = 302; location = "https://x.com/author/status/456" }
+        val client = TwitterHttpClient({ opened++; redirect })
+        assertNotNull(runCatching { client.webMetadata("https://x.com/i/status/123", pagePostId = "123") }.exceptionOrNull())
+        assertEquals(1, opened)
+        assertEquals(null, redirect.getRequestProperty("Cookie"))
+        assertEquals(null, redirect.getRequestProperty("Authorization"))
+    }
+
+    @Test
+    fun metadataHttpFailuresPreserveBodyWithoutGuessingAccessReasonAndEnforceBounds() = runBlocking {
+        val graphUrl = "https://x.com${TwitterWebMetadata.GRAPHQL_PATH}"
+        val body = "{\"errors\":[{\"code\":179}]}".toByteArray()
+        val denied = FakeConnection(body).apply { code = 403 }
+        val response = TwitterHttpClient({ denied }).webMetadata(graphUrl, guestToken = "123")
+        assertEquals(403, response.status)
+        assertEquals(body.toString(Charsets.UTF_8), response.body)
+        assertEquals("123", denied.getRequestProperty("x-guest-token"))
+        assertEquals(null, denied.getRequestProperty("Cookie"))
+        val limited = FakeConnection(ByteArray(0)).apply { code = 429 }
+        val failure = runCatching { TwitterHttpClient({ limited }).webMetadata(graphUrl) }.exceptionOrNull()
+        assertEquals(TwitterAccessFailure.RATE_LIMITED, (failure as TwitterAccessException).reason)
+        for (oversized in listOf(
+            FakeConnection(ByteArray(0)).apply { length = 2 * 1024 * 1024L + 1 },
+            FakeConnection(ByteArray(2 * 1024 * 1024 + 1)).apply { length = -1 },
+            FakeConnection(ByteArray(1)).apply { length = 2 },
+        )) {
+            assertNotNull(runCatching { TwitterHttpClient({ oversized }).webMetadata(graphUrl) }.exceptionOrNull())
+            assertTrue(oversized.disconnected)
+        }
+    }
+
     private open class FakeConnection(body: ByteArray) : HttpURLConnection(URL("https://video.twimg.com/test.mp4")) {
         private val input = ByteArrayInputStream(body)
         var length = body.size.toLong()
@@ -134,6 +193,7 @@ class TwitterHttpClientTest {
         override fun disconnect() { disconnected = true }
         override fun usingProxy() = false
         override fun getInputStream(): InputStream = input
+        override fun getErrorStream(): InputStream = input
         override fun getResponseCode() = code
         override fun getContentLengthLong() = length
         override fun getContentType() = mime

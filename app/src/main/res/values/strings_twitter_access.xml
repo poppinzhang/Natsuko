@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="twitter_access_login_required">X requires you to sign in to view this media.</string>
+    <string name="twitter_access_session_expired">Your X session has expired. Sign in again to retry.</string>
+    <string name="twitter_access_deleted">X reports that this post was deleted or does not exist.</string>
+    <string name="twitter_access_protected">The author has restricted access to this post. Signing in alone does not grant access.</string>
+    <string name="twitter_access_age_restricted">X restricts this media based on your account’s age or content settings. Check your account on X.</string>
+    <string name="twitter_access_withheld">X has withheld this post in your region. Signing in cannot remove this restriction.</string>
+    <string name="twitter_access_unavailable">X reports that this post or its author is unavailable.</string>
+    <string name="twitter_access_unknown">X did not provide enough information to determine why this post is unavailable. It may be restricted, removed, or temporarily inaccessible.</string>
+</resources>

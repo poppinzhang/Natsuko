@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This project is an Android application for processing images, PDFs, and videos stored on Android devices, with a separate workflow for downloading videos from public X / Twitter posts.
+This project is an Android application for processing images, PDFs, and videos stored on Android devices, with a separate workflow for downloading videos from X / Twitter posts, including optional sign-in and explicit login-restriction detection.
 
 `README.md` is the user-facing introduction. Keep setup commands, architecture details, implementation constraints, and agent instructions in this file or the linked technical documentation.
 
@@ -125,7 +125,7 @@ Read the relevant feature document before changing behavior. Keep parameter limi
 | Combined/per-image PDF output, page size, orientation, and margins | [Images to PDF](docs/image2pdf.md) |
 | Batch PDF rendering, PNG/JPEG output, and resolution limits | [PDF to images](docs/pdf2image.md) |
 | Video formats, palette, dithering, sampling, looping, and the frame limit | [Video to GIF](docs/video2gif.md) |
-| Public-post URL validation, download boundaries, and conversion of downloaded MP4 files to GIF | [Download Twitter video](docs/download_twitter_video.md) |
+| Post URL validation, access-error classification, optional X sign-in, download boundaries, and conversion of downloaded MP4 files to GIF | [Download Twitter video](docs/download_twitter_video.md) |
 | Source GPS validation, metadata formats, conflict decisions, and same-format output copies | [Copy image location](docs/copy_location.md) |
 | App-specific output, user-directory saving, permissions, and per-file retries | [Output storage](docs/output_storage.md) |
 | Persistent feature ordering, cross-category dragging, and TalkBack actions | [Home feature order](docs/home_feature_order.md) |
@@ -138,7 +138,7 @@ Share targets must preserve each feature's workflow: black-border removal starts
 
 Generated files first go to app-specific storage. Optional user-directory saving uses `Download/Natsuko/<feature>/` or an authorized custom directory, without an additional timestamp folder in the user-visible destination. Preserve app-specific results when user-directory saving fails, and retry only files that have not been saved successfully.
 
-Local processing must not upload media. Twitter downloads use X's public HTTPS endpoints and video CDN without account login or third-party parsing services. Do not introduce runtime downloads of executables, native libraries, or codecs; see the bundled [FFmpeg](third_party/ffmpeg/README.md) and [metadata runtime](third_party/metadata/README.md) build references.
+Local processing must not upload media. Twitter downloads use X's official HTTPS endpoints, post pages, and video CDN without third-party parsing services. Automatically prompt for sign-in only when the requested post's structured response explicitly identifies a login restriction; deletion, protected visibility, withholding, rate limits, generic HTTP 401/403, empty tombstones, and unknown failures must not be relabeled as login requirements. The download screen also allows users to initiate sign-in themselves; manual sign-in does not automatically start a download and must not promise access. Sign-in takes place on X's official page after the user chooses it, with session handling explained on that page. Keep the native session in memory only, restrict its cookies to the X metadata origin, clear WebView data on opening/closing, and exclude it from backup. Do not log passwords or session values, forward credentials to the video CDN, or weaken the existing download limits. See [the feature document](docs/download_twitter_video.md) for session, cancellation, and error rules. Do not introduce runtime downloads of executables, native libraries, or codecs; see the bundled [FFmpeg](third_party/ffmpeg/README.md) and [metadata runtime](third_party/metadata/README.md) build references.
 
 The only installable code the app downloads is its own update, and only after the user checks for updates in settings and confirms: the signed release APK comes from this project's GitHub Releases over HTTPS and is handed to Android's package installer, which verifies the signature and replaces the app. The app never executes a downloaded file itself and never checks for updates in the background. Keep the allowed hosts, verification steps, and release-asset contract aligned with [App update](docs/app_update.md).
 

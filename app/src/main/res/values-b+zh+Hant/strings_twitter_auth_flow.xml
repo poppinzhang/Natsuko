@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="twitter_auth_consent_title">登入後查看此影片？</string>
+    <string name="twitter_auth_consent_message">X 要求登入後才能查看此推文。登入 X 官方頁面，允許 Natsuko 取得其中的影片。密碼直接在 X 頁面輸入。Natsuko 會保留登入狀態，直到你主動清除或應用程式處理程序結束。登入不會解除年齡或帳號限制。</string>
+    <string name="twitter_auth_sign_in">登入 X</string>
+    <string name="twitter_auth_session_active">本次應用程式工作階段已取得 X 登入狀態。</string>
+    <string name="twitter_auth_sign_out">清除 X 登入狀態</string>
+    <string name="twitter_auth_manual_hint">如果無法確認推文無法使用的原因，也可以主動登入後重試。登入不保證能夠存取。</string>
+</resources>

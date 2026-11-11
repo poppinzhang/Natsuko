@@ -20,6 +20,10 @@ import com.poppinzhang.natsuko.data.UserStorageRepository
 import com.poppinzhang.natsuko.data.update.AppUpdater
 import com.poppinzhang.natsuko.data.update.GitHubAppUpdater
 import com.poppinzhang.natsuko.data.twitter.TwitterStatusLink
+import com.poppinzhang.natsuko.data.twitter.SyndicationTwitterVideoSource
+import com.poppinzhang.natsuko.data.twitter.TwitterAccessException
+import com.poppinzhang.natsuko.data.twitter.TwitterAccessFailure
+import com.poppinzhang.natsuko.data.twitter.TwitterSession
 import com.poppinzhang.natsuko.data.twitter.TwitterDownloadScope
 import com.poppinzhang.natsuko.data.twitter.TwitterVideoSelection
 import com.poppinzhang.natsuko.model.AdjustmentEdits
@@ -78,6 +82,8 @@ import kotlinx.coroutines.withContext
 
 enum class AppScreen { HOME, SETTINGS, ABOUT, CONFIGURE, TWITTER_DOWNLOAD, RESULT, ADJUST_CHOOSE, ADJUST_EDIT, ADJUST_EXPORT, COPY_LOCATION_SOURCE, COPY_LOCATION_TARGETS }
 
+enum class TwitterLoginStep { CONSENT, SIGN_IN }
+
 data class NatsukoUiState(
     val screen: AppScreen = AppScreen.HOME,
     val feature: Feature? = null,
@@ -88,6 +94,8 @@ data class NatsukoUiState(
     val gifOptions: GifOptions = GifOptions(),
     val twitterLink: String = "",
     val twitterVideoSelection: TwitterVideoSelection? = null,
+    val twitterLoginStep: TwitterLoginStep? = null,
+    val twitterSessionActive: Boolean = false,
     val isProcessing: Boolean = false,
     val progress: ProcessingProgress = ProcessingProgress(0, 1, text(R.string.backend_preparing)),
     val outcome: ProcessingOutcome? = null,
@@ -108,12 +116,11 @@ data class NatsukoUiState(
 class NatsukoViewModel @JvmOverloads constructor(
     application: Application,
     appUpdater: AppUpdater = GitHubAppUpdater(application),
-    private val downloadTwitter: suspend (
+    private val downloadTwitter: (suspend (
         String,
         suspend (TwitterVideoSelection) -> TwitterDownloadScope,
         (Int, Int, UiText) -> Unit,
-    ) -> ProcessingOutcome =
-        DownloadTwitterVideoProcessor(application, OutputRepository(application))::process,
+    ) -> ProcessingOutcome)? = null,
 ) : AndroidViewModel(application) {
     private val resolver = DocumentResolver(application)
     private val outputRepository = OutputRepository(application)
@@ -133,6 +140,12 @@ class NatsukoViewModel @JvmOverloads constructor(
     private val locationSources = mutableSetOf<File>()
     private var locationDecision: CompletableDeferred<LocationConflictDecision>? = null
     private var locationImportGeneration = 0
+    // Account credentials never enter UI/saved state, preferences, backups, or diagnostics.
+    @Volatile private var twitterSession: TwitterSession? = null
+    private val twitterProcessor = DownloadTwitterVideoProcessor(
+        application, outputRepository, SyndicationTwitterVideoSource(session = { twitterSession }),
+    )
+    private var twitterLoginDecision: CompletableDeferred<TwitterSession>? = null
     private val mutableState = MutableStateFlow(freshState())
     val state: StateFlow<NatsukoUiState> = mutableState.asStateFlow()
     private val stopObservingStorage = storagePreferences.observe { settings ->
@@ -165,7 +178,9 @@ class NatsukoViewModel @JvmOverloads constructor(
     /** An import that arrived while unexported adjustments were open; it waits for confirmation. */
     private var pendingImport: PendingImport? = null
 
-    private fun freshState() = NatsukoUiState(storageSettings = storagePreferences.read())
+    private fun freshState() = NatsukoUiState(
+        storageSettings = storagePreferences.read(), twitterSessionActive = twitterSession != null,
+    )
 
     fun setThemeMode(mode: ThemeMode) {
         mutableThemeMode.value = appearancePreferences.setThemeMode(mode)
@@ -433,6 +448,89 @@ class NatsukoViewModel @JvmOverloads constructor(
         twitterScopeDecision?.complete(scope)
     }
 
+    fun acceptTwitterLogin() {
+        if (twitterLoginDecision?.isActive == true && mutableState.value.twitterLoginStep == TwitterLoginStep.CONSENT) {
+            mutableState.update { it.copy(twitterLoginStep = TwitterLoginStep.SIGN_IN) }
+        }
+    }
+
+    fun completeTwitterLogin(session: TwitterSession) {
+        if (mutableState.value.twitterLoginStep == TwitterLoginStep.SIGN_IN) {
+            twitterLoginDecision?.complete(session)
+        }
+    }
+
+    fun forgetTwitterSession() {
+        if (isBusy()) return
+        clearTwitterSession()
+    }
+
+    /** A deliberate account action; it does not start a download or claim that login will help. */
+    fun signInToTwitter() {
+        if (isBusy() || mutableState.value.screen != AppScreen.TWITTER_DOWNLOAD || twitterSession != null) return
+        processingJob = viewModelScope.launch {
+            mutableState.update { it.copy(isProcessing = true, errorMessage = null) }
+            try {
+                val session = requestTwitterLogin(requireConsent = false)
+                currentCoroutineContext().ensureActive()
+                twitterSession = session
+                mutableState.update { it.copy(twitterSessionActive = true) }
+            } catch (_: CancellationException) {
+                // Closing the login page leaves the input ready to edit or retry.
+            } finally {
+                mutableState.update { it.copy(isProcessing = false) }
+            }
+        }
+    }
+
+    private fun clearTwitterSession() {
+        twitterSession = null
+        mutableState.update { it.copy(twitterSessionActive = false) }
+    }
+
+    private suspend fun requestTwitterLogin(requireConsent: Boolean = true): TwitterSession = withContext(Dispatchers.Main.immediate) {
+        val decision = CompletableDeferred<TwitterSession>()
+        twitterLoginDecision = decision
+        mutableState.update { it.copy(twitterLoginStep = if (requireConsent) TwitterLoginStep.CONSENT else TwitterLoginStep.SIGN_IN) }
+        try {
+            decision.await()
+        } finally {
+            decision.cancel()
+            if (twitterLoginDecision === decision) {
+                twitterLoginDecision = null
+                mutableState.update { it.copy(twitterLoginStep = null) }
+            }
+        }
+    }
+
+    private suspend fun downloadTwitterWithLogin(
+        link: String,
+        progress: (Int, Int, UiText) -> Unit,
+    ): ProcessingOutcome {
+        var loginAttempted = false
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            try {
+                return downloadTwitter?.invoke(link, ::requestTwitterDownloadScope, progress)
+                    ?: twitterProcessor.process(link, ::requestTwitterDownloadScope, progress)
+            } catch (error: TwitterAccessException) {
+                if (error.reason == TwitterAccessFailure.SESSION_EXPIRED && twitterSession != null) {
+                    clearTwitterSession()
+                    // Diagnose anonymously again before offering login: the post may have disappeared.
+                    if (!loginAttempted) continue
+                }
+                if (error.reason != TwitterAccessFailure.LOGIN_REQUIRED || loginAttempted || twitterSession != null) {
+                    throw error
+                }
+                loginAttempted = true
+                val session = requestTwitterLogin()
+                currentCoroutineContext().ensureActive()
+                twitterSession = session
+                mutableState.update { it.copy(twitterSessionActive = true) }
+            }
+        }
+    }
+
     private suspend fun requestTwitterDownloadScope(selection: TwitterVideoSelection): TwitterDownloadScope =
         withContext(Dispatchers.Main.immediate) {
             val decision = CompletableDeferred<TwitterDownloadScope>()
@@ -587,7 +685,7 @@ class NatsukoViewModel @JvmOverloads constructor(
                         Feature.IMAGES_TO_PDF -> imagesToPdfProcessor.process(snapshot.inputs, snapshot.imagesToPdfOptions, progress)
                         Feature.PDF_TO_IMAGES -> pdfToImagesProcessor.process(snapshot.inputs, snapshot.pdfToImagesOptions, progress)
                         Feature.VIDEO_TO_GIF -> videoToGifProcessor.process(snapshot.inputs.first(), snapshot.gifOptions, progress)
-                        Feature.DOWNLOAD_TWITTER_VIDEO -> downloadTwitter(snapshot.twitterLink, ::requestTwitterDownloadScope, progress).also {
+                        Feature.DOWNLOAD_TWITTER_VIDEO -> downloadTwitterWithLogin(snapshot.twitterLink, progress).also {
                             // Retain ownership across withContext's cancellable dispatch back to Main.
                             unpublishedDownload = it
                         }
@@ -1130,6 +1228,8 @@ class NatsukoViewModel @JvmOverloads constructor(
     }
 
     override fun onCleared() {
+        twitterSession = null
+        twitterLoginDecision?.cancel()
         stopObservingAppearance()
         stopObservingStorage()
         releaseLocationSources()

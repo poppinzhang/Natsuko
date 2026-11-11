@@ -227,6 +227,9 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
             onLinkChange = viewModel::updateTwitterLink,
             onDownload = viewModel::downloadTwitterVideo,
             onBack = viewModel::back,
+            sessionActive = state.twitterSessionActive,
+            onSignOut = viewModel::forgetTwitterSession,
+            onSignIn = viewModel::signInToTwitter,
         )
         AppScreen.COPY_LOCATION_SOURCE -> state.copyLocation?.let {
             CopyLocationSourceScreen(
@@ -309,7 +312,12 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
     state.twitterVideoSelection?.let { selection ->
         TwitterVideoSelectionDialog(selection, viewModel::chooseTwitterDownloadScope, viewModel::cancelProcessing)
     }
-    if (state.isProcessing && state.copyLocation?.conflict == null && state.twitterVideoSelection == null) {
+    when (state.twitterLoginStep) {
+        TwitterLoginStep.CONSENT -> TwitterLoginConsentDialog(viewModel::acceptTwitterLogin, viewModel::cancelProcessing)
+        TwitterLoginStep.SIGN_IN -> TwitterLoginDialog(viewModel::completeTwitterLogin, viewModel::cancelProcessing)
+        null -> Unit
+    }
+    if (state.isProcessing && state.copyLocation?.conflict == null && state.twitterVideoSelection == null && state.twitterLoginStep == null) {
         ProcessingDialog(state.progress, viewModel::cancelProcessing)
     }
 }

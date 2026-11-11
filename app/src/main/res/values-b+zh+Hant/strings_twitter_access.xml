@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="twitter_access_login_required">X 要求登入後才能查看此媒體。</string>
+    <string name="twitter_access_session_expired">你的 X 登入狀態已失效，請重新登入後重試。</string>
+    <string name="twitter_access_deleted">X 表示此推文已刪除或不存在。</string>
+    <string name="twitter_access_protected">作者已限制此推文的可見範圍，僅登入無法取得存取權限。</string>
+    <string name="twitter_access_age_restricted">X 根據你的帳號年齡或內容設定限制此媒體。請在 X 中檢查帳號設定。</string>
+    <string name="twitter_access_withheld">X 已限制你所在地區查看此推文，登入無法解除此限制。</string>
+    <string name="twitter_access_unavailable">X 表示此推文或其作者目前無法使用。</string>
+    <string name="twitter_access_unknown">X 未提供足夠資訊，無法確認此推文無法使用的原因。內容可能受限、已移除或暫時無法存取。</string>
+</resources>

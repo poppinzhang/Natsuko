@@ -58,7 +58,7 @@
     <string name="backend_merged_image">Merged image</string>
     <string name="backend_no_downloadable_mp4">No downloadable MP4 video is available.</string>
     <string name="backend_post_invalid_response">X returned unrecognized post information. Try again later.</string>
-    <string name="backend_post_unavailable">Unable to read this post. It may be deleted, protected, require sign-in, or be temporarily unavailable.</string>
+    <string name="backend_post_unavailable">Unable to read this post. X did not provide enough information to determine why it is unavailable.</string>
     <string name="backend_video_mp4_unavailable">No directly downloadable MP4 is available, or the public API returned incomplete media information.</string>
     <string name="backend_post_no_media">This post has no downloadable videos or GIFs, or the public API did not provide the media.</string>
     <string name="backend_video_cache_failed">Unable to create a temporary video directory.</string>
@@ -92,8 +92,8 @@
     <string name="backend_download_url_unsupported">The download URL is not a supported official X HTTPS address.</string>
     <string name="backend_download_redirect_limit">The X download URL redirected too many times.</string>
     <string name="backend_download_redirect_invalid">X returned an invalid download redirect.</string>
-    <string name="backend_x_access_denied">X denied access. The post may require sign-in, be protected, or have an expired download URL.</string>
-    <string name="backend_x_media_missing">The post or video does not exist and may have been deleted.</string>
+    <string name="backend_x_access_denied">X denied this request. The response does not establish whether signing in would allow access.</string>
+    <string name="backend_x_media_missing">X could not find the requested post or video at this address.</string>
     <string name="backend_x_rate_limited">Too many requests to X. Try again later.</string>
     <string name="backend_x_server_error">X is temporarily unavailable (HTTP %1$s). Try again later.</string>
     <string name="backend_x_http_error">The X download request failed (HTTP %1$s).</string>

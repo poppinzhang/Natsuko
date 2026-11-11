@@ -18,7 +18,7 @@
     <string name="about_project_llvm_description">同梱のネイティブ実行ファイルが使用するコンパイラーランタイムとNDKコンポーネントです。各コンポーネントのライセンスは原文をご確認ください。</string>
     <string name="twitter_download_start">ダウンロードを開始</string>
     <string name="twitter_link_title">投稿のリンクを貼り付け</string>
-    <string name="twitter_link_description">公開されているX / Twitterの投稿リンクを入力して、動画やGIFをダウンロードできます。</string>
+    <string name="twitter_link_description">X / Twitterの投稿リンクを入力して、動画やGIFをダウンロードできます。Xがログインを必要とすると明示した場合は、ログインして再試行できます。</string>
     <string name="twitter_link_label">投稿リンク</string>
     <string name="twitter_link_placeholder">https://x.com/username/status/post_id</string>
     <string name="twitter_gif_title">ダウンロードした動画をGIFに変換</string>

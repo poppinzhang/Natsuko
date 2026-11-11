@@ -6,10 +6,16 @@ import com.poppinzhang.natsuko.model.text
 import com.poppinzhang.natsuko.model.checkText
 import com.poppinzhang.natsuko.model.checkNotNullText
 import com.poppinzhang.natsuko.model.LocalizedIllegalStateException
+import com.poppinzhang.natsuko.model.LocalizedIOException
+import com.poppinzhang.natsuko.model.LocalizedFailure
 import java.io.File
 import java.net.URI
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withTimeout
 
 data class TwitterVideo(
     val url: String?,
@@ -26,9 +32,69 @@ interface TwitterVideoSource {
 
 class SyndicationTwitterVideoSource(
     private val http: TwitterHttpClient = TwitterHttpClient(),
+    private val session: () -> TwitterSession? = { null },
 ) : TwitterVideoSource {
-    override suspend fun resolve(link: TwitterStatusLink): List<TwitterVideo> =
-        TwitterVideoMetadata.parse(http.metadata(link), link.id)
+    override suspend fun resolve(link: TwitterStatusLink): List<TwitterVideo> = try {
+        // Includes every diagnostic request, rather than starting a new deadline for each fallback.
+        withTimeout(60_000) { resolveWithinDeadline(link) }
+    } catch (timeout: TimeoutCancellationException) {
+        currentCoroutineContext().ensureActive()
+        throw LocalizedIOException(text(R.string.backend_download_timeout), timeout)
+    }
+
+    private suspend fun resolveWithinDeadline(link: TwitterStatusLink): List<TwitterVideo> {
+        val publicMedia = try {
+            TwitterVideoMetadata.parse(http.metadata(link), link.id)
+        } catch (failure: Exception) {
+            if (!isIncompleteMetadata(failure)) throw failure
+            null
+        }
+        // Keep existing partial-batch behavior: a missing MP4 for one attachment must not
+        // discard other downloadable videos if a diagnostic endpoint is unavailable.
+        if (publicMedia != null && publicMedia.any { it.url != null }) return publicMedia
+        session()?.let { return resolveGraphql(link, it) }
+        try {
+            return resolveGraphql(link, null)
+        } catch (failure: TwitterAccessException) {
+            if (failure.reason != TwitterAccessFailure.UNKNOWN) throw failure
+        }
+        // The guest API sometimes removes the reason from a tombstone. The official post page
+        // can still include its focal post's structured explanation (including the explicit login gate).
+        val page = http.webMetadata("https://x.com/i/status/${link.id}", pagePostId = link.id)
+        try {
+            return TwitterWebMetadata.parsePublicPage(page.body, link.id)
+        } catch (failure: TwitterAccessException) {
+            if (failure.reason == TwitterAccessFailure.UNKNOWN && publicMedia != null) return publicMedia
+            throw failure
+        }
+    }
+
+    private suspend fun resolveGraphql(link: TwitterStatusLink, authenticated: TwitterSession?): List<TwitterVideo> {
+        val guestToken = if (authenticated == null) {
+            val response = http.webMetadata("https://api.x.com/1.1/guest/activate.json", activateGuest = true)
+            val token = runCatching { JSONObject(response.body).optString("guest_token") }.getOrNull()
+            if (response.status != 200 || token == null || !Regex("[0-9]{1,32}").matches(token)) {
+                throw TwitterAccessException(TwitterAccessFailure.UNKNOWN)
+            }
+            token
+        } else null
+        val response = http.webMetadata(TwitterWebMetadata.queryUrl(link.id), session = authenticated, guestToken = guestToken)
+        try {
+            return TwitterWebMetadata.parseGraphql(response.body, link.id, authenticated != null)
+        } catch (failure: TwitterAccessException) {
+            if (failure.reason == TwitterAccessFailure.UNKNOWN && response.status == 401 && authenticated != null) {
+                throw TwitterAccessException(TwitterAccessFailure.SESSION_EXPIRED)
+            }
+            throw failure
+        }
+    }
+
+    private fun isIncompleteMetadata(failure: Exception): Boolean =
+        failure is TwitterAccessException && failure.reason == TwitterAccessFailure.UNKNOWN ||
+            (failure as? LocalizedFailure)?.userMessage in setOf(
+                text(R.string.backend_post_unavailable), text(R.string.backend_post_invalid_response),
+                text(R.string.backend_post_no_media),
+            )
 
     override suspend fun download(video: TwitterVideo, destination: File, onBytes: (Long, Long?) -> Unit) {
         http.download(checkNotNullText(video.url) { video.unavailableReason ?: text(R.string.backend_no_downloadable_mp4) }, destination, onBytes)

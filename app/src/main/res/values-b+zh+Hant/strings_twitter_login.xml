@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="twitter_login_title">登入 X</string>
+    <string name="twitter_login_help">使用 X 使用者名稱和密碼登入並完成驗證。密碼直接交給 X，Natsuko 會保留登入狀態，直到你主動清除或應用程式處理程序結束。此處不支援 Google 或 Apple 登入。完成後點選「登入完成，繼續」。</string>
+    <string name="twitter_login_continue">登入完成，繼續</string>
+    <string name="twitter_login_incomplete">X 尚未提供完整的登入狀態。請先完成登入和驗證，然後重試。</string>
+    <string name="twitter_login_load_failed">無法載入 X 登入頁面。請檢查網路，或取消後重試。</string>
+    <string name="twitter_login_unavailable">無法開啟 Android WebView。請更新或啟用 Android System WebView 後重試。</string>
+    <string name="twitter_login_navigation_blocked">此處只能開啟 X 頁面。請使用 X 使用者名稱和密碼登入。</string>
+    <string name="twitter_login_secure_connection_failed">無法驗證與 X 的安全連線，已停止登入。</string>
+    <string name="twitter_login_loading">正在開啟 X 登入頁…</string>
+</resources>

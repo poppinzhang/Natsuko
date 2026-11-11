@@ -18,7 +18,7 @@
     <string name="about_project_llvm_description">內建原生執行檔使用的編譯器執行階段及 NDK 元件；詳細授權條款請參閱各元件的聲明原文。</string>
     <string name="twitter_download_start">開始下載</string>
     <string name="twitter_link_title">貼上推文連結</string>
-    <string name="twitter_link_description">輸入公開的 X / Twitter 推文連結，下載其中的影片或動畫圖片。</string>
+    <string name="twitter_link_description">輸入 X / Twitter 推文連結，下載其中的影片或動畫圖片。X 明確要求登入時，可選擇登入後重試。</string>
     <string name="twitter_link_label">推文連結</string>
     <string name="twitter_link_placeholder">https://x.com/使用者名稱/status/推文編號</string>
     <string name="twitter_gif_title">下載後可直接轉 GIF</string>

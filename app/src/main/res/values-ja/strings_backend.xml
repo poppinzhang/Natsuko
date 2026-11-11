@@ -58,7 +58,7 @@
     <string name="backend_merged_image">結合した画像</string>
     <string name="backend_no_downloadable_mp4">ダウンロードできるMP4動画がありません。</string>
     <string name="backend_post_invalid_response">Xから返された投稿情報を認識できませんでした。しばらくしてからやり直してください。</string>
-    <string name="backend_post_unavailable">この投稿を読み込めませんでした。削除済み、非公開、ログインが必要、または一時的にアクセスできない可能性があります。</string>
+    <string name="backend_post_unavailable">この投稿を読み込めませんでした。Xから十分な情報が提供されていないため、理由を確認できません。</string>
     <string name="backend_video_mp4_unavailable">直接ダウンロードできるMP4がないか、公開APIから完全なメディア情報が提供されませんでした。</string>
     <string name="backend_post_no_media">この投稿にはダウンロードできる動画やGIFがないか、公開APIからメディアが提供されませんでした。</string>
     <string name="backend_video_cache_failed">動画の一時フォルダを作成できませんでした。</string>
@@ -90,8 +90,8 @@
     <string name="backend_download_url_unsupported">ダウンロードURLが、対応するX公式のHTTPSアドレスではありません。</string>
     <string name="backend_download_redirect_limit">XのダウンロードURLのリダイレクト回数が多すぎます。</string>
     <string name="backend_download_redirect_invalid">Xから無効なダウンロードのリダイレクト先が返されました。</string>
-    <string name="backend_x_access_denied">Xにアクセスを拒否されました。投稿がログインを必要とするか、非公開であるか、ダウンロードURLが失効している可能性があります。</string>
-    <string name="backend_x_media_missing">投稿または動画が見つかりません。削除された可能性があります。</string>
+    <string name="backend_x_access_denied">Xがこのリクエストを拒否しました。この応答からは、ログインすればアクセスできるかどうかを判断できません。</string>
+    <string name="backend_x_media_missing">Xでこのアドレスの投稿または動画が見つかりませんでした。</string>
     <string name="backend_x_rate_limited">Xへのリクエストが多すぎます。しばらくしてからやり直してください。</string>
     <string name="backend_x_server_error">Xを一時的に利用できません（HTTP %1$s）。しばらくしてからやり直してください。</string>
     <string name="backend_x_http_error">Xへのダウンロードリクエストに失敗しました（HTTP %1$s）。</string>
