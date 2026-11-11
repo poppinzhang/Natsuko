@@ -4,7 +4,7 @@
 
 下载完成的页面，提供「视频转 GIF」的功能按钮，可以将刚下载的视频直接转换成 GIF，让两个功能可以串联起来。
 
-带 `/video/序号` 链接的下载范围选择已加入开发版，尚未发布，记录于 [CHANGELOG 的 unstaged 条目](../CHANGELOG.md#unstaged)。
+带 `/video/序号` 链接的下载范围选择自 1.3.2 起提供，记录于 [CHANGELOG 的 1.3.2 条目](../CHANGELOG.md#132)。
 
 ## 使用流程
 

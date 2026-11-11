@@ -36,8 +36,8 @@
 根目录 `version.properties` 是构建、归档目录和 CI 的共同版本来源：
 
 ```properties
-VERSION_NAME=1.3.1
-VERSION_CODE=8
+VERSION_NAME=1.3.2
+VERSION_CODE=9
 ```
 
 `VERSION_NAME` 使用 `主版本.次版本.修订号`；`VERSION_CODE` 每次正式发布递增。1.0.0 的内部版本号为 3，因为旧试打包已经使用 1 和 2。Gradle 不再回退到硬编码版本。旧 `NATSUKO_VERSION_NAME` / `NATSUKO_VERSION_CODE` 环境变量如存在，必须与文件一致，不能覆盖文件中的版本。
@@ -108,10 +108,10 @@ NATSUKO_KEY_PASSWORD=replace-with-your-key-password
 确认签名 APK 的包名为 `com.poppinzhang.natsuko`、版本与 `version.properties` 一致、最低 Android 版本为 API 36，并使用 SDK Build Tools 验证签名和对齐。例如在项目根目录运行（工具路径按本机 SDK 调整）：
 
 ```bash
-"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs dist/1.3.1/Natsuko-1.3.1.apk
-"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 dist/1.3.1/Natsuko-1.3.1.apk
-"$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging dist/1.3.1/Natsuko-1.3.1.apk
-(cd dist/1.3.1 && shasum -a 256 -c SHA256SUMS)
+"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs dist/1.3.2/Natsuko-1.3.2.apk
+"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 dist/1.3.2/Natsuko-1.3.2.apk
+"$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging dist/1.3.2/Natsuko-1.3.2.apk
+(cd dist/1.3.2 && shasum -a 256 -c SHA256SUMS)
 ```
 
 具备设备/模拟器时运行仪器测试，并安装正式 APK 验证能启动、显示正确版本和功能入口。视频改动还应在安装包中检查两种 ABI 的 FFmpeg/FFprobe 已实际打包，并在断网状态下验证视频元数据读取、GIF 转换、损坏输入与取消清理。构建通过不等于全部设备、文件格式均已验证；视频兼容性取决于内置 FFmpeg 构建支持的容器、编解码器及输入文件本身。
@@ -132,7 +132,7 @@ GitHub Release 只发布以下三个附件，由发布任务按文件名逐一�
 | `natsuko-third-party-sources-<版本>.tar.gz` | 内置 FFmpeg、dav1d、ExifTool 与 Perl 的对应源码和重建资料，包内含 `LICENSE`、`NOTICE` 与 `THIRD_PARTY_NOTICES.md`。LGPL 要求它与安装包在同一下载位置提供。 |
 | `SHA256SUMS` | 发布任务为以上两个文件生成的校验和；归档目录内的同名文件覆盖全部归档文件，两者内容不同。 |
 
-应用内更新（开发版，尚未发布）按 `Natsuko-<版本>.apk` 这一文件名在最新 Release 中查找安装包，并要求 tag 为 `v<版本>`、签名密钥与已发布版本相同、`VERSION_CODE` 递增。已安装的旧版本无法随发布流程一起修改：调整附件命名时，至少保证每个 Release 只有一个 `.apk` 附件，详见 [应用更新](app_update.md#发布要求)。
+应用内更新（自 1.3.2 起提供）按 `Natsuko-<版本>.apk` 这一文件名在最新 Release 中查找安装包，并要求 tag 为 `v<版本>`、签名密钥与已发布版本相同、`VERSION_CODE` 递增。已安装的旧版本无法随发布流程一起修改：调整附件命名时，至少保证每个 Release 只有一个 `.apk` 附件，详见 [应用更新](app_update.md#发布要求)。
 
 Debug APK、AAB、R8 `mapping.txt`、签名验证报告、`BUILD_INFO.properties` 及文档副本属于构建记录，只保留在 Actions 附件 `natsuko-<版本>`（受仓库的附件保留期限制，默认 90 天）和本地 `dist/<版本>/`，不上传到 Release。需要还原旧版本的混淆堆栈而附件已过期时，在对应 tag 上重新打包即可生成 `mapping.txt`：工具链版本固定，1.3.1 的本地打包与 CI 产物逐字节一致。发布说明在 CHANGELOG 条目之后附加附件说明，注明 FFmpeg 的 LGPL 许可及对应源码包。新增 Release 附件时，在发布任务的上传列表中显式添加，不要改回通配符上传。
 
