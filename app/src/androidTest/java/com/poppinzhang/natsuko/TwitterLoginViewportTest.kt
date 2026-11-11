@@ -82,10 +82,10 @@ class TwitterLoginViewportTest {
         instrumentation.runOnMainSync {
             checkNotNull(browser).windowInsetsController?.show(WindowInsets.Type.ime())
         }
-        compose.waitUntil(15_000) {
+        waitForKeyboardViewport(15_000, "IME shown and fixture input focused", initialNative, initialPage) {
             nativeMetrics().imeVisible && metrics().activeElement == "username"
         }
-        compose.waitUntil(10_000) {
+        waitForKeyboardViewport(10_000, "Native and CSS viewport resized", initialNative, initialPage) {
             val native = nativeMetrics()
             val page = metrics()
             native.height < initialNative.height &&
@@ -112,7 +112,7 @@ class TwitterLoginViewportTest {
         instrumentation.runOnMainSync {
             checkNotNull(browser).windowInsetsController?.hide(WindowInsets.Type.ime())
         }
-        compose.waitUntil(10_000) {
+        waitForKeyboardViewport(10_000, "Viewport restored after hiding IME", initialNative, initialPage) {
             val native = nativeMetrics()
             val page = metrics()
             !native.imeVisible && kotlin.math.abs(native.height - initialNative.height) <= 1 &&
@@ -122,6 +122,25 @@ class TwitterLoginViewportTest {
         assertEquals("Closing the keyboard must restore the CSS viewport without residual padding",
             initialPage.visualHeight, restored.frame.height, 2.0)
         assertNativeControlsVisible()
+    }
+
+    private fun waitForKeyboardViewport(
+        timeoutMillis: Long,
+        step: String,
+        beforeNative: NativeMetrics,
+        beforePage: PageMetrics,
+        condition: () -> Boolean,
+    ) {
+        try {
+            compose.waitUntil(timeoutMillis, condition)
+        } catch (failure: ComposeTimeoutException) {
+            // Fixture geometry and focus ID only; never capture input values or account content.
+            throw AssertionError(
+                "$step timed out. Before native=$beforeNative, page=$beforePage; " +
+                    "after native=${nativeMetrics()}, page=${metrics()}; ${fixtureDiagnostics()}",
+                failure,
+            )
+        }
     }
 
     private fun showLogin(viewport: String) {
@@ -254,10 +273,14 @@ class TwitterLoginViewportTest {
         instrumentation.runOnMainSync {
             val view = checkNotNull(browser)
             val location = IntArray(2).also(view::getLocationOnScreen)
+            val insets = view.rootWindowInsets
             result = NativeMetrics(
                 location[0], location[1], view.width, view.height,
                 view.resources.displayMetrics.density.toDouble(),
-                view.rootWindowInsets?.isVisible(WindowInsets.Type.ime()) == true,
+                insets?.isVisible(WindowInsets.Type.ime()) == true,
+                insets?.getInsets(WindowInsets.Type.ime())?.bottom ?: 0,
+                insets?.getInsets(WindowInsets.Type.systemBars())?.bottom ?: 0,
+                view.rootView.height,
             )
         }
         return result
@@ -283,9 +306,11 @@ class TwitterLoginViewportTest {
                 };
                 return JSON.stringify({
                     layoutWidth:document.documentElement.clientWidth,
+                    layoutHeight:document.documentElement.clientHeight,
                     scrollWidth:document.documentElement.scrollWidth,
                     visualWidth:viewport.width, visualHeight:viewport.height,
                     visualLeft:viewport.offsetLeft, visualTop:viewport.offsetTop,
+                    visualScale:viewport.scale, devicePixelRatio:window.devicePixelRatio,
                     frame:rect('frame'), scroller:rect('scroller'),
                     input:rect('username'), submit:rect('submit'),
                     activeElement:document.activeElement.id, submitted:window.fixtureSubmitted === true
@@ -294,9 +319,10 @@ class TwitterLoginViewportTest {
         """.trimIndent())
         val json = JSONObject(JSONTokener(result).nextValue() as String)
         return PageMetrics(
-            json.getDouble("layoutWidth"), json.getDouble("scrollWidth"),
+            json.getDouble("layoutWidth"), json.getDouble("layoutHeight"), json.getDouble("scrollWidth"),
             json.getDouble("visualWidth"), json.getDouble("visualHeight"),
             json.getDouble("visualLeft"), json.getDouble("visualTop"),
+            json.getDouble("visualScale"), json.getDouble("devicePixelRatio"),
             json.rect("frame"), json.rect("scroller"), json.rect("input"), json.rect("submit"),
             json.getString("activeElement"), json.getBoolean("submitted"),
         )
@@ -308,6 +334,7 @@ class TwitterLoginViewportTest {
 
     private data class NativeMetrics(
         val left: Int, val top: Int, val width: Int, val height: Int, val density: Double, val imeVisible: Boolean,
+        val imeBottom: Int, val systemBarsBottom: Int, val rootHeight: Int,
     )
 
     private data class CssRect(val left: Double, val top: Double, val right: Double, val bottom: Double) {
@@ -317,8 +344,9 @@ class TwitterLoginViewportTest {
     }
 
     private data class PageMetrics(
-        val layoutWidth: Double, val scrollWidth: Double,
+        val layoutWidth: Double, val layoutHeight: Double, val scrollWidth: Double,
         val visualWidth: Double, val visualHeight: Double, val visualLeft: Double, val visualTop: Double,
+        val visualScale: Double, val devicePixelRatio: Double,
         val frame: CssRect, val scroller: CssRect, val input: CssRect, val submit: CssRect,
         val activeElement: String, val submitted: Boolean,
     )
