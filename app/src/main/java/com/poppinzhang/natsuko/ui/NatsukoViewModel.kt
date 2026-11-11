@@ -24,6 +24,8 @@ import com.poppinzhang.natsuko.data.twitter.SyndicationTwitterVideoSource
 import com.poppinzhang.natsuko.data.twitter.TwitterAccessException
 import com.poppinzhang.natsuko.data.twitter.TwitterAccessFailure
 import com.poppinzhang.natsuko.data.twitter.TwitterSession
+import com.poppinzhang.natsuko.data.twitter.TwitterSessionStore
+import com.poppinzhang.natsuko.data.twitter.EncryptedTwitterSessionStore
 import com.poppinzhang.natsuko.data.twitter.TwitterDownloadScope
 import com.poppinzhang.natsuko.data.twitter.TwitterVideoSelection
 import com.poppinzhang.natsuko.model.AdjustmentEdits
@@ -49,6 +51,7 @@ import com.poppinzhang.natsuko.model.ProcessingOutcome
 import com.poppinzhang.natsuko.model.ProcessingFailure
 import com.poppinzhang.natsuko.model.ProcessingProgress
 import com.poppinzhang.natsuko.model.ThemeMode
+import com.poppinzhang.natsuko.model.LocalizedIOException
 import com.poppinzhang.natsuko.processing.ImageMergeProcessor
 import com.poppinzhang.natsuko.processing.CropBlackBorderProcessor
 import com.poppinzhang.natsuko.processing.ImagesToPdfProcessor
@@ -116,6 +119,7 @@ data class NatsukoUiState(
 class NatsukoViewModel @JvmOverloads constructor(
     application: Application,
     appUpdater: AppUpdater = GitHubAppUpdater(application),
+    private val twitterSessions: TwitterSessionStore = EncryptedTwitterSessionStore(application),
     private val downloadTwitter: (suspend (
         String,
         suspend (TwitterVideoSelection) -> TwitterDownloadScope,
@@ -177,6 +181,37 @@ class NatsukoViewModel @JvmOverloads constructor(
 
     /** An import that arrived while unexported adjustments were open; it waits for confirmation. */
     private var pendingImport: PendingImport? = null
+
+    // Restoring does not block unrelated media work. Account actions and downloads await it.
+    private val twitterSessionRestore = viewModelScope.launch {
+        try {
+            restoreTwitterSession()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            mutableState.update { it.copy(errorMessage = text(R.string.twitter_auth_session_load_failed)) }
+        }
+    }
+
+    private suspend fun restoreTwitterSession() {
+        val restored = withContext(Dispatchers.IO) { twitterSessions.read() }
+        twitterSession = restored
+        mutableState.update { it.copy(twitterSessionActive = restored != null) }
+    }
+
+    private suspend fun awaitTwitterSession() {
+        twitterSessionRestore.join()
+        // Launcher and share activities can coexist. Refresh before each action so another
+        // instance's completed save or disconnect takes effect before these credentials are used.
+        // A transient disk/Keystore failure aborts the action without clearing the saved session.
+        try {
+            restoreTwitterSession()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            throw LocalizedIOException(text(R.string.twitter_auth_session_load_failed))
+        }
+    }
 
     private fun freshState() = NatsukoUiState(
         storageSettings = storagePreferences.read(), twitterSessionActive = twitterSession != null,
@@ -462,30 +497,60 @@ class NatsukoViewModel @JvmOverloads constructor(
 
     fun forgetTwitterSession() {
         if (isBusy()) return
-        clearTwitterSession()
-    }
-
-    /** A deliberate account action; it does not start a download or claim that login will help. */
-    fun signInToTwitter() {
-        if (isBusy() || mutableState.value.screen != AppScreen.TWITTER_DOWNLOAD || twitterSession != null) return
         processingJob = viewModelScope.launch {
             mutableState.update { it.copy(isProcessing = true, errorMessage = null) }
             try {
-                val session = requestTwitterLogin(requireConsent = false)
-                currentCoroutineContext().ensureActive()
-                twitterSession = session
-                mutableState.update { it.copy(twitterSessionActive = true) }
+                twitterSessionRestore.join()
+                clearTwitterSession()
             } catch (_: CancellationException) {
-                // Closing the login page leaves the input ready to edit or retry.
+                // Once clearing begins, its durable deletion completes even if the workflow closes.
+            } catch (error: Exception) {
+                mutableState.update { it.copy(errorMessage = error.userMessage(R.string.twitter_auth_session_clear_failed)) }
             } finally {
                 mutableState.update { it.copy(isProcessing = false) }
             }
         }
     }
 
-    private fun clearTwitterSession() {
+    /** A deliberate account action; it does not start a download or claim that login will help. */
+    fun signInToTwitter() {
+        if (isBusy() || mutableState.value.screen != AppScreen.TWITTER_DOWNLOAD) return
+        processingJob = viewModelScope.launch {
+            mutableState.update { it.copy(isProcessing = true, errorMessage = null) }
+            try {
+                awaitTwitterSession()
+                if (twitterSession != null) return@launch
+                val session = requestTwitterLogin(requireConsent = false)
+                currentCoroutineContext().ensureActive()
+                saveTwitterSession(session)
+            } catch (_: CancellationException) {
+                // Closing the login page leaves the input ready to edit or retry.
+            } catch (error: Exception) {
+                mutableState.update { it.copy(errorMessage = error.userMessage(R.string.twitter_auth_session_save_failed)) }
+            } finally {
+                mutableState.update { it.copy(isProcessing = false) }
+            }
+        }
+    }
+
+    private suspend fun clearTwitterSession() = withContext(NonCancellable + Dispatchers.IO) {
+        try {
+            twitterSessions.clear()
+        } catch (_: Exception) {
+            throw LocalizedIOException(text(R.string.twitter_auth_session_clear_failed))
+        }
         twitterSession = null
         mutableState.update { it.copy(twitterSessionActive = false) }
+    }
+
+    private suspend fun saveTwitterSession(session: TwitterSession) = withContext(NonCancellable + Dispatchers.IO) {
+        try {
+            twitterSessions.write(session)
+        } catch (_: Exception) {
+            throw LocalizedIOException(text(R.string.twitter_auth_session_save_failed))
+        }
+        twitterSession = session
+        mutableState.update { it.copy(twitterSessionActive = true) }
     }
 
     private suspend fun requestTwitterLogin(requireConsent: Boolean = true): TwitterSession = withContext(Dispatchers.Main.immediate) {
@@ -507,6 +572,7 @@ class NatsukoViewModel @JvmOverloads constructor(
         link: String,
         progress: (Int, Int, UiText) -> Unit,
     ): ProcessingOutcome {
+        awaitTwitterSession()
         var loginAttempted = false
         while (true) {
             currentCoroutineContext().ensureActive()
@@ -525,8 +591,7 @@ class NatsukoViewModel @JvmOverloads constructor(
                 loginAttempted = true
                 val session = requestTwitterLogin()
                 currentCoroutineContext().ensureActive()
-                twitterSession = session
-                mutableState.update { it.copy(twitterSessionActive = true) }
+                saveTwitterSession(session)
             }
         }
     }

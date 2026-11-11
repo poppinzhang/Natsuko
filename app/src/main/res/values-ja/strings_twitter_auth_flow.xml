@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="twitter_auth_consent_title">ログインしてこの動画を表示しますか？</string>
-    <string name="twitter_auth_consent_message">この投稿を表示するにはXへのログインが必要です。Xの公式ページでログインし、Natsukoが動画を取得できるようにします。パスワードはXのページに直接入力します。ログイン情報は、接続を解除するかアプリのプロセスが終了するまでNatsukoに保持されます。ログインしても年齢やアカウントの制限は解除されません。</string>
+    <string name="twitter_auth_consent_message">この投稿を表示するにはXへのログインが必要です。Xの公式ページでログインし、Natsukoが動画を取得できるようにします。パスワードはXのページに直接入力します。Natsukoはログイン情報をこの端末に暗号化して保存し、アプリを再起動しても、接続を解除するかXがログイン情報の失効を確認するまで保持します。ログインしても年齢やアカウントの制限は解除されません。</string>
     <string name="twitter_auth_sign_in">Xにログイン</string>
-    <string name="twitter_auth_session_active">現在のアプリセッションでXのログイン情報を利用できます。</string>
+    <string name="twitter_auth_session_active">Xのログイン情報はこの端末に保存され、アプリを再起動しても利用できます。</string>
     <string name="twitter_auth_sign_out">Xのログイン接続を解除</string>
     <string name="twitter_auth_manual_hint">投稿を利用できない理由が不明な場合は、ログインしてから再試行することもできます。ログインしてもアクセスできるとは限りません。</string>
+    <string name="twitter_auth_session_load_failed">保存したXのログイン情報を読み込めませんでした。もう一度お試しください。</string>
+    <string name="twitter_auth_session_save_failed">Xのログイン情報を保存できませんでした。もう一度ログインしてください。</string>
+    <string name="twitter_auth_session_clear_failed">Xのログイン情報を完全に削除できませんでした。もう一度お試しください。</string>
 </resources>

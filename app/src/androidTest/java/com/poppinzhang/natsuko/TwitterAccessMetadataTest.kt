@@ -160,6 +160,50 @@ class TwitterAccessMetadataTest {
         assertEquals("https://video.twimg.com/card.mp4", videos.single().url)
     }
 
+    @Test
+    fun genericAuthenticatedHttpFailuresDoNotExpireSavedSessions() = runBlocking {
+        for (status in listOf(401, 403)) {
+            for (body in listOf("{}", "<html>Not authorized</html>", """{"errors":[{"message":"Not authorized"}]}""")) {
+                assertEquals(TwitterAccessFailure.UNKNOWN, authenticatedFailure(status, body))
+            }
+        }
+    }
+
+    @Test
+    fun structuredAuthenticatedFailureStillExpiresSavedSessions() = runBlocking {
+        assertEquals(TwitterAccessFailure.SESSION_EXPIRED, authenticatedFailure(401, """{"errors":[{"code":89}]}"""))
+        assertEquals(TwitterAccessFailure.SESSION_EXPIRED, authenticatedFailure(200, graph(loginResult)))
+    }
+
+    private suspend fun authenticatedFailure(status: Int, response: String): TwitterAccessFailure? {
+        val session = checkNotNull(TwitterSession.fromCookieHeader("auth_token=fixture; ct0=fixture-csrf"))
+        var requests = 0
+        val http = TwitterHttpClient({ url ->
+            requests++
+            val publicRequest = url.host == "cdn.syndication.twimg.com"
+            check(publicRequest || url.host == "x.com" && url.path == TwitterWebMetadata.GRAPHQL_PATH)
+            val bytes = (if (publicRequest) "{}" else response).toByteArray()
+            object : HttpURLConnection(url) {
+                override fun connect() = Unit
+                override fun disconnect() = Unit
+                override fun usingProxy() = false
+                override fun getResponseCode(): Int {
+                    assertEquals(if (publicRequest) null else session.cookieHeader, getRequestProperty("Cookie"))
+                    return if (publicRequest) 200 else status
+                }
+                override fun getContentLengthLong() = bytes.size.toLong()
+                override fun getInputStream() = ByteArrayInputStream(bytes)
+                override fun getErrorStream() = ByteArrayInputStream(bytes)
+            }
+        })
+        val failure = runCatching {
+            SyndicationTwitterVideoSource(http, session = { session })
+                .resolve(TwitterStatusLink.parse("https://x.com/i/status/$id"))
+        }.exceptionOrNull()
+        assertEquals(2, requests)
+        return (failure as? TwitterAccessException)?.reason
+    }
+
     private fun graph(result: String): String = """{"data":{"tweetResult":{"result":$result}}}"""
     private fun ssrPage(payload: String): String = "<script>result:${'$'}R[14]={kind:\"Result.Ok\",value:${JSONObject.quote(payload)}}</script>"
 

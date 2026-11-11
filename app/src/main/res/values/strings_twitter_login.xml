@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="twitter_login_title">Sign in to X</string>
-    <string name="twitter_login_help">Sign in with your X username and password and complete verification. Your password goes directly to X. Natsuko keeps the session until you disconnect or the app process ends. Google and Apple sign-in are not supported. Then tap Login complete, continue.</string>
     <string name="twitter_login_continue">Login complete, continue</string>
     <string name="twitter_login_incomplete">X has not provided a complete login session yet. Finish signing in and verification, then try again.</string>
     <string name="twitter_login_load_failed">The X login page could not be loaded. Check your connection or cancel and try again.</string>

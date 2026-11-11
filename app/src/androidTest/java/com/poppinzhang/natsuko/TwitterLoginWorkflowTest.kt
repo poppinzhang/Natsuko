@@ -17,6 +17,7 @@ import com.poppinzhang.natsuko.data.twitter.TwitterAccessException
 import com.poppinzhang.natsuko.data.twitter.TwitterAccessFailure
 import com.poppinzhang.natsuko.data.twitter.TwitterDownloadScope
 import com.poppinzhang.natsuko.data.twitter.TwitterSession
+import com.poppinzhang.natsuko.data.twitter.TwitterSessionStore
 import com.poppinzhang.natsuko.data.twitter.TwitterVideoSelection
 import com.poppinzhang.natsuko.model.ProcessingOutcome
 import com.poppinzhang.natsuko.ui.AppScreen
@@ -26,6 +27,9 @@ import com.poppinzhang.natsuko.ui.NatsukoViewModel
 import com.poppinzhang.natsuko.ui.TwitterLoginStep
 import com.poppinzhang.natsuko.ui.theme.NatsukoTheme
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.io.IOException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -82,6 +86,7 @@ class TwitterLoginWorkflowTest {
         assertNull(result.twitterVideoSelection)
         model.openTwitterDownload()
         model.forgetTwitterSession()
+        await(model) { !it.isProcessing && !it.twitterSessionActive }
         assertFalse(model.state.value.twitterSessionActive)
         assertEquals(LINK, model.state.value.twitterLink)
     }
@@ -209,7 +214,238 @@ class TwitterLoginWorkflowTest {
         assertEquals(1, calls.get())
         model.openTwitterDownload()
         model.forgetTwitterSession()
+        await(model) { !it.isProcessing && !it.twitterSessionActive }
         assertFalse(model.state.value.twitterSessionActive)
+    }
+
+    @Test fun completedLoginSurvivesViewModelReplacementAndDisconnectPersists() = runBlocking {
+        val sessions = MemorySessions()
+        val first = model(sessions) { _, _ -> ProcessingOutcome(emptyList(), emptyList()) }
+        first.openTwitterDownload()
+        first.signInToTwitter()
+        await(first) { it.twitterLoginStep == TwitterLoginStep.SIGN_IN }
+        first.completeTwitterLogin(session())
+        await(first) { !it.isProcessing && it.twitterSessionActive }
+        instrumentation.runOnMainSync { store.clear() }
+
+        val calls = AtomicInteger()
+        val restored = model(sessions) { _, _ -> calls.incrementAndGet(); ProcessingOutcome(emptyList(), emptyList()) }
+        start(restored)
+        await(restored) { !it.isProcessing && it.outcome != null }
+        assertTrue(restored.state.value.twitterSessionActive)
+        assertEquals(1, calls.get())
+        assertNull(restored.state.value.twitterLoginStep)
+        restored.openTwitterDownload()
+        restored.forgetTwitterSession()
+        await(restored) { !it.isProcessing && !it.twitterSessionActive }
+        assertNull(sessions.value)
+        val disconnected = model(sessions) { _, _ -> throw TwitterAccessException(TwitterAccessFailure.LOGIN_REQUIRED) }
+        start(disconnected)
+        await(disconnected) { it.twitterLoginStep == TwitterLoginStep.CONSENT }
+        assertFalse(disconnected.state.value.twitterSessionActive)
+        disconnected.cancelProcessing()
+    }
+
+    @Test fun disconnectInAnotherLiveViewModelIsObservedBeforeDownload(): Unit = runBlocking {
+        val sessions = MemorySessions(session())
+        val first = model(sessions) { _, _ -> ProcessingOutcome(emptyList(), emptyList()) }
+        val calls = AtomicInteger()
+        val second = model(sessions) { _, _ ->
+            calls.incrementAndGet()
+            throw TwitterAccessException(TwitterAccessFailure.LOGIN_REQUIRED)
+        }
+        await(first) { it.twitterSessionActive }
+        await(second) { it.twitterSessionActive }
+
+        first.forgetTwitterSession()
+        await(first) { !it.isProcessing && !it.twitterSessionActive }
+        assertNull(sessions.value)
+        start(second)
+        val refreshed = await(second) { it.twitterLoginStep == TwitterLoginStep.CONSENT }
+        assertFalse(refreshed.twitterSessionActive)
+        assertEquals(1, calls.get())
+        second.cancelProcessing()
+        await(second) { !it.isProcessing }
+    }
+
+    @Test fun loginSavedByAnotherLiveViewModelIsObservedBeforeDownload() = runBlocking {
+        val sessions = MemorySessions()
+        val first = model(sessions) { _, _ -> ProcessingOutcome(emptyList(), emptyList()) }
+        var activeDuringDownload = false
+        lateinit var second: NatsukoViewModel
+        second = model(sessions) { _, _ ->
+            activeDuringDownload = second.state.value.twitterSessionActive
+            ProcessingOutcome(emptyList(), emptyList())
+        }
+        // Complete an anonymous action so this instance has already restored its empty store.
+        start(second)
+        await(second) { !it.isProcessing && it.outcome != null }
+        assertFalse(activeDuringDownload)
+
+        first.openTwitterDownload()
+        first.signInToTwitter()
+        await(first) { it.twitterLoginStep == TwitterLoginStep.SIGN_IN }
+        first.completeTwitterLogin(session())
+        await(first) { !it.isProcessing && it.twitterSessionActive }
+        start(second)
+        await(second) { !it.isProcessing && it.outcome != null }
+        assertTrue(activeDuringDownload)
+        assertTrue(second.state.value.twitterSessionActive)
+        assertNull(second.state.value.twitterLoginStep)
+    }
+
+    @Test fun failedRefreshDoesNotUsePreviouslyRestoredCredentials() = runBlocking {
+        val reads = AtomicInteger()
+        val sessions = MemorySessions(session(), beforeRead = {
+            if (reads.incrementAndGet() == 2) throw IOException("Synthetic refresh failure")
+        })
+        val calls = AtomicInteger()
+        val model = model(sessions) { _, _ ->
+            calls.incrementAndGet()
+            ProcessingOutcome(emptyList(), emptyList())
+        }
+        await(model) { it.twitterSessionActive }
+        start(model)
+        val failed = await(model) { !it.isProcessing && it.errorMessage != null }
+        assertEquals(com.poppinzhang.natsuko.model.text(R.string.twitter_auth_session_load_failed), failed.errorMessage)
+        assertEquals(0, calls.get())
+        assertTrue(failed.twitterSessionActive)
+        assertNotNull(sessions.value)
+        model.downloadTwitterVideo()
+        await(model) { !it.isProcessing && it.outcome != null }
+        assertEquals(1, calls.get())
+    }
+
+    @Test fun downloadWaitsForRestoreAndNonAuthenticationFailuresKeepSavedSession() = runBlocking {
+        val readStarted = CountDownLatch(1)
+        val readAllowed = CountDownLatch(1)
+        val sessions = MemorySessions(session(), beforeRead = {
+            readStarted.countDown()
+            check(readAllowed.await(5, TimeUnit.SECONDS))
+        })
+        val calls = AtomicInteger()
+        val model = model(sessions) { _, _ -> calls.incrementAndGet(); throw TwitterAccessException(TwitterAccessFailure.UNKNOWN) }
+        start(model)
+        assertTrue(readStarted.await(5, TimeUnit.SECONDS))
+        assertEquals(0, calls.get())
+        readAllowed.countDown()
+        await(model) { !it.isProcessing && it.errorMessage != null }
+        assertTrue(model.state.value.twitterSessionActive)
+        assertNotNull(sessions.value)
+
+        for (failure in listOf(TwitterAccessFailure.PROTECTED, TwitterAccessFailure.RATE_LIMITED)) {
+            val next = model(sessions) { _, _ -> throw TwitterAccessException(failure) }
+            start(next)
+            await(next) { !it.isProcessing && it.errorMessage != null }
+            assertTrue(next.state.value.twitterSessionActive)
+            assertNotNull(sessions.value)
+        }
+        val offline = model(sessions) { _, _ -> throw IOException("Synthetic offline failure") }
+        start(offline)
+        await(offline) { !it.isProcessing && it.errorMessage != null }
+        assertTrue(offline.state.value.twitterSessionActive)
+        assertNotNull(sessions.value)
+    }
+
+    @Test fun expiredRestoredSessionIsDeletedBeforeAnonymousRetry() = runBlocking {
+        val sessions = MemorySessions(session())
+        val calls = AtomicInteger()
+        val model = model(sessions) { _, _ ->
+            if (calls.incrementAndGet() == 1) throw TwitterAccessException(TwitterAccessFailure.SESSION_EXPIRED)
+            assertNull(sessions.value)
+            throw TwitterAccessException(TwitterAccessFailure.PROTECTED)
+        }
+        start(model)
+        await(model) { !it.isProcessing && it.errorMessage != null }
+        assertEquals(2, calls.get())
+        assertFalse(model.state.value.twitterSessionActive)
+        assertNull(sessions.value)
+    }
+
+    @Test fun disconnectWaitsForPendingRestoreSoOldCredentialsCannotReappear() = runBlocking {
+        val readStarted = CountDownLatch(1)
+        val readAllowed = CountDownLatch(1)
+        val sessions = MemorySessions(session(), beforeRead = {
+            readStarted.countDown()
+            check(readAllowed.await(5, TimeUnit.SECONDS))
+        })
+        val model = model(sessions) { _, _ -> ProcessingOutcome(emptyList(), emptyList()) }
+        assertTrue(readStarted.await(5, TimeUnit.SECONDS))
+        model.forgetTwitterSession()
+        await(model) { it.isProcessing }
+        readAllowed.countDown()
+        await(model) { !it.isProcessing && !it.twitterSessionActive }
+        assertNull(sessions.value)
+    }
+
+    @Test fun saveFailureIsReportedWithoutClaimingAnActiveSession() = runBlocking {
+        val sessions = MemorySessions(beforeWrite = { throw IOException("Synthetic disk failure") })
+        val model = model(sessions) { _, _ -> fail("Manual login must not download"); ProcessingOutcome(emptyList(), emptyList()) }
+        model.openTwitterDownload()
+        model.signInToTwitter()
+        await(model) { it.twitterLoginStep == TwitterLoginStep.SIGN_IN }
+        model.completeTwitterLogin(session())
+        val failed = await(model) { !it.isProcessing && it.errorMessage != null }
+        assertEquals(com.poppinzhang.natsuko.model.text(R.string.twitter_auth_session_save_failed), failed.errorMessage)
+        assertFalse(failed.twitterSessionActive)
+        assertNull(sessions.value)
+    }
+
+    @Test fun transientRestoreFailureRetriesBeforeAnyDownloadAndKeepsOriginalSession() = runBlocking {
+        val reads = AtomicInteger()
+        val sessions = MemorySessions(session(), beforeRead = {
+            if (reads.incrementAndGet() <= 2) throw IOException("Synthetic temporarily unavailable key")
+        })
+        val calls = AtomicInteger()
+        val model = model(sessions) { _, _ -> calls.incrementAndGet(); ProcessingOutcome(emptyList(), emptyList()) }
+        await(model) { it.errorMessage != null }
+        start(model)
+        await(model) { !it.isProcessing && it.errorMessage != null && reads.get() == 2 }
+        assertEquals(0, calls.get())
+        assertNotNull(sessions.value)
+        assertNull(model.state.value.twitterLoginStep)
+        model.downloadTwitterVideo()
+        await(model) { !it.isProcessing && it.outcome != null }
+        assertTrue(model.state.value.twitterSessionActive)
+        assertEquals(1, calls.get())
+        assertEquals(3, reads.get())
+    }
+
+    @Test fun failedDisconnectKeepsClearActionAvailableForRetry() = runBlocking {
+        val clears = AtomicInteger()
+        val sessions = MemorySessions(session(), beforeClear = {
+            if (clears.incrementAndGet() == 1) throw IOException("Synthetic temporarily unavailable key")
+        })
+        val model = model(sessions) { _, _ -> ProcessingOutcome(emptyList(), emptyList()) }
+        await(model) { it.twitterSessionActive }
+        model.forgetTwitterSession()
+        val failed = await(model) { !it.isProcessing && it.errorMessage != null }
+        assertEquals(com.poppinzhang.natsuko.model.text(R.string.twitter_auth_session_clear_failed), failed.errorMessage)
+        assertTrue(failed.twitterSessionActive)
+        assertNotNull(sessions.value)
+        model.forgetTwitterSession()
+        await(model) { !it.isProcessing && !it.twitterSessionActive }
+        assertNull(sessions.value)
+        assertEquals(2, clears.get())
+    }
+
+    @Test fun cancellingAfterLoginCompletionDoesNotInterruptDurableSave() = runBlocking {
+        val writeStarted = CountDownLatch(1)
+        val writeAllowed = CountDownLatch(1)
+        val sessions = MemorySessions(beforeWrite = {
+            writeStarted.countDown()
+            check(writeAllowed.await(5, TimeUnit.SECONDS))
+        })
+        val model = model(sessions) { _, _ -> ProcessingOutcome(emptyList(), emptyList()) }
+        model.openTwitterDownload()
+        model.signInToTwitter()
+        await(model) { it.twitterLoginStep == TwitterLoginStep.SIGN_IN }
+        model.completeTwitterLogin(session())
+        assertTrue(writeStarted.await(5, TimeUnit.SECONDS))
+        model.cancelProcessing()
+        writeAllowed.countDown()
+        await(model) { !it.isProcessing && it.twitterSessionActive }
+        assertNotNull(sessions.value)
     }
 
     private fun session() = checkNotNull(TwitterSession.fromCookieHeader("auth_token=synthetic-test-only; ct0=synthetic-csrf"))
@@ -222,13 +458,27 @@ class TwitterLoginWorkflowTest {
     }
     private suspend fun await(model: NatsukoViewModel, predicate: (NatsukoUiState) -> Boolean) =
         withTimeout(10_000) { model.state.first(predicate) }
-    private fun model(work: suspend (String, suspend (TwitterVideoSelection) -> TwitterDownloadScope) -> ProcessingOutcome): NatsukoViewModel {
+    private fun model(
+        sessions: TwitterSessionStore = MemorySessions(),
+        work: suspend (String, suspend (TwitterVideoSelection) -> TwitterDownloadScope) -> ProcessingOutcome,
+    ): NatsukoViewModel {
         lateinit var model: NatsukoViewModel
         instrumentation.runOnMainSync {
-            model = NatsukoViewModel(application, downloadTwitter = { link, choose, _ -> work(link, choose) })
+            model = NatsukoViewModel(application, twitterSessions = sessions, downloadTwitter = { link, choose, _ -> work(link, choose) })
             store.put("login-${number++}", model)
         }
         return model
+    }
+
+    private class MemorySessions(
+        @Volatile var value: TwitterSession? = null,
+        val beforeRead: () -> Unit = {},
+        val beforeWrite: () -> Unit = {},
+        val beforeClear: () -> Unit = {},
+    ) : TwitterSessionStore {
+        override fun read(): TwitterSession? { beforeRead(); return value }
+        override fun write(session: TwitterSession) { beforeWrite(); value = session }
+        override fun clear() { beforeClear(); value = null }
     }
     companion object { private const val LINK = "https://x.com/user/status/1234567890123456789/video/2" }
 }

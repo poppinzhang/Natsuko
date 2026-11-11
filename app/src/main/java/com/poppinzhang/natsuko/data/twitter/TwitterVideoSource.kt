@@ -79,14 +79,9 @@ class SyndicationTwitterVideoSource(
             token
         } else null
         val response = http.webMetadata(TwitterWebMetadata.queryUrl(link.id), session = authenticated, guestToken = guestToken)
-        try {
-            return TwitterWebMetadata.parseGraphql(response.body, link.id, authenticated != null)
-        } catch (failure: TwitterAccessException) {
-            if (failure.reason == TwitterAccessFailure.UNKNOWN && response.status == 401 && authenticated != null) {
-                throw TwitterAccessException(TwitterAccessFailure.SESSION_EXPIRED)
-            }
-            throw failure
-        }
+        // A generic HTTP failure does not prove that saved account credentials are invalid.
+        // Only an explicit authentication failure in X's structured response expires a session.
+        return TwitterWebMetadata.parseGraphql(response.body, link.id, authenticated != null)
     }
 
     private fun isIncompleteMetadata(failure: Exception): Boolean =

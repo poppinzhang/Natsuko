@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="twitter_login_title">Xにログイン</string>
-    <string name="twitter_login_help">Xのユーザー名とパスワードでログインし、認証を完了してください。パスワードはXに直接送信されます。ログイン情報は、接続を解除するかアプリのプロセスが終了するまでNatsukoに保持されます。GoogleやAppleでのログインには対応していません。完了したら「ログイン完了、続行」をタップしてください。</string>
     <string name="twitter_login_continue">ログイン完了、続行</string>
     <string name="twitter_login_incomplete">Xから完全なログイン情報を取得できていません。ログインと認証を完了してから、もう一度お試しください。</string>
     <string name="twitter_login_load_failed">Xのログインページを読み込めませんでした。接続を確認するか、キャンセルしてからもう一度お試しください。</string>

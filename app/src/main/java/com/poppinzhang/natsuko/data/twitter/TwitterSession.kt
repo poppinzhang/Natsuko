@@ -2,7 +2,7 @@ package com.poppinzhang.natsuko.data.twitter
 
 import java.net.URI
 
-/** Authentication material is deliberately not a data class, Parcelable, or persisted preference. */
+/** Authentication material is never a data class, Parcelable, UI state, or plaintext preference. */
 class TwitterSession private constructor(
     private val authToken: String,
     internal val csrfToken: String,
@@ -39,7 +39,9 @@ class TwitterSession private constructor(
 
 /** Top-level login navigation is confined to X; never dispatch an intent or another browser. */
 object TwitterLoginUrl {
-    const val START = "https://x.com/i/flow/login"
+    // Start at X's public entry, then let the user choose its sign-in action. Deep-linking
+    // into its asynchronous onboarding flow can initially show only an empty shell and Back.
+    const val START = "https://x.com/"
 
     fun isAllowed(url: String): Boolean = runCatching {
         val uri = URI(url)
