@@ -12,6 +12,7 @@ enum class AppLanguage(val languageTag: String, @param:StringRes val labelRes: I
     CHINESE("zh", R.string.settings_language_chinese),
     TRADITIONAL_CHINESE("zh-Hant", R.string.settings_language_traditional_chinese),
     KOREAN("ko", R.string.settings_language_korean),
+    JAPANESE("ja", R.string.settings_language_japanese),
     ENGLISH("en", R.string.settings_language_english),
 }
 
@@ -30,6 +31,7 @@ object AppLanguages {
             if (traditional) AppLanguage.TRADITIONAL_CHINESE else AppLanguage.CHINESE
         }
         "ko" -> AppLanguage.KOREAN
+        "ja" -> AppLanguage.JAPANESE
         "en" -> AppLanguage.ENGLISH
         else -> AppLanguage.SYSTEM
     }

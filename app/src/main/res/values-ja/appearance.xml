@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="appearance_title">外観</string>
+    <string name="appearance_color_mode">カラーモード</string>
+    <string name="appearance_color_mode_hint">いつでも切り替えられます。変更はすぐに反映されます。</string>
+    <string name="appearance_system">システム設定に従う</string>
+    <string name="appearance_light">ライト</string>
+    <string name="appearance_dark">ダーク</string>
+</resources>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_copy_location">画像の位置情報をコピー</string>
+    <string name="feature_copy_location_description">GPS座標と地名を複数の画像にコピー</string>
+    <string name="share_copy_location">Natsuko · 画像の位置情報をコピー</string>
+    <string name="location_source_title">1. コピー元の画像を選択</string>
+    <string name="location_source_hint">GPS座標を含む画像を選択してください。座標を読み取れない画像はコピー元にできません。</string>
+    <string name="location_pick_source">コピー元の画像を選択</string>
+    <string name="location_targets_title">2. コピー先の画像を選択</string>
+    <string name="location_targets_hint">画像を1枚以上選択すると、コピーが自動的に始まります。位置情報がすでにある画像は、1枚ずつ処理方法を確認します。</string>
+    <string name="location_source_label">コピー元の位置情報</string>
+    <string name="location_pick_targets">コピー先の画像を選択</string>
+    <string name="location_copies_hint">結果はアプリ専用の画像フォルダに新しいコピーとして保存され、元のファイルは保持されます。座標と画像に記録された地名をコピーし、オンラインでの住所検索は行いません。</string>
+    <string name="location_formats_hint">JPEG / PNG / WebP / HEIF / HEIC / TIFF / ARW / CR3 / CR2 / NEF / RAF / RW2</string>
+    <string name="location_conflict_title">この画像には位置情報があります</string>
+    <string name="location_before">コピー前：%1$s</string>
+    <string name="location_after">コピー後：%1$s</string>
+    <string name="location_conflict_hint">「以降すべて」は、この画像と、今回の一括処理でこの後に続く位置情報付きの画像すべてに適用されます。</string>
+    <string name="location_overwrite">上書き</string>
+    <string name="location_skip">スキップ</string>
+    <string name="location_overwrite_all">以降すべて上書き</string>
+    <string name="location_skip_all">以降すべてスキップ</string>
+    <string name="location_abort">一括処理を中止</string>
+    <string name="location_success">%1$d枚の画像に位置情報をコピーしました。</string>
+    <string name="location_loading">画像の位置情報を読み込み中…</string>
+    <string name="location_invalid_source">この画像には有効なGPS座標がないため、コピー元にできません。</string>
+    <string name="location_unsupported_format">この画像形式は位置情報のコピーに対応していません。</string>
+    <string name="location_read_failed">この画像を読み込めませんでした。ファイルとアクセス権を確認してください。</string>
+    <string name="location_copy_failed">画像の位置情報をコピーできませんでした。</string>
+    <string name="location_processing">%1$d/%2$d · %3$s</string>
+    <string name="location_skipped">画像に位置情報があるため、スキップしました。</string>
+    <string name="location_aborted">一括処理を中止しました。完了したコピーは保持されています。</string>
+    <string name="location_choose_one_source">位置情報のコピー元にする画像を1枚選択してください。</string>
+    <string name="location_picker_failed">ファイル選択画面を開けませんでした。やり直してください。</string>
+    <string name="location_metadata_failed">画像の位置情報の読み取りまたは書き込みに失敗しました。</string>
+    <string name="location_format_unsupported">対応していない画像形式です。</string>
+    <string name="location_backend_missing">内蔵のメタデータ処理エンジンを利用できません。</string>
+    <string name="location_write_verification_failed">コピーした位置情報を検証できませんでした。</string>
+    <string name="location_skipped_summary">スキップまたは未処理：%1$d</string>
+</resources>

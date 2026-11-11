@@ -129,8 +129,9 @@ Read the relevant feature document before changing behavior. Keep parameter limi
 | Source GPS validation, metadata formats, conflict decisions, and same-format output copies | [Copy image location](docs/copy_location.md) |
 | App-specific output, user-directory saving, permissions, and per-file retries | [Output storage](docs/output_storage.md) |
 | Persistent feature ordering, cross-category dragging, and TalkBack actions | [Home feature order](docs/home_feature_order.md) |
-| Simplified Chinese, Traditional Chinese, Korean, English, and system-language fallback | [Internationalization](docs/i18n.md) |
+| Simplified Chinese, Traditional Chinese, Korean, Japanese, English, and system-language fallback | [Internationalization](docs/i18n.md) |
 | Persistent system/light/dark mode, including share import | [Appearance](docs/appearance.md) |
+| Manual update check against GitHub Releases, download verification, and installation through Android's package installer | [App update](docs/app_update.md) |
 | Offline dependency notices and license maintenance | [About](docs/about.md) and [native licenses](docs/native_licenses.md) |
 
 Share targets must preserve each feature's workflow: black-border removal starts automatic processing; a shared post opens download confirmation; image adjustment opens the editor after choosing one image when necessary; location copying validates a source before selecting targets. The remaining conversion features open their configuration screens. Keep activity aliases, MIME filters, and parser tests aligned with these workflows.
@@ -138,6 +139,8 @@ Share targets must preserve each feature's workflow: black-border removal starts
 Generated files first go to app-specific storage. Optional user-directory saving uses `Download/Natsuko/<feature>/` or an authorized custom directory, without an additional timestamp folder in the user-visible destination. Preserve app-specific results when user-directory saving fails, and retry only files that have not been saved successfully.
 
 Local processing must not upload media. Twitter downloads use X's public HTTPS endpoints and video CDN without account login or third-party parsing services. Do not introduce runtime downloads of executables, native libraries, or codecs; see the bundled [FFmpeg](third_party/ffmpeg/README.md) and [metadata runtime](third_party/metadata/README.md) build references.
+
+The only installable code the app downloads is its own update, and only after the user checks for updates in settings and confirms: the signed release APK comes from this project's GitHub Releases over HTTPS and is handed to Android's package installer, which verifies the signature and replaces the app. The app never executes a downloaded file itself and never checks for updates in the background. Keep the allowed hosts, verification steps, and release-asset contract aligned with [App update](docs/app_update.md).
 
 ## Build, Verification, and Release
 
@@ -164,6 +167,8 @@ After preparing the release changelog, version, and dedicated signing configurat
 ```
 
 Use `./scripts/package.sh --unsigned` only for explicitly unsigned validation builds; those APKs are not installable release packages. Artifacts, release notes, source archives, and SHA-256 checksums are written to `dist/<version>/`; an existing directory for the same version is backed up after successful packaging.
+
+The signed release APK is archived as `Natsuko-<version>.apk`. A GitHub Release publishes only that APK, `natsuko-third-party-sources-<version>.tar.gz`, and a `SHA256SUMS` covering those two files; every other file in `dist/<version>/` is a build record that stays in the workflow artifact. Add a release asset only through the explicit upload list in the release job, never by uploading the whole directory.
 
 Follow [the release rules](docs/release.md). `version.properties` is the sole source of the version name and Android version code; do not maintain duplicate current-version values in the README. Local packaging does not authorize pushing tags or publishing a remote release.
 
@@ -231,6 +236,7 @@ When adding or changing features:
 * Update relevant project documentation
 * Keep terminology consistent
 * Keep the documentation for each feature up to date whenever its design or implementation changes.
+* Maintain English, Simplified Chinese, Traditional Chinese, Korean, and Japanese translations for every new or changed user-facing string. Japanese is a required supported language for future features; follow [Internationalization](docs/i18n.md).
 
 ## Terminology
 

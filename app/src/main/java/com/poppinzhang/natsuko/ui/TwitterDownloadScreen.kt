@@ -17,28 +17,66 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.poppinzhang.natsuko.R
+import com.poppinzhang.natsuko.data.twitter.TwitterDownloadScope
+import com.poppinzhang.natsuko.data.twitter.TwitterVideoSelection
 import com.poppinzhang.natsuko.model.Feature
+
+@Composable
+internal fun TwitterVideoSelectionDialog(
+    selection: TwitterVideoSelection,
+    onChoose: (TwitterDownloadScope) -> Unit,
+    onCancel: () -> Unit,
+) {
+    AlertDialog(
+        modifier = Modifier.testTag("twitter-selection-dialog"),
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(R.string.twitter_selection_title)) },
+        text = {
+            Text(pluralStringResource(R.plurals.twitter_selection_message, selection.videoCount, selection.videoCount))
+        },
+        confirmButton = {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = { onChoose(TwitterDownloadScope.CURRENT) },
+                    modifier = Modifier.fillMaxWidth().testTag("twitter-selection-current"),
+                ) { Text(stringResource(R.string.twitter_selection_current)) }
+                OutlinedButton(
+                    onClick = { onChoose(TwitterDownloadScope.ALL) },
+                    modifier = Modifier.fillMaxWidth().testTag("twitter-selection-all"),
+                ) { Text(stringResource(R.string.twitter_selection_all)) }
+                TextButton(
+                    onClick = onCancel,
+                    modifier = Modifier.fillMaxWidth().testTag("twitter-selection-cancel"),
+                ) { Text(stringResource(R.string.main_cancel)) }
+            }
+        },
+    )
+}
 
 @Composable
 internal fun TwitterDownloadScreen(

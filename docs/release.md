@@ -6,7 +6,7 @@
 4. 使用 `./scripts/package.sh` 构建正式包，必须配置专用发布签名；同一应用后续版本复用相同密钥。`./scripts/package.sh --unsigned` 仅用于明确标识的未签名验证构建，不能作为可安装正式包分发。
 5. 每次打包执行单元测试与 Lint，并构建 Debug APK、Release APK 和 Release AAB。具备 Android 16 设备/模拟器时，同时执行 `./gradlew connectedDebugAndroidTest`。检查 APK 的包名、版本、最低 Android 版本及发布签名，并核验归档校验和。
 6. 产物存放在 `dist/<版本号>/`，附带更新日志、当前版本发布说明、版本元数据、混淆映射和 SHA-256 校验文件。同版本旧目录在成功生成新产物后备份，避免残留的未签名包混入正式包。
-7. 如通过 GitHub 发布，tag 使用 `v<版本号>` 并与版本配置一致，发布说明取自当前版本的 CHANGELOG 条目。创建或推送 tag、上传公开 Release 应在明确要求发布到远端时执行；本地正式打包不等同于远端发布。
+7. 如通过 GitHub 发布，tag 使用 `v<版本号>` 并与版本配置一致，发布说明取自当前版本的 CHANGELOG 条目并附带附件说明。Release 附件只有 `Natsuko-<版本号>.apk`、`natsuko-third-party-sources-<版本号>.tar.gz` 和这两个文件的 `SHA256SUMS`；`dist/<版本号>/` 中的其余文件是构建记录，不上传。创建或推送 tag、上传公开 Release 应在明确要求发布到远端时执行；本地正式打包不等同于远端发布。
 
 ## 1.0.0 基线
 

@@ -7,6 +7,7 @@
     <string name="settings_language_chinese">简体中文</string>
     <string name="settings_language_traditional_chinese">繁體中文</string>
     <string name="settings_language_korean">한국어</string>
+    <string name="settings_language_japanese">日本語</string>
     <string name="settings_language_english">English</string>
     <string name="settings_language_hint">預設依照系統語言，也可個別指定 Natsuko 的語言。系統語言不受支援時使用英文。</string>
     <string name="settings_language_cancel">取消</string>

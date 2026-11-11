@@ -30,6 +30,7 @@ class TwitterVideoMetadataTest {
         assertEquals("https://video.twimg.com/vid/1280x720/big.mp4?tag=12", result[0].url)
         assertEquals("https://video.twimg.com/tweet_video/gif.mp4", result[1].url)
         assertTrue(result[1].animatedGif)
+        assertEquals(listOf(2, 3), result.map { it.mediaIndex })
     }
 
     @Test
@@ -42,6 +43,7 @@ class TwitterVideoMetadataTest {
         assertNull(result[0].url)
         assertNotNull(result[0].unavailableReason)
         assertNotNull(result[1].url)
+        assertEquals(listOf(1, 2), result.map { it.mediaIndex })
     }
 
     @Test
@@ -51,12 +53,23 @@ class TwitterVideoMetadataTest {
         ]}}""", "123")
         assertTrue(legacy.single().animatedGif)
         assertTrue(legacy.single().url!!.endsWith("legacy.mp4"))
+        assertEquals(1, legacy.single().mediaIndex)
         val card = """{"media_entities":{"media":{"type":"video","video_info":{"variants":[
           {"content_type":"video/mp4","url":"https://video.twimg.com/card.mp4"}
         ]}}}}"""
         val metadata = JSONObject().put("id_str", "123").put("card", JSONObject()
             .put("binding_values", JSONObject().put("unified_card", JSONObject().put("string_value", card))))
         assertEquals("https://video.twimg.com/card.mp4", TwitterVideoMetadata.parse(metadata.toString(), "123").single().url)
+    }
+
+    @Test
+    fun malformedAttachmentDoesNotShiftLaterVideoPositions() {
+        val result = TwitterVideoMetadata.parse("""{"id_str":"123","mediaDetails":[
+          null,
+          {"type":"photo"},
+          {"type":"video","video_info":{"variants":[{"content_type":"video/mp4","url":"https://video.twimg.com/good.mp4"}]}}
+        ]}""", "123")
+        assertEquals(3, result.single().mediaIndex)
     }
 
     @Test

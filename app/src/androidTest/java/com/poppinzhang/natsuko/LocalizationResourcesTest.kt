@@ -17,13 +17,13 @@ class LocalizationResourcesTest {
     fun supportedLanguagesAndEnglishFallbackAreDeclared() {
         val config = LocaleConfig.fromContextIgnoringOverride(context)
         assertEquals(LocaleConfig.STATUS_SUCCESS, config.status)
-        assertEquals(setOf("en", "zh", "zh-Hant", "ko"), config.supportedLocales!!.toLanguageTags().split(',').toSet())
+        assertEquals(setOf("en", "zh", "zh-Hant", "ko", "ja"), config.supportedLocales!!.toLanguageTags().split(',').toSet())
         assertEquals("en", config.defaultLocale!!.language)
     }
 
     @Test
     fun englishAndUnsupportedLocalesUseEnglish() {
-        for (tag in listOf("en", "en-US", "en-GB", "ja-JP", "fr-FR", "ar-EG")) {
+        for (tag in listOf("en", "en-US", "en-GB", "fr-FR", "ar-EG")) {
             val localized = localizedContext(tag)
             assertEquals(tag, "Settings", localized.getString(R.string.settings_title))
             assertEquals(tag, "Remove black borders · Natsuko", localized.getString(R.string.share_crop_black_border))
@@ -54,6 +54,15 @@ class LocalizationResourcesTest {
             val localized = localizedContext(tag)
             assertEquals(tag, "설정", localized.getString(R.string.settings_title))
             assertEquals(tag, "검은 테두리 제거 · Natsuko", localized.getString(R.string.share_crop_black_border))
+        }
+    }
+
+    @Test
+    fun japaneseLocalesUseTheJapaneseTranslation() {
+        for (tag in listOf("ja", "ja-JP")) {
+            val localized = localizedContext(tag)
+            assertEquals(tag, "設定", localized.getString(R.string.settings_title))
+            assertEquals(tag, "黒い余白を除去 · Natsuko", localized.getString(R.string.share_crop_black_border))
         }
     }
 

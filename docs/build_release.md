@@ -29,7 +29,7 @@
 
 应用原创代码使用 Apache-2.0，其他组件保留各自许可。每个构建由实际解析的运行时依赖生成离线「关于」清单；新增/升级依赖必须更新审查清单，详见 [关于与许可维护](about.md)。
 
-打包会核验三个产物中的许可证和原生组件，并归档 `LICENSE`、`NOTICE`、`THIRD_PARTY_NOTICES.md` 与 `natsuko-third-party-sources-<版本>.tar.gz`。该源码包包含 FFmpeg/dav1d 原始源码、构建参数、校验和、构建脚本及第三方声明。下载渠道应同时提供安装包和对应源码包；GitHub CI 会随产物自动上传这些文件。缺失法律文件、源码或产物内声明会阻止归档。`natsuko.png` 的角色图像授权仍需维护者核实。
+打包会核验三个产物中的许可证和原生组件，并归档 `LICENSE`、`NOTICE`、`THIRD_PARTY_NOTICES.md` 与 `natsuko-third-party-sources-<版本>.tar.gz`。该源码包包含 FFmpeg/dav1d 原始源码、构建参数、校验和、构建脚本及第三方声明。下载渠道应同时提供安装包和对应源码包；GitHub Release 会将两者一同发布。三份法律文件已内置于安装包并收录在源码包根目录，不作为单独的 Release 附件上传。缺失法律文件、源码或产物内声明会阻止归档。`natsuko.png` 的角色图像授权仍需维护者核实。
 
 ## 版本与更新日志
 
@@ -76,7 +76,7 @@ JVM 测试覆盖拼接布局、预览布局、黑边检测、PDF 页面布局、
 ./scripts/package.sh
 ```
 
-脚本校验版本、CHANGELOG 和签名配置，执行单元测试、Lint、Debug APK、Release APK 和 Release AAB 构建。输出到 `dist/<VERSION_NAME>/`，同时归档 `CHANGELOG.md`、当前版本的 `RELEASE_NOTES.md`、公开版本元数据 `BUILD_INFO.properties`、`version.properties`、R8 `mapping.txt`（如有）与 `SHA256SUMS`。签名构建还附带 APK/AAB 签名验证结果。打包只收集本次生成的对应签名类型产物；成功替换同版本目录前备份到 `dist/<VERSION_NAME>.backup.<随机后缀>/`，避免混入历史未签名包。
+脚本校验版本、CHANGELOG 和签名配置，执行单元测试、Lint、Debug APK、Release APK 和 Release AAB 构建。输出到 `dist/<VERSION_NAME>/`，其中 Release APK 归档为 `Natsuko-<VERSION_NAME>.apk`；同时归档 `CHANGELOG.md`、当前版本的 `RELEASE_NOTES.md`、公开版本元数据 `BUILD_INFO.properties`、`version.properties`、R8 `mapping.txt`（如有）与 `SHA256SUMS`。签名构建还附带 APK/AAB 签名验证结果。打包只收集本次生成的对应签名类型产物；成功替换同版本目录前备份到 `dist/<VERSION_NAME>.backup.<随机后缀>/`，避免混入历史未签名包。
 
 Release APK 是正式安装包，AAB 用于应用商店分发；Debug APK 用于开发验证。所有正式升级必须复用同一签名身份和递增的内部版本号。
 
@@ -86,7 +86,7 @@ Release APK 是正式安装包，AAB 用于应用商店分发；Debug APK 用于
 ./scripts/package.sh --unsigned
 ```
 
-该模式生成 `app-release-unsigned.apk` 和未签名 AAB，并在元数据中注明状态；未签名 APK 不能直接安装。不能把此构建作为已签名正式包交付。
+该模式生成 `Natsuko-<VERSION_NAME>-unsigned.apk` 和未签名 AAB，并在元数据中注明状态；未签名 APK 不能直接安装。不能把此构建作为已签名正式包交付。
 
 ## Release 签名
 
@@ -108,9 +108,9 @@ NATSUKO_KEY_PASSWORD=replace-with-your-key-password
 确认签名 APK 的包名为 `com.poppinzhang.natsuko`、版本与 `version.properties` 一致、最低 Android 版本为 API 36，并使用 SDK Build Tools 验证签名和对齐。例如在项目根目录运行（工具路径按本机 SDK 调整）：
 
 ```bash
-"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs dist/1.3.1/app-release.apk
-"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 dist/1.3.1/app-release.apk
-"$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging dist/1.3.1/app-release.apk
+"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs dist/1.3.1/Natsuko-1.3.1.apk
+"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 dist/1.3.1/Natsuko-1.3.1.apk
+"$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging dist/1.3.1/Natsuko-1.3.1.apk
 (cd dist/1.3.1 && shasum -a 256 -c SHA256SUMS)
 ```
 
@@ -122,7 +122,19 @@ NATSUKO_KEY_PASSWORD=replace-with-your-key-password
 
 Android SDK 初始化显式设置 `packages: 'platform-tools'`，避免 `setup-android@v3` 的默认配置尝试安装已从 Google 仓库移除的旧 `tools` 包。随后单独安装 Android 36 平台和 Build Tools 36.0.0，模拟器及系统镜像由设备测试步骤安装。
 
-构建和设备测试报告无论成功或失败都会尝试保存为 Actions 附件。同一分支的新运行取消旧运行，tag 发布运行不自动取消。发布任务先核验所有文件的 SHA-256、版本、签名状态、tag 和构建提交，再创建草稿并上传完整产物，最后公开为最新版本。失败的草稿允许重试上传；已公开的版本拒绝覆盖，后续修复应使用新版本。
+构建和设备测试报告无论成功或失败都会尝试保存为 Actions 附件。同一分支的新运行取消旧运行，tag 发布运行不自动取消。发布任务先核验所有文件的 SHA-256、版本、签名状态、tag 和构建提交，再创建草稿并上传发布附件，最后公开为最新版本。失败的草稿允许重试上传；已公开的版本拒绝覆盖，后续修复应使用新版本。
+
+GitHub Release 只发布以下三个附件，由发布任务按文件名逐一上传：
+
+| 附件 | 用途 |
+| :-- | :-- |
+| `Natsuko-<版本>.apk` | 已签名的正式安装包。 |
+| `natsuko-third-party-sources-<版本>.tar.gz` | 内置 FFmpeg、dav1d、ExifTool 与 Perl 的对应源码和重建资料，包内含 `LICENSE`、`NOTICE` 与 `THIRD_PARTY_NOTICES.md`。LGPL 要求它与安装包在同一下载位置提供。 |
+| `SHA256SUMS` | 发布任务为以上两个文件生成的校验和；归档目录内的同名文件覆盖全部归档文件，两者内容不同。 |
+
+应用内更新（开发版，尚未发布）按 `Natsuko-<版本>.apk` 这一文件名在最新 Release 中查找安装包，并要求 tag 为 `v<版本>`、签名密钥与已发布版本相同、`VERSION_CODE` 递增。已安装的旧版本无法随发布流程一起修改：调整附件命名时，至少保证每个 Release 只有一个 `.apk` 附件，详见 [应用更新](app_update.md#发布要求)。
+
+Debug APK、AAB、R8 `mapping.txt`、签名验证报告、`BUILD_INFO.properties` 及文档副本属于构建记录，只保留在 Actions 附件 `natsuko-<版本>`（受仓库的附件保留期限制，默认 90 天）和本地 `dist/<版本>/`，不上传到 Release。需要还原旧版本的混淆堆栈而附件已过期时，在对应 tag 上重新打包即可生成 `mapping.txt`：工具链版本固定，1.3.1 的本地打包与 CI 产物逐字节一致。发布说明在 CHANGELOG 条目之后附加附件说明，注明 FFmpeg 的 LGPL 许可及对应源码包。新增 Release 附件时，在发布任务的上传列表中显式添加，不要改回通配符上传。
 
 在仓库 Secrets 配置：
 

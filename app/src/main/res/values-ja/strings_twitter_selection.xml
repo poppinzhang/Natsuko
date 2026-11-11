@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="twitter_selection_title">ダウンロードする動画を選択</string>
+    <plurals name="twitter_selection_message">
+        <item quantity="other">この投稿には動画が%1$d本あります。リンク先の動画のみ、または投稿内のすべての動画をダウンロードできます。</item>
+    </plurals>
+    <string name="twitter_selection_current">この動画のみダウンロード</string>
+    <string name="twitter_selection_all">すべての動画をダウンロード</string>
+    <string name="backend_post_video_link_ambiguous">同じ投稿内の異なる動画へのリンクが含まれています。動画のリンクを1つだけ残してください。</string>
+    <string name="backend_post_video_index_invalid">このリンクが指定する動画が投稿内に見つかりません。リンクを確認するか、投稿のリンクからすべての動画をダウンロードしてください。</string>
+</resources>

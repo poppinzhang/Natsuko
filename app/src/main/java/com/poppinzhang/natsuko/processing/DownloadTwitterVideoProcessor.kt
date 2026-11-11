@@ -8,7 +8,9 @@ import com.poppinzhang.natsuko.model.checkText
 import android.content.Context
 import com.poppinzhang.natsuko.data.OutputRepository
 import com.poppinzhang.natsuko.data.twitter.SyndicationTwitterVideoSource
+import com.poppinzhang.natsuko.data.twitter.TwitterDownloadScope
 import com.poppinzhang.natsuko.data.twitter.TwitterStatusLink
+import com.poppinzhang.natsuko.data.twitter.TwitterVideoSelection
 import com.poppinzhang.natsuko.data.twitter.TwitterVideoSource
 import com.poppinzhang.natsuko.model.Feature
 import com.poppinzhang.natsuko.model.OutputArtifact
@@ -32,25 +34,42 @@ class DownloadTwitterVideoProcessor(
     suspend fun process(
         link: String,
         onProgress: (Int, Int, UiText) -> Unit,
+    ): ProcessingOutcome = process(link, { TwitterDownloadScope.ALL }, onProgress)
+
+    suspend fun process(
+        link: String,
+        chooseScope: suspend (TwitterVideoSelection) -> TwitterDownloadScope,
+        onProgress: (Int, Int, UiText) -> Unit,
     ): ProcessingOutcome = withContext(Dispatchers.IO) {
         val post = TwitterStatusLink.parse(link)
         onProgress(0, 1000, text(R.string.backend_reading_post))
         val videos = source.resolve(post)
         checkText(videos.isNotEmpty()) { text(R.string.backend_post_no_download) }
+        val indexedVideos = videos.withIndex().toList()
+        val selectedVideos = post.videoIndex?.let { mediaIndex ->
+            val current = indexedVideos.singleOrNull { (it.value.mediaIndex ?: it.index + 1) == mediaIndex }
+            checkText(current != null) { text(R.string.backend_post_video_index_invalid) }
+            if (videos.size > 1 && chooseScope(TwitterVideoSelection(mediaIndex, videos.size)) == TwitterDownloadScope.CURRENT) {
+                listOf(checkNotNull(current))
+            } else indexedVideos
+        } ?: indexedVideos
+        currentCoroutineContext().ensureActive()
         val directory = outputRepository.createRunDirectory(Feature.DOWNLOAD_TWITTER_VIDEO)
         val outputs = mutableListOf<OutputArtifact>()
         val failures = mutableListOf<ProcessingFailure>()
         var completed = false
         try {
-            videos.forEachIndexed { index, video ->
+            selectedVideos.forEachIndexed { index, indexedVideo ->
                 currentCoroutineContext().ensureActive()
-                val label = text(if (video.animatedGif) R.string.backend_post_gif_label else R.string.backend_post_video_label, post.id, index + 1)
-                val file = directory.resolve("twitter_${post.id}_${index + 1}.mp4")
+                val video = indexedVideo.value
+                val videoNumber = indexedVideo.index + 1
+                val label = text(if (video.animatedGif) R.string.backend_post_gif_label else R.string.backend_post_video_label, post.id, videoNumber)
+                val file = directory.resolve("twitter_${post.id}_$videoNumber.mp4")
                 val temporary = directory.resolve(".${file.name}.part")
                 var saved = false
                 try {
                     checkText(video.url != null) { video.unavailableReason ?: text(R.string.backend_video_no_mp4) }
-                    onProgress(index * 1000 / videos.size, 1000, text(R.string.backend_downloading_progress, index + 1, videos.size))
+                    onProgress(index * 1000 / selectedVideos.size, 1000, text(R.string.backend_downloading_progress, index + 1, selectedVideos.size))
                     source.download(video, temporary) { bytes, total ->
                         val withinFile = if (total != null && total > 0) (bytes.toDouble() / total * 900).toInt().coerceIn(0, 900) else 0
                         val amount = if (total != null && total > 0) {
@@ -58,11 +77,11 @@ class DownloadTwitterVideoProcessor(
                         } else {
                             text(R.string.backend_download_kilobytes, bytes / 1024)
                         }
-                        onProgress((index * 1000 + withinFile) / videos.size, 1000, text(R.string.backend_downloading_bytes, index + 1, videos.size, amount))
+                        onProgress((index * 1000 + withinFile) / selectedVideos.size, 1000, text(R.string.backend_downloading_bytes, index + 1, selectedVideos.size, amount))
                     }
                     currentCoroutineContext().ensureActive()
                     checkText(temporary.length() > 0) { text(R.string.backend_download_video_empty) }
-                    onProgress((index * 1000 + 950) / videos.size, 1000, text(R.string.backend_validating_video, index + 1, videos.size))
+                    onProgress((index * 1000 + 950) / selectedVideos.size, 1000, text(R.string.backend_validating_video, index + 1, selectedVideos.size))
                     verifyVideo(temporary)
                     currentCoroutineContext().ensureActive()
                     Files.move(temporary.toPath(), file.toPath())
@@ -80,7 +99,7 @@ class DownloadTwitterVideoProcessor(
                     temporary.delete()
                     if (!saved) file.delete()
                 }
-                onProgress((index + 1) * 1000 / videos.size, 1000, text(R.string.backend_videos_processed, index + 1, videos.size))
+                onProgress((index + 1) * 1000 / selectedVideos.size, 1000, text(R.string.backend_videos_processed, index + 1, selectedVideos.size))
             }
             currentCoroutineContext().ensureActive()
             completed = true

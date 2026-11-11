@@ -8,7 +8,7 @@ class AppLanguagesTest {
     @Test
     fun absentOrUnsupportedOverrideUsesSystemSelection() {
         assertEquals(AppLanguage.SYSTEM, AppLanguages.fromLocale(null))
-        for (tag in listOf("ja-JP", "fr-FR", "und")) {
+        for (tag in listOf("fr-FR", "ar-EG", "und")) {
             assertEquals(tag, AppLanguage.SYSTEM, AppLanguages.fromLocale(Locale.forLanguageTag(tag)))
         }
     }
@@ -30,6 +30,13 @@ class AppLanguagesTest {
         }
         for (tag in listOf("ko", "ko-KR", "ko-KP")) {
             assertEquals(tag, AppLanguage.KOREAN, AppLanguages.fromLocale(Locale.forLanguageTag(tag)))
+        }
+    }
+
+    @Test
+    fun japaneseRegionalOverridesSelectJapanese() {
+        for (tag in listOf("ja", "ja-JP")) {
+            assertEquals(tag, AppLanguage.JAPANESE, AppLanguages.fromLocale(Locale.forLanguageTag(tag)))
         }
     }
 }

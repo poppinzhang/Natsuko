@@ -1,6 +1,7 @@
 package com.poppinzhang.natsuko.data.twitter
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
@@ -11,7 +12,9 @@ class TwitterStatusLinkTest {
             for (path in listOf("user/status/123456", "i/status/123456", "i/web/status/123456", "statuses/123456", "user/status/123456/video/2")) {
                 val parsed = TwitterStatusLink.parse("推荐视频（https://$host/$path?s=20&t=abc）。")
                 assertEquals("123456", parsed.id)
-                assertEquals("https://x.com/i/status/123456", parsed.canonicalUrl)
+                val expectedIndex = if (path.endsWith("/video/2")) 2 else null
+                assertEquals(expectedIndex, parsed.videoIndex)
+                assertEquals("https://x.com/i/status/123456" + (expectedIndex?.let { "/video/$it" } ?: ""), parsed.canonicalUrl)
             }
         }
     }
@@ -25,6 +28,19 @@ class TwitterStatusLinkTest {
     }
 
     @Test
+    fun preservesOneVideoSelectionAcrossDuplicateAndWholePostLinks() {
+        val parsed = TwitterStatusLink.parse(
+            "https://x.com/user/status/123/video/2?s=20 https://twitter.com/i/status/123/video/2/ https://x.com/i/status/123",
+        )
+        assertEquals(2, parsed.videoIndex)
+        assertEquals("https://x.com/i/status/123/video/2", parsed.canonicalUrl)
+        assertNull(TwitterStatusLink.parse("https://x.com/user/status/123/photo/2").videoIndex)
+        assertThrows(IllegalArgumentException::class.java) {
+            TwitterStatusLink.parse("https://x.com/user/status/123/video/1 https://x.com/user/status/123/video/2")
+        }
+    }
+
+    @Test
     fun rejectsUntrustedHostsMalformedPathsAndNonTweets() {
         listOf(
             "", "https://x.com/user", "https://x.com.evil.test/user/status/123",
@@ -32,6 +48,7 @@ class TwitterStatusLinkTest {
             "https://x.com:8080/user/status/123", "https://x.com/user/status/0",
             "https://x.com/user/status/123oops", "https://x.com/user/status/123/anything",
             "https://x.com/user/status/123%2Fvideo%2F1", "file:///user/status/123",
+            "https://x.com/user/status/123/video/0", "https://x.com/user/status/123/video/2147483648",
             "https://x.com/user/status/" + "1".repeat(21), "x".repeat(8193),
         ).forEach { input -> assertThrows(input, IllegalArgumentException::class.java) { TwitterStatusLink.parse(input) } }
     }

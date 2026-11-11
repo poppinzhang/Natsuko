@@ -15,6 +15,7 @@ class LocalizationResourcesTest {
         "zh" to "values-zh",
         "zh-Hant" to "values-b+zh+Hant",
         "ko" to "values-ko",
+        "ja" to "values-ja",
     )
     private val resources = listOf(File("src/main/res"), File("app/src/main/res"))
         .firstOrNull { it.isDirectory }
@@ -69,7 +70,7 @@ class LocalizationResourcesTest {
                         assertTrue("$key needs an English other quantity", "other" in source.variants)
                         assertTrue("$key needs a $language other quantity", "other" in translated.variants)
                         val arguments = formatArguments(source.variants.getValue("other"))
-                        // Chinese and Korean only need 'other'; validate every available branch.
+                        // Chinese, Korean, and Japanese only need 'other'; validate every available branch.
                         translated.variants.forEach { (quantity, value) ->
                             assertEquals("$key ($language/$quantity) format arguments", arguments, formatArguments(value))
                         }

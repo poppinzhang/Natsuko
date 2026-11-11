@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_reorder_hint">機能を長押ししてドラッグすると並べ替えられます</string>
+    <string name="home_feature_position">%2$d項目中%1$d番目</string>
+    <string name="home_feature_dragging">移動中 · %1$s</string>
+</resources>

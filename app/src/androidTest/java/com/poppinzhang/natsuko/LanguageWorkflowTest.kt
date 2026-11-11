@@ -60,7 +60,7 @@ class LanguageWorkflowTest {
             retainedViewModel.updateTwitterLink("https://x.com/example/status/1234567890")
             retainedViewModel.openSettings()
         }
-        for (language in listOf(AppLanguage.CHINESE, AppLanguage.TRADITIONAL_CHINESE, AppLanguage.KOREAN)) {
+        for (language in listOf(AppLanguage.CHINESE, AppLanguage.TRADITIONAL_CHINESE, AppLanguage.KOREAN, AppLanguage.JAPANESE)) {
             choose(language)
             waitForLanguage(language)
             compose.onNodeWithTag("language-picker").assertTextEquals(nativeLabel(language))
@@ -92,6 +92,7 @@ class LanguageWorkflowTest {
             "zh-Hant" to AppLanguage.TRADITIONAL_CHINESE,
             "zh-TW" to AppLanguage.TRADITIONAL_CHINESE,
             "ko-KR" to AppLanguage.KOREAN,
+            "ja-JP" to AppLanguage.JAPANESE,
         )) {
             compose.activityRule.scenario.onActivity {
                 // The same framework preference is changed by Android's App languages screen.
@@ -121,6 +122,7 @@ class LanguageWorkflowTest {
                     AppLanguage.CHINESE -> "设置"
                     AppLanguage.TRADITIONAL_CHINESE -> "設定"
                     AppLanguage.KOREAN -> "설정"
+                    AppLanguage.JAPANESE -> "設定"
                     AppLanguage.ENGLISH -> "Settings"
                     AppLanguage.SYSTEM -> it.createConfigurationContext(
                         Configuration(it.resources.configuration).apply {
@@ -139,6 +141,7 @@ class LanguageWorkflowTest {
         AppLanguage.CHINESE -> "简体中文"
         AppLanguage.TRADITIONAL_CHINESE -> "繁體中文"
         AppLanguage.KOREAN -> "한국어"
+        AppLanguage.JAPANESE -> "日本語"
         AppLanguage.ENGLISH -> "English"
         AppLanguage.SYSTEM -> error("The system option has a localized label")
     }

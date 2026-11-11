@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_update">앱 업데이트</string>
+    <string name="update_current_version">현재 버전: %1$s</string>
+    <string name="update_hint">확인을 누를 때만 GitHub에 연결하여 최신 릴리스를 조회합니다.</string>
+    <string name="update_check">업데이트 확인</string>
+    <string name="update_checking">업데이트 확인 중…</string>
+    <string name="update_up_to_date">최신 버전을 사용 중입니다.</string>
+    <string name="update_available_title">새 버전 %1$s 사용 가능</string>
+    <string name="update_available_message">현재 버전은 %1$s입니다. 업데이트(%2$s)를 GitHub에서 다운로드한 후 설치합니다. 설치가 끝나면 Natsuko가 종료되므로 다시 열어 주세요.</string>
+    <string name="update_release_notes">릴리스 노트 보기</string>
+    <string name="update_install">업데이트</string>
+    <string name="update_later">나중에</string>
+    <string name="update_downloading_title">업데이트 다운로드 중</string>
+    <string name="update_download_progress">%1$s / %2$s</string>
+    <string name="update_installing_title">업데이트 설치 중</string>
+    <string name="update_installing_message">시스템에서 확인을 요청하면 설치를 승인하세요. 설치가 끝나면 Natsuko가 종료되므로 다시 열어 주세요.</string>
+    <string name="update_wait_for_tasks">처리 또는 저장이 완료된 후 업데이트하세요.</string>
+    <string name="update_open_page_failed">릴리스 페이지를 열 수 없습니다</string>
+    <string name="update_error_check_failed">업데이트를 확인할 수 없습니다. 나중에 다시 시도하세요.</string>
+    <string name="update_error_network">GitHub에 연결할 수 없습니다. 네트워크 연결을 확인하고 다시 시도하세요.</string>
+    <string name="update_error_rate_limited">GitHub에서 이 네트워크의 요청을 일시적으로 제한하고 있습니다. 나중에 다시 시도하세요.</string>
+    <string name="update_error_no_release">게시된 릴리스를 찾을 수 없습니다.</string>
+    <string name="update_error_http">GitHub에서 오류를 반환했습니다(HTTP %1$d). 나중에 다시 시도하세요.</string>
+    <string name="update_error_redirect">GitHub에서 지원되지 않는 다운로드 주소를 반환했습니다.</string>
+    <string name="update_error_invalid_response">GitHub에서 받은 릴리스 정보를 읽을 수 없습니다.</string>
+    <string name="update_error_missing_apk">버전 %1$s 릴리스에 설치 파일이 없습니다.</string>
+    <string name="update_error_checksum">다운로드한 업데이트가 검증을 통과하지 못해 삭제되었습니다. 다시 시도하세요.</string>
+    <string name="update_error_invalid_package">다운로드한 파일이 올바른 설치 파일이 아닙니다.</string>
+    <string name="update_error_package_mismatch">업데이트가 현재 설치된 Natsuko와 같은 앱이 아니므로 덮어쓸 수 없습니다.</string>
+    <string name="update_error_not_newer">다운로드한 업데이트가 설치된 버전보다 최신이 아닙니다.</string>
+    <string name="update_error_install_failed">업데이트를 설치할 수 없습니다.</string>
+    <string name="update_error_install_blocked">시스템에서 설치를 차단했습니다. 기기의 보안 또는 관리 설정을 확인하세요.</string>
+    <string name="update_error_install_conflict">업데이트의 서명이 설치된 앱과 달라 덮어쓸 수 없습니다.</string>
+    <string name="update_error_install_incompatible">이 업데이트는 이 기기와 호환되지 않습니다.</string>
+    <string name="update_error_install_storage">저장 공간이 부족하여 업데이트를 설치할 수 없습니다.</string>
+</resources>

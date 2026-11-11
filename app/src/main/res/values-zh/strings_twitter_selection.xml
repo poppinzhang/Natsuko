@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="twitter_selection_title">选择下载范围</string>
+    <plurals name="twitter_selection_message">
+        <item quantity="other">这条推文含 %1$d 个视频。请选择只下载当前链接的视频，或下载推文中的全部视频。</item>
+    </plurals>
+    <string name="twitter_selection_current">只下载当前视频</string>
+    <string name="twitter_selection_all">下载全部视频</string>
+    <string name="backend_post_video_link_ambiguous">输入包含同一推文的不同视频链接，请只保留一个视频链接。</string>
+    <string name="backend_post_video_index_invalid">无法在这条推文中找到链接指定的视频，请检查链接或使用推文链接下载全部视频。</string>
+</resources>

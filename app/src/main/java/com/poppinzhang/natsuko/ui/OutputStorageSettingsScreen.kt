@@ -65,6 +65,8 @@ internal fun OutputStorageSettingsScreen(
     onEnabledChange: (Boolean) -> Unit,
     onChooseDirectory: () -> Unit,
     onRestoreDefault: () -> Unit,
+    updateState: AppUpdateState,
+    onCheckUpdate: () -> Unit,
 ) {
     val settings = state.storageSettings
     Scaffold(
@@ -130,6 +132,8 @@ internal fun OutputStorageSettingsScreen(
                     }
                 }
             }
+            item { Text(stringResource(R.string.settings_update), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+            item { AppUpdateSetting(updateState, onCheckUpdate) }
         }
     }
 }

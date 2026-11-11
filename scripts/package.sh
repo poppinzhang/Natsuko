@@ -118,6 +118,7 @@ gradle_options=(--no-daemon)
 if [[ "$unsigned" == true ]]; then
   gradle_options+=("-PnatsukoUnsignedRelease=true")
   release_apk="app-release-unsigned.apk"
+  package_apk="Natsuko-$VERSION_NAME-unsigned.apk"
   signing_status="unsigned-verification"
 else
   if [[ -f "$project_dir/release.properties" ]]; then
@@ -132,6 +133,7 @@ else
   apksigner="$ANDROID_HOME/build-tools/36.0.0/apksigner"
   [[ -x "$apksigner" && -x "$JAVA_HOME/bin/jarsigner" ]] || fail "请安装 Android Build Tools 36.0.0 和 JDK 17 以验证发布签名。"
   release_apk="app-release.apk"
+  package_apk="Natsuko-$VERSION_NAME.apk"
   signing_status="signed-release"
 fi
 
@@ -152,6 +154,9 @@ for artifact in "${artifacts[@]}"; do
   [[ -f "$artifact" ]] || fail "构建未生成预期文件：$artifact"
   cp "$artifact" "$staging_dir/"
 done
+# Gradle's file name tells a downloader nothing; archive the release APK as
+# <project>-<version>, keeping unsigned verification builds visibly distinct.
+mv "$staging_dir/$release_apk" "$staging_dir/$package_apk"
 python3 scripts/verify-open-source.py "${artifacts[@]}"
 python3 scripts/verify-ffmpeg.py "${artifacts[@]}"
 python3 scripts/verify-metadata.py "${artifacts[@]}"
@@ -161,13 +166,14 @@ if [[ -f app/build/outputs/mapping/release/mapping.txt ]]; then
   cp app/build/outputs/mapping/release/mapping.txt "$staging_dir/mapping.txt"
 fi
 if [[ "$unsigned" == false ]]; then
-  "$apksigner" verify --verbose --print-certs "$staging_dir/$release_apk" > "$staging_dir/SIGNING_CERTIFICATE.txt"
+  "$apksigner" verify --verbose --print-certs "$staging_dir/$package_apk" > "$staging_dir/SIGNING_CERTIFICATE.txt"
   LC_ALL=C "$JAVA_HOME/bin/jarsigner" -verify "$staging_dir/app-release.aab" > "$staging_dir/AAB_SIGNATURE.txt"
   awk '/^jar verified\./ { verified = 1 } END { exit !verified }' "$staging_dir/AAB_SIGNATURE.txt" || fail "AAB 签名验证未通过。"
 fi
 
 # Preserve repository-relative paths so the included native build script runs
-# directly after extraction. The release workflow publishes every staged file.
+# directly after extraction. The release workflow publishes this archive next to
+# the APK; the other staged files stay in the local and CI build archive.
 source_name="natsuko-third-party-sources-$VERSION_NAME"
 source_dir="$staging_dir/$source_name"
 mkdir -p "$source_dir"

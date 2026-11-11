@@ -6,29 +6,42 @@ import com.poppinzhang.natsuko.model.requireText
 import java.net.URI
 import java.util.Locale
 
-class TwitterStatusLink private constructor(val id: String) {
-    val canonicalUrl: String get() = "https://x.com/i/status/$id"
+class TwitterStatusLink private constructor(
+    val id: String,
+    /** One-based attachment position from /video/n; photos also occupy attachment positions. */
+    val videoIndex: Int?,
+) {
+    val canonicalUrl: String get() = "https://x.com/i/status/$id" + (videoIndex?.let { "/video/$it" } ?: "")
 
     companion object {
         private val hosts = setOf("x.com", "twitter.com").flatMap { host ->
             listOf(host, "www.$host", "mobile.$host", "m.$host")
         }.toSet()
         private val urls = Regex("https?://[^\\s<>\\\"'，。！？（）【】]+", RegexOption.IGNORE_CASE)
-        private val statusPath = Regex("/(?:[A-Za-z0-9_]+/status|i/web/status|i/status|statuses)/([1-9][0-9]{0,19})(?:/(?:video|photo)/[1-9][0-9]*)?/?")
+        private val statusPath = Regex("/(?:[A-Za-z0-9_]+/status|i/web/status|i/status|statuses)/([1-9][0-9]{0,19})(?:/(video|photo)/([1-9][0-9]*))?/?")
 
         fun parse(text: String): TwitterStatusLink {
             requireText(text.length <= 8192) { text(R.string.backend_post_link_too_long) }
-            val ids = urls.findAll(text.trim()).mapNotNull { match ->
+            val links = urls.findAll(text.trim()).mapNotNull { match ->
                 val url = match.value.trimEnd('.', ',', '!', '?', ';', ':', ')', ']', '}')
                 val uri = runCatching { URI(url) }.getOrNull() ?: return@mapNotNull null
                 if (uri.host?.lowercase(Locale.ROOT) !in hosts || uri.userInfo != null ||
                     uri.port !in listOf(-1, 80, 443)
                 ) return@mapNotNull null
-                statusPath.matchEntire(uri.rawPath.orEmpty())?.groupValues?.get(1)
-            }.distinct().toList()
-            requireText(ids.isNotEmpty()) { text(R.string.backend_post_link_invalid) }
+                val path = statusPath.matchEntire(uri.rawPath.orEmpty()) ?: return@mapNotNull null
+                val videoIndex = if (path.groupValues[2] == "video") {
+                    val index = path.groupValues[3].toIntOrNull()
+                    requireText(index != null) { text(R.string.backend_post_video_index_invalid) }
+                    index
+                } else null
+                TwitterStatusLink(path.groupValues[1], videoIndex)
+            }.toList()
+            requireText(links.isNotEmpty()) { text(R.string.backend_post_link_invalid) }
+            val ids = links.map { it.id }.distinct()
             requireText(ids.size == 1) { text(R.string.backend_post_link_single) }
-            return TwitterStatusLink(ids.single())
+            val videoIndices = links.mapNotNull { it.videoIndex }.distinct()
+            requireText(videoIndices.size <= 1) { text(R.string.backend_post_video_link_ambiguous) }
+            return TwitterStatusLink(ids.single(), videoIndices.singleOrNull())
         }
     }
 }

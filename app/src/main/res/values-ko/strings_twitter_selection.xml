@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="twitter_selection_title">다운로드할 동영상 선택</string>
+    <plurals name="twitter_selection_message">
+        <item quantity="other">게시물에 동영상이 %1$d개 있습니다. 이 링크의 동영상만 다운로드하거나 게시물의 모든 동영상을 다운로드하세요.</item>
+    </plurals>
+    <string name="twitter_selection_current">이 동영상만 다운로드</string>
+    <string name="twitter_selection_all">모든 동영상 다운로드</string>
+    <string name="backend_post_video_link_ambiguous">입력에 같은 게시물의 서로 다른 동영상 링크가 포함되어 있습니다. 동영상 링크를 하나만 남겨 주세요.</string>
+    <string name="backend_post_video_index_invalid">게시물에서 링크가 지정한 동영상을 찾을 수 없습니다. 링크를 확인하거나 게시물 링크로 모든 동영상을 다운로드하세요.</string>
+</resources>

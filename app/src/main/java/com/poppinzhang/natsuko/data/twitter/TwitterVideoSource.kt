@@ -15,6 +15,8 @@ data class TwitterVideo(
     val url: String?,
     val animatedGif: Boolean,
     val unavailableReason: UiText? = null,
+    /** One-based position among all post attachments, including photos. */
+    val mediaIndex: Int? = null,
 )
 
 interface TwitterVideoSource {
@@ -44,15 +46,17 @@ object TwitterVideoMetadata {
         checkText(document.optString("id_str") == expectedId) {
             text(R.string.backend_post_unavailable)
         }
-        val media = mutableListOf<JSONObject>()
+        val media = mutableListOf<IndexedValue<JSONObject>>()
         document.optJSONArray("mediaDetails")?.let { array ->
-            for (index in 0 until array.length()) array.optJSONObject(index)?.let(media::add)
+            for (index in 0 until array.length()) {
+                array.optJSONObject(index)?.let { media += IndexedValue(index + 1, it) }
+            }
         }
         if (media.isEmpty()) {
             // Older player responses contain a single video with type/src variants.
             document.optJSONObject("video")?.let { video ->
-                media += JSONObject().put("type", if (video.optBoolean("isGif")) "animated_gif" else "video")
-                    .put("video_info", video)
+                media += IndexedValue(1, JSONObject().put("type", if (video.optBoolean("isGif")) "animated_gif" else "video")
+                    .put("video_info", video))
             }
         }
         if (media.isEmpty()) {
@@ -61,15 +65,18 @@ object TwitterVideoMetadata {
             if (card.isNotBlank()) {
                 val entities = runCatching { JSONObject(card).optJSONObject("media_entities") }.getOrNull()
                 // JSONObject key iteration is unspecified; sorting keeps attachment order deterministic.
-                entities?.keys()?.asSequence()?.sorted()?.forEach { key -> entities.optJSONObject(key)?.let(media::add) }
+                entities?.keys()?.asSequence()?.sorted()?.forEachIndexed { index, key ->
+                    entities.optJSONObject(key)?.let { media += IndexedValue(index + 1, it) }
+                }
             }
         }
-        val videos = media.filter { it.optString("type") in setOf("video", "animated_gif") }.map { entry ->
+        val videos = media.filter { it.value.optString("type") in setOf("video", "animated_gif") }.map { (mediaIndex, entry) ->
             val selected = bestMp4(entry.optJSONObject("video_info")?.optJSONArray("variants"))
             TwitterVideo(
                 url = selected,
                 animatedGif = entry.optString("type") == "animated_gif",
                 unavailableReason = if (selected == null) text(R.string.backend_video_mp4_unavailable) else null,
+                mediaIndex = mediaIndex,
             )
         }
         checkText(videos.isNotEmpty()) { text(R.string.backend_post_no_media) }

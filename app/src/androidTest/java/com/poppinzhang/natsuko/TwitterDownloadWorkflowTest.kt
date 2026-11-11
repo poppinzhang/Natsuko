@@ -10,6 +10,8 @@ import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.hasTestTag
@@ -28,11 +30,17 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.poppinzhang.natsuko.data.OutputRepository
 import com.poppinzhang.natsuko.data.OutputStoragePreferences
 import com.poppinzhang.natsuko.data.OutputStorageSettings
+import com.poppinzhang.natsuko.data.twitter.TwitterDownloadScope
+import com.poppinzhang.natsuko.data.twitter.TwitterStatusLink
+import com.poppinzhang.natsuko.data.twitter.TwitterVideo
+import com.poppinzhang.natsuko.data.twitter.TwitterVideoSelection
+import com.poppinzhang.natsuko.data.twitter.TwitterVideoSource
 import com.poppinzhang.natsuko.model.Feature
 import com.poppinzhang.natsuko.model.UiText
 import com.poppinzhang.natsuko.model.OutputArtifact
 import com.poppinzhang.natsuko.model.ProcessingFailure
 import com.poppinzhang.natsuko.model.ProcessingOutcome
+import com.poppinzhang.natsuko.processing.DownloadTwitterVideoProcessor
 import com.poppinzhang.natsuko.ui.AppScreen
 import com.poppinzhang.natsuko.ui.NatsukoApp
 import com.poppinzhang.natsuko.ui.NatsukoUiState
@@ -393,24 +401,223 @@ class TwitterDownloadWorkflowTest {
         assertEquals(1, downloadCalls.get())
     }
 
+    @Test
+    fun videoLinkWaitsForChoiceAndDownloadsOnlyItsOriginalMediaPosition() = runBlocking {
+        // The first attachment is a photo, so /video/3 is the second video.
+        val fixture = newProcessorViewModel(listOf(2, 3))
+        val viewModel = fixture.viewModel
+        composeRule.setContent { NatsukoTheme { NatsukoApp(viewModel) } }
+        viewModel.openTwitterDownload()
+        composeRule.onNodeWithTag("twitter-link-input").performTextReplacement("$LINK/video/3")
+        composeRule.onNodeWithTag("twitter-download-start").performClick()
+
+        val waiting = awaitVideoSelection(viewModel)
+        assertEquals(3, waiting.twitterVideoSelection!!.mediaIndex)
+        assertEquals(2, waiting.twitterVideoSelection.videoCount)
+        assertTrue(waiting.isProcessing)
+        assertTrue(fixture.downloadedMedia.isEmpty())
+        assertNull(waiting.outcome)
+        composeRule.onNodeWithTag("twitter-selection-dialog").assertIsDisplayed()
+        composeRule.onNodeWithTag("twitter-selection-current").performClick()
+
+        val result = awaitOutcome(viewModel)
+        assertEquals(listOf(3), fixture.downloadedMedia.toList())
+        assertEquals("twitter_1234567890123456789_2.mp4", result.outcome!!.outputs.single().file.name)
+        assertTrue(result.outcome.failures.isEmpty())
+        assertEquals(1, fixture.resolveCalls.get())
+        assertNull(result.twitterVideoSelection)
+    }
+
+    @Test
+    fun videoShareRetainsSelectorAndAllowsDownloadingAllVideos() = runBlocking {
+        val fixture = newProcessorViewModel(listOf(1, 2))
+        val viewModel = fixture.viewModel
+        val shared = "看看这个视频 $LINK/video/2?s=20"
+        composeRule.setContent { NatsukoTheme { NatsukoApp(viewModel) } }
+
+        viewModel.handleShareIntent(shareIntent().apply {
+            clipData = ClipData.newPlainText("Video", shared)
+        })
+
+        assertEquals(shared, viewModel.state.value.twitterLink)
+        assertFalse(viewModel.state.value.isProcessing)
+        assertEquals(0, fixture.resolveCalls.get())
+        composeRule.onNodeWithTag("twitter-download-start").performClick()
+        assertEquals(2, awaitVideoSelection(viewModel).twitterVideoSelection!!.mediaIndex)
+        assertTrue(fixture.downloadedMedia.isEmpty())
+        composeRule.onNodeWithTag("twitter-selection-all").performClick()
+
+        val result = awaitOutcome(viewModel)
+        assertEquals(listOf(1, 2), fixture.downloadedMedia.toList())
+        assertEquals(
+            listOf("twitter_1234567890123456789_1.mp4", "twitter_1234567890123456789_2.mp4"),
+            result.outcome!!.outputs.map { it.file.name },
+        )
+        assertEquals(1, fixture.resolveCalls.get())
+        assertNull(result.twitterVideoSelection)
+    }
+
+    @Test
+    fun cancellingVideoChoicePreservesLinkAndRetryNeedsANewChoice() = runBlocking {
+        val fixture = newProcessorViewModel(listOf(1, 2))
+        val viewModel = fixture.viewModel
+        val link = "$LINK/video/2"
+        composeRule.setContent { NatsukoTheme { NatsukoApp(viewModel) } }
+        viewModel.openTwitterDownload()
+        viewModel.updateTwitterLink(link)
+        viewModel.downloadTwitterVideo()
+        awaitVideoSelection(viewModel)
+
+        // Pending selection is still part of processing and cannot be replaced by editing.
+        viewModel.updateTwitterLink(SECOND_LINK)
+        viewModel.downloadTwitterVideo()
+        assertEquals(link, viewModel.state.value.twitterLink)
+        assertEquals(1, fixture.resolveCalls.get())
+        composeRule.onNodeWithTag("twitter-selection-cancel").performClick()
+
+        val cancelled = awaitState(viewModel) { !it.isProcessing }
+        assertEquals(AppScreen.TWITTER_DOWNLOAD, cancelled.screen)
+        assertEquals(link, cancelled.twitterLink)
+        assertNull(cancelled.twitterVideoSelection)
+        assertNull(cancelled.outcome)
+        assertNull(cancelled.errorMessage)
+        assertTrue(fixture.downloadedMedia.isEmpty())
+        composeRule.onNodeWithTag("twitter-selection-dialog").assertDoesNotExist()
+
+        composeRule.onNodeWithTag("twitter-download-start").performClick()
+        awaitVideoSelection(viewModel)
+        assertEquals(2, fixture.resolveCalls.get())
+        assertTrue(fixture.downloadedMedia.isEmpty())
+        composeRule.onNodeWithTag("twitter-selection-current").performClick()
+        awaitOutcome(viewModel)
+        assertEquals(listOf(2), fixture.downloadedMedia.toList())
+    }
+
+    @Test
+    fun rebuildingCompositionKeepsPendingVideoChoiceWithoutResolvingAgain() = runBlocking {
+        val fixture = newProcessorViewModel(listOf(1, 2))
+        val viewModel = fixture.viewModel
+        val generation = mutableIntStateOf(0)
+        composeRule.setContent {
+            key(generation.intValue) { NatsukoTheme { NatsukoApp(viewModel) } }
+        }
+        viewModel.openTwitterDownload()
+        viewModel.updateTwitterLink("$LINK/video/2")
+        viewModel.downloadTwitterVideo()
+        val choice = awaitVideoSelection(viewModel).twitterVideoSelection
+
+        composeRule.runOnIdle { generation.intValue++ }
+
+        composeRule.onNodeWithTag("twitter-selection-dialog").assertIsDisplayed()
+        assertEquals(choice, viewModel.state.value.twitterVideoSelection)
+        assertEquals(1, fixture.resolveCalls.get())
+        assertTrue(fixture.downloadedMedia.isEmpty())
+        composeRule.onNodeWithTag("twitter-selection-current").performClick()
+        awaitOutcome(viewModel)
+        assertEquals(listOf(2), fixture.downloadedMedia.toList())
+    }
+
+    @Test
+    fun ordinaryPostAndSingleVideoCompleteWithoutSelection() = runBlocking {
+        for ((link, media) in listOf(LINK to listOf(1, 2), "$LINK/video/2" to listOf(2))) {
+            val fixture = newProcessorViewModel(media)
+            fixture.viewModel.openTwitterDownload()
+            fixture.viewModel.updateTwitterLink(link)
+            fixture.viewModel.downloadTwitterVideo()
+
+            val state = awaitState(fixture.viewModel) {
+                it.twitterVideoSelection != null || (!it.isProcessing && (it.outcome != null || it.errorMessage != null))
+            }
+
+            assertNull(state.twitterVideoSelection)
+            assertNull(state.errorMessage)
+            assertEquals(AppScreen.RESULT, state.screen)
+            assertEquals(media, fixture.downloadedMedia.toList())
+            outputs.addAll(state.outcome!!.outputs)
+        }
+    }
+
+    @Test
+    fun invalidVideoPositionReportsErrorWithoutDownloadingAnotherVideo() = runBlocking {
+        val fixture = newProcessorViewModel(listOf(2, 3))
+        val viewModel = fixture.viewModel
+        composeRule.setContent { NatsukoTheme { NatsukoApp(viewModel) } }
+        viewModel.openTwitterDownload()
+        // Position 1 is a photo, rather than the first item in the filtered video list.
+        viewModel.updateTwitterLink("$LINK/video/1")
+        viewModel.downloadTwitterVideo()
+
+        val failed = awaitState(viewModel) { !it.isProcessing && it.errorMessage != null }
+
+        assertEquals(AppScreen.TWITTER_DOWNLOAD, failed.screen)
+        assertNull(failed.twitterVideoSelection)
+        assertNull(failed.outcome)
+        assertTrue(fixture.downloadedMedia.isEmpty())
+        composeRule.onNodeWithTag("twitter-selection-dialog").assertDoesNotExist()
+    }
+
     private fun newViewModel(
         download: suspend (String, (Int, Int, UiText) -> Unit) -> ProcessingOutcome =
             { _, progress -> successfulDownload(progress) },
+    ): NatsukoViewModel = newScopedViewModel { link, _, progress -> download(link, progress) }
+
+    private fun newScopedViewModel(
+        download: suspend (String, suspend (TwitterVideoSelection) -> TwitterDownloadScope, (Int, Int, UiText) -> Unit) -> ProcessingOutcome,
     ): NatsukoViewModel {
         lateinit var viewModel: NatsukoViewModel
         instrumentation.runOnMainSync {
             val factory = object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    NatsukoViewModel(context.applicationContext as Application) { link, progress ->
+                    NatsukoViewModel(context.applicationContext as Application) { link, chooseScope, progress ->
                         downloadCalls.incrementAndGet()
-                        download(link, progress)
+                        download(link, chooseScope, progress)
                     } as T
             }
             viewModel = ViewModelProvider(store, factory)["twitter-workflow-${viewModels.size}", NatsukoViewModel::class.java]
         }
         viewModels += viewModel
         return viewModel
+    }
+
+    private data class ScopeFixture(
+        val viewModel: NatsukoViewModel,
+        val resolveCalls: AtomicInteger,
+        val downloadedMedia: ConcurrentLinkedQueue<Int>,
+    )
+
+    private fun newProcessorViewModel(mediaIndices: List<Int>): ScopeFixture {
+        val resolveCalls = AtomicInteger()
+        val downloadedMedia = ConcurrentLinkedQueue<Int>()
+        val source = object : TwitterVideoSource {
+            override suspend fun resolve(link: TwitterStatusLink): List<TwitterVideo> {
+                resolveCalls.incrementAndGet()
+                assertEquals("1234567890123456789", link.id)
+                return mediaIndices.map { index ->
+                    TwitterVideo("https://video.twimg.com/test-$index.mp4", false, mediaIndex = index)
+                }
+            }
+
+            override suspend fun download(video: TwitterVideo, destination: File, onBytes: (Long, Long?) -> Unit) {
+                downloadedMedia.add(checkNotNull(video.mediaIndex))
+                instrumentation.context.assets.open("video/h264.mp4").use { input ->
+                    destination.outputStream().use { output -> input.copyTo(output) }
+                }
+                onBytes(destination.length(), destination.length())
+            }
+        }
+        val processor = DownloadTwitterVideoProcessor(context, OutputRepository(context), source)
+        val viewModel = newScopedViewModel { link, chooseScope, progress ->
+            processor.process(link, chooseScope, progress)
+        }
+        return ScopeFixture(viewModel, resolveCalls, downloadedMedia)
+    }
+
+    private suspend fun awaitVideoSelection(viewModel: NatsukoViewModel): NatsukoUiState = awaitState(viewModel) {
+        it.twitterVideoSelection != null || it.errorMessage != null
+    }.also {
+        assertNull(it.errorMessage)
+        assertNotNull(it.twitterVideoSelection)
     }
 
     private fun successfulDownload(progress: (Int, Int, UiText) -> Unit): ProcessingOutcome {

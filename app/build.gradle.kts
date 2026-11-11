@@ -145,7 +145,7 @@ android {
         versionName = configuredVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        resourceConfigurations += listOf("en", "zh", "b+zh+Hant", "ko")
+        resourceConfigurations += listOf("en", "zh", "b+zh+Hant", "ko", "ja")
         vectorDrawables.useSupportLibrary = true
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
     }

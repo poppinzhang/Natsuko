@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="secondary_back">戻る</string>
+    <string name="about_title">このアプリについて</string>
+    <string name="about_notices_title">オープンソースのライセンス情報</string>
+    <string name="about_app_version">バージョン %1$s（%2$d）</string>
+    <string name="about_project_version">バージョン %1$s</string>
+    <string name="about_projects_title">オープンソースプロジェクトとライセンス</string>
+    <string name="about_projects_description">以下のオープンソースプロジェクトに感謝します。プロジェクトを選択すると、ライセンス全文、著作権表示、その他の情報をオフラインで確認できます。</string>
+    <string name="about_view_notices">オープンソースのライセンス情報を表示</string>
+    <string name="about_link_error">プロジェクトのリンクを開けませんでした</string>
+    <string name="about_open_source_url">プロジェクトのソースを開く</string>
+    <string name="about_load_error">アプリに同梱されたオープンソースのライセンス情報を読み込めませんでした。もう一度お試しください。</string>
+    <string name="about_retry">再試行</string>
+    <string name="about_project_natsuko_description">アプリ独自のコードはApache 2.0ライセンスで提供されています。サードパーティ製コンポーネントとキャラクター画像の権利については、ライセンス情報をご確認ください。</string>
+    <string name="about_project_ffmpeg_description">同梱の動画処理バックエンドです。GPLおよびnonfreeコンポーネントは無効になっています。対応するソースコードと再ビルド用資料は、リリースアーカイブのnatsuko-third-party-sources-&lt;version&gt;.tar.gzに含まれています。</string>
+    <string name="about_project_dav1d_description">同梱のFFmpegバックエンドが使用するAV1デコーダーです。ソースコードは各リリースに含まれています。</string>
+    <string name="about_project_llvm_description">同梱のネイティブ実行ファイルが使用するコンパイラーランタイムとNDKコンポーネントです。各コンポーネントのライセンスは原文をご確認ください。</string>
+    <string name="twitter_download_start">ダウンロードを開始</string>
+    <string name="twitter_link_title">投稿のリンクを貼り付け</string>
+    <string name="twitter_link_description">公開されているX / Twitterの投稿リンクを入力して、動画やGIFをダウンロードできます。</string>
+    <string name="twitter_link_label">投稿リンク</string>
+    <string name="twitter_link_placeholder">https://x.com/username/status/post_id</string>
+    <string name="twitter_gif_title">ダウンロードした動画をGIFに変換</string>
+    <string name="twitter_gif_description">XのGIFは通常、MP4動画として配信されています。ダウンロード後は動画ファイルとして保存されます。結果画面で「動画をGIFに変換」を選び、フレームレートとサイズを設定して変換できます。</string>
+    <string name="twitter_storage_description">ダウンロードしたファイルには、アプリの出力先設定が適用されます。自動保存が有効な場合は、選択した保存先フォルダにも保存されます。</string>
+</resources>

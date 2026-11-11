@@ -31,6 +31,8 @@ MOCK
 cat > "$ANDROID_HOME/build-tools/36.0.0/apksigner" <<'MOCK'
 #!/usr/bin/env bash
 [[ "${FAIL_SIGNATURE:-}" != true ]] || exit 1
+# The certificate report must describe the signed APK under its archived name.
+[[ "${@: -1}" == */Natsuko-1.0.0.apk && "$(cat "${@: -1}")" == signed ]] || exit 17
 printf 'Signer #1 certificate SHA-256 digest: mock\n'
 MOCK
 cat > "$JAVA_HOME/bin/jarsigner" <<'MOCK'
@@ -126,7 +128,9 @@ expect_failure '精确版本标题' ./scripts/package.sh --unsigned
 printf '# Changelog\n\n## unstaged\n\n- Pending feature.\n\n## 1.0.0\n\n- Current features.\n' > CHANGELOG.md
 expect_failure 'unstaged 下的内容' ./scripts/package.sh
 ./scripts/package.sh --unsigned > test.log
-[[ -f dist/1.0.0/app-release-unsigned.apk && ! -e dist/1.0.0/app-release.apk ]]
+# The release APK is archived as <project>-<version>; Gradle's names never reach dist.
+[[ "$(cat dist/1.0.0/Natsuko-1.0.0-unsigned.apk)" == unsigned && ! -e dist/1.0.0/Natsuko-1.0.0.apk ]]
+[[ ! -e dist/1.0.0/app-release-unsigned.apk && ! -e dist/1.0.0/app-release.apk ]]
 awk '/SIGNING_STATUS=unsigned-verification/ { found = 1 } END { exit !found }' dist/1.0.0/BUILD_INFO.properties
 write_changelog
 
@@ -141,7 +145,9 @@ touch key.jks
 printf previous > dist/1.0.0/previous-package
 CHECK_SIGNING=true NATSUKO_STORE_PASSWORD=environment-wins GITHUB_OUTPUT="$fixture/github-output" ./scripts/package.sh --tag v1.0.0 > test.log
 [[ ! -e SHOULD_NOT_EXIST && ! -e dist/1.0.0/release.properties ]]
-[[ -f dist/1.0.0/app-release.apk && ! -e dist/1.0.0/app-release-unsigned.apk ]]
+[[ "$(cat dist/1.0.0/Natsuko-1.0.0.apk)" == signed && ! -e dist/1.0.0/Natsuko-1.0.0-unsigned.apk ]]
+[[ ! -e dist/1.0.0/app-release.apk && ! -e dist/1.0.0/app-release-unsigned.apk ]]
+[[ "$(cat dist/1.0.0/app-debug.apk)" == debug && "$(cat dist/1.0.0/app-release.aab)" == bundle ]]
 [[ -f dist/1.0.0/mapping.txt && -f dist/1.0.0/SIGNING_CERTIFICATE.txt && -f dist/1.0.0/AAB_SIGNATURE.txt ]]
 for file in LICENSE NOTICE THIRD_PARTY_NOTICES.md; do
   cmp "$file" "dist/1.0.0/$file"

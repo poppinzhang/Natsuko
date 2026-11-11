@@ -156,6 +156,25 @@ jobs:
           grep -Fx "RELEASE_TAG=$GITHUB_REF_NAME" BUILD_INFO.properties
           grep -Fx "GIT_COMMIT=$GITHUB_SHA" BUILD_INFO.properties
 
+          # Publish an explicit list, never a glob. The workflow artifact also holds
+          # the debug APK, AAB, R8 mapping and verification reports: build records,
+          # not downloads. The source archive must stay next to the APK because it
+          # is the corresponding source of the bundled LGPL code, and it already
+          # contains LICENSE, NOTICE and THIRD_PARTY_NOTICES.md.
+          apk="Natsuko-$RELEASE_VERSION.apk"
+          sources="natsuko-third-party-sources-$RELEASE_VERSION.tar.gz"
+          checksums="$RUNNER_TEMP/SHA256SUMS"
+          shasum -a 256 "$apk" "$sources" > "$checksums"
+
+          # The download page has to state the FFmpeg/LGPL use and point at the
+          # matching source archive; see docs/native_licenses.md.
+          {
+            printf '\n---\n\n### 附件说明\n\n'
+            printf -- '- `%s`：已签名安装包，适用于 Android 16 及以上系统。\n' "$apk"
+            printf -- '- `%s`：本软件使用 FFmpeg，依 LGPL 2.1 或后续版本分发；该压缩包提供本版本内置第三方组件的对应源码、重建资料与许可证声明，仅安装使用无需下载。\n' "$sources"
+            printf -- '- `SHA256SUMS`：以上两个文件的 SHA-256 校验和。\n'
+          } >> RELEASE_NOTES.md
+
           # A failed upload can be retried while the release is still a draft.
           # Published assets are never replaced by a workflow rerun.
           if is_draft="$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq '.isDraft')"; then
@@ -163,5 +182,5 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" --draft --verify-tag --title "$GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md
           fi
-          gh release upload "$GITHUB_REF_NAME" ./* --clobber
+          gh release upload "$GITHUB_REF_NAME" "$apk" "$sources" "$checksums" --clobber
           gh release edit "$GITHUB_REF_NAME" --draft=false --latest --title "$GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md

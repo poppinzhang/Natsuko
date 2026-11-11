@@ -117,6 +117,7 @@ private val PdfPreviewPageMaxSize = 280.dp
 fun NatsukoApp(viewModel: NatsukoViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val updateState by viewModel.appUpdate.state.collectAsStateWithLifecycle()
     val cropPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia(maxItems = 100),
     ) { viewModel.acceptSelection(Feature.CROP_BLACK_BORDER, it) }
@@ -217,6 +218,8 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
             onEnabledChange = viewModel::setSaveToUserStorage,
             onChooseDirectory = viewModel::requestUserStorageDirectory,
             onRestoreDefault = viewModel::restoreDefaultUserStorageDirectory,
+            updateState = updateState,
+            onCheckUpdate = viewModel.appUpdate::check,
         )
         AppScreen.TWITTER_DOWNLOAD -> TwitterDownloadScreen(
             link = state.twitterLink,
@@ -289,6 +292,8 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
         DiscardAdjustmentDialog(onConfirm = viewModel::confirmDiscardAdjustment, onDismiss = viewModel::dismissDiscardAdjustment)
     }
 
+    AppUpdateDialogs(updateState, viewModel.appUpdate)
+
     state.errorMessage?.let { message ->
         AlertDialog(
             onDismissRequest = viewModel::dismissError,
@@ -301,7 +306,10 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
     state.copyLocation?.conflict?.let { conflict ->
         CopyLocationConflictDialog(conflict, viewModel::chooseLocationConflict)
     }
-    if (state.isProcessing && state.copyLocation?.conflict == null) {
+    state.twitterVideoSelection?.let { selection ->
+        TwitterVideoSelectionDialog(selection, viewModel::chooseTwitterDownloadScope, viewModel::cancelProcessing)
+    }
+    if (state.isProcessing && state.copyLocation?.conflict == null && state.twitterVideoSelection == null) {
         ProcessingDialog(state.progress, viewModel::cancelProcessing)
     }
 }

@@ -25,6 +25,7 @@ class UiTextLocalizationTest {
         val chinese = contextFor("zh-CN")
         val traditional = contextFor("zh-Hant")
         val korean = contextFor("ko")
+        val japanese = contextFor("ja")
         val output = OutputArtifact(
             File("merged.png"), "image/png", text(R.string.backend_merged_image),
             detail = text(R.string.backend_border_removed),
@@ -39,24 +40,28 @@ class UiTextLocalizationTest {
         assertEquals("拼接图片", output.label.resolve(chinese))
         assertEquals("拼接圖片", output.label.resolve(traditional))
         assertEquals("합친 이미지", output.label.resolve(korean))
+        assertEquals("結合した画像", output.label.resolve(japanese))
         assertEquals("Black borders removed", output.detail!!.resolve(english))
         assertEquals("已去除黑边", output.detail!!.resolve(chinese))
         assertEquals("已去除黑邊", output.detail!!.resolve(traditional))
         assertEquals("검은 테두리 제거 완료", output.detail!!.resolve(korean))
+        assertEquals("黒い余白を除去しました", output.detail!!.resolve(japanese))
         assertEquals("Saving Merged image", progress.message.resolve(english))
         assertEquals("正在保存 拼接图片", progress.message.resolve(chinese))
         assertEquals("正在儲存 拼接圖片", progress.message.resolve(traditional))
         assertEquals("합친 이미지 저장 중", progress.message.resolve(korean))
+        assertEquals("結合した画像を保存中", progress.message.resolve(japanese))
         assertEquals("Failed to save to the user storage directory: Storage is full.", failure.reason.resolve(english))
         assertEquals("保存至用户存储目录失败：存储空间不足", failure.reason.resolve(chinese))
         assertEquals("儲存至使用者儲存資料夾失敗：儲存空間不足", failure.reason.resolve(traditional))
         assertEquals("사용자 저장 폴더에 저장하지 못했습니다: 저장 공간이 가득 찼습니다.", failure.reason.resolve(korean))
+        assertEquals("ユーザーの保存先フォルダに保存できませんでした：空き容量がありません", failure.reason.resolve(japanese))
         // The same retained object can switch back; no resolved locale was captured by the backend.
         assertEquals("Saving Merged image", progress.message.resolve(english))
     }
 
     @Test
-    fun localizedFailuresMatchChineseScriptAndKoreanWhileUnsupportedLanguagesUseEnglish() {
+    fun localizedFailuresMatchSupportedLanguagesWhileUnsupportedLanguagesUseEnglish() {
         val message = text(R.string.backend_processing_failed)
         listOf("zh-CN", "zh-SG", "zh-Hans").forEach {
             assertEquals(it, "处理失败", message.resolve(contextFor(it)))
@@ -66,6 +71,9 @@ class UiTextLocalizationTest {
         }
         listOf("ko", "ko-KR").forEach {
             assertEquals(it, "처리에 실패했습니다.", message.resolve(contextFor(it)))
+        }
+        listOf("ja", "ja-JP").forEach {
+            assertEquals(it, "処理に失敗しました", message.resolve(contextFor(it)))
         }
         assertEquals("Processing failed.", message.resolve(contextFor("fr-FR")))
     }
@@ -82,6 +90,7 @@ class UiTextLocalizationTest {
         assertEquals("处理失败", platformError.userMessage(R.string.backend_processing_failed).resolve(contextFor("zh")))
         assertEquals("處理失敗", platformError.userMessage(R.string.backend_processing_failed).resolve(contextFor("zh-Hant")))
         assertEquals("처리에 실패했습니다.", platformError.userMessage(R.string.backend_processing_failed).resolve(contextFor("ko")))
+        assertEquals("処理に失敗しました", platformError.userMessage(R.string.backend_processing_failed).resolve(contextFor("ja")))
         assertEquals("example.png", UiText.Literal("example.png").resolve(contextFor("zh")))
     }
 
@@ -91,6 +100,7 @@ class UiTextLocalizationTest {
         val chinese = contextFor("zh")
         val traditional = contextFor("zh-Hant")
         val korean = contextFor("ko")
+        val japanese = contextFor("ja")
         val one = quantityText(R.plurals.backend_combined_pdf_label, 1, 1)
         val many = quantityText(R.plurals.backend_combined_pdf_label, 2, 2)
         assertEquals("Combined PDF (1 page)", one.resolve(english))
@@ -101,10 +111,13 @@ class UiTextLocalizationTest {
         assertEquals("合併 PDF（2 頁）", many.resolve(traditional))
         assertEquals("합친 PDF(1페이지)", one.resolve(korean))
         assertEquals("합친 PDF(2페이지)", many.resolve(korean))
+        assertEquals("結合したPDF（1ページ）", one.resolve(japanese))
+        assertEquals("結合したPDF（2ページ）", many.resolve(japanese))
         val gif = quantityText(R.plurals.backend_gif_output_label, 1, "100% \"clip\".mp4", 1)
         assertEquals("100% \"clip\".mp4 GIF (1 frame)", gif.resolve(english))
         assertEquals("100% \"clip\".mp4 GIF（1 影格）", gif.resolve(traditional))
         assertEquals("100% \"clip\".mp4 GIF(1프레임)", gif.resolve(korean))
+        assertEquals("100% \"clip\".mp4 GIF（1フレーム）", gif.resolve(japanese))
     }
 
     private fun contextFor(languageTag: String): Context {

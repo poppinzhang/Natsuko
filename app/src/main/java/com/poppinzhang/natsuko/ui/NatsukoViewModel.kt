@@ -17,7 +17,11 @@ import com.poppinzhang.natsuko.data.OutputStoragePreferences
 import com.poppinzhang.natsuko.data.OutputStorageSettings
 import com.poppinzhang.natsuko.data.ShareImportParser
 import com.poppinzhang.natsuko.data.UserStorageRepository
+import com.poppinzhang.natsuko.data.update.AppUpdater
+import com.poppinzhang.natsuko.data.update.GitHubAppUpdater
 import com.poppinzhang.natsuko.data.twitter.TwitterStatusLink
+import com.poppinzhang.natsuko.data.twitter.TwitterDownloadScope
+import com.poppinzhang.natsuko.data.twitter.TwitterVideoSelection
 import com.poppinzhang.natsuko.model.AdjustmentEdits
 import com.poppinzhang.natsuko.model.AdjustmentExportSettings
 import com.poppinzhang.natsuko.model.AdjustmentHistory
@@ -83,6 +87,7 @@ data class NatsukoUiState(
     val pdfToImagesOptions: PdfToImagesOptions = PdfToImagesOptions(),
     val gifOptions: GifOptions = GifOptions(),
     val twitterLink: String = "",
+    val twitterVideoSelection: TwitterVideoSelection? = null,
     val isProcessing: Boolean = false,
     val progress: ProcessingProgress = ProcessingProgress(0, 1, text(R.string.backend_preparing)),
     val outcome: ProcessingOutcome? = null,
@@ -102,7 +107,12 @@ data class NatsukoUiState(
 
 class NatsukoViewModel @JvmOverloads constructor(
     application: Application,
-    private val downloadTwitter: suspend (String, (Int, Int, UiText) -> Unit) -> ProcessingOutcome =
+    appUpdater: AppUpdater = GitHubAppUpdater(application),
+    private val downloadTwitter: suspend (
+        String,
+        suspend (TwitterVideoSelection) -> TwitterDownloadScope,
+        (Int, Int, UiText) -> Unit,
+    ) -> ProcessingOutcome =
         DownloadTwitterVideoProcessor(application, OutputRepository(application))::process,
 ) : AndroidViewModel(application) {
     private val resolver = DocumentResolver(application)
@@ -128,12 +138,21 @@ class NatsukoViewModel @JvmOverloads constructor(
     private val stopObservingStorage = storagePreferences.observe { settings ->
         mutableState.update { it.copy(storageSettings = settings) }
     }
+
+    /** App updates keep their own state: file workflows replace [state] wholesale when they reset. */
+    val appUpdate = AppUpdateController(
+        scope = viewModelScope,
+        updater = appUpdater,
+        isProcessing = { mutableState.value.let { it.isProcessing || it.isSavingToUserStorage } },
+        onError = { message -> mutableState.update { it.copy(errorMessage = message) } },
+    )
     private var processingJob: Job? = null
     private var importJob: Job? = null
     private var storageJob: Job? = null
     private var settingsReturnScreen = AppScreen.HOME
     private var enableAfterDirectorySelection = false
     private var twitterDownloadResult: NatsukoUiState? = null
+    private var twitterScopeDecision: CompletableDeferred<TwitterDownloadScope>? = null
     private var adjustmentSession: ImageAdjustmentSession? = null
     private var adjustmentLoadJob: Job? = null
     private var estimateJob: Job? = null
@@ -152,7 +171,9 @@ class NatsukoViewModel @JvmOverloads constructor(
         mutableThemeMode.value = appearancePreferences.setThemeMode(mode)
     }
 
-    private fun isBusy() = mutableState.value.let { it.isProcessing || it.isSavingToUserStorage }
+    // Installing an update closes the app, so a download or installation blocks new work like processing does.
+    private fun isBusy() = mutableState.value.let { it.isProcessing || it.isSavingToUserStorage } ||
+        appUpdate.state.value.blocksOtherWork
 
     fun acceptSelection(feature: Feature, uris: List<Uri>) {
         if (feature == Feature.COPY_LOCATION) {
@@ -408,6 +429,25 @@ class NatsukoViewModel @JvmOverloads constructor(
         process()
     }
 
+    fun chooseTwitterDownloadScope(scope: TwitterDownloadScope) {
+        twitterScopeDecision?.complete(scope)
+    }
+
+    private suspend fun requestTwitterDownloadScope(selection: TwitterVideoSelection): TwitterDownloadScope =
+        withContext(Dispatchers.Main.immediate) {
+            val decision = CompletableDeferred<TwitterDownloadScope>()
+            twitterScopeDecision = decision
+            mutableState.update { it.copy(twitterVideoSelection = selection) }
+            try {
+                decision.await()
+            } finally {
+                if (twitterScopeDecision === decision) {
+                    twitterScopeDecision = null
+                    mutableState.update { it.copy(twitterVideoSelection = null) }
+                }
+            }
+        }
+
     fun convertDownloadedVideoToGif(output: OutputArtifact) {
         val snapshot = mutableState.value
         if (isBusy() || snapshot.feature != Feature.DOWNLOAD_TWITTER_VIDEO ||
@@ -547,7 +587,7 @@ class NatsukoViewModel @JvmOverloads constructor(
                         Feature.IMAGES_TO_PDF -> imagesToPdfProcessor.process(snapshot.inputs, snapshot.imagesToPdfOptions, progress)
                         Feature.PDF_TO_IMAGES -> pdfToImagesProcessor.process(snapshot.inputs, snapshot.pdfToImagesOptions, progress)
                         Feature.VIDEO_TO_GIF -> videoToGifProcessor.process(snapshot.inputs.first(), snapshot.gifOptions, progress)
-                        Feature.DOWNLOAD_TWITTER_VIDEO -> downloadTwitter(snapshot.twitterLink, progress).also {
+                        Feature.DOWNLOAD_TWITTER_VIDEO -> downloadTwitter(snapshot.twitterLink, ::requestTwitterDownloadScope, progress).also {
                             // Retain ownership across withContext's cancellable dispatch back to Main.
                             unpublishedDownload = it
                         }
@@ -593,6 +633,7 @@ class NatsukoViewModel @JvmOverloads constructor(
     fun openSettings() {
         if (isBusy() || mutableState.value.screen == AppScreen.SETTINGS) return
         settingsReturnScreen = mutableState.value.screen
+        appUpdate.clearResult()
         mutableState.update { it.copy(screen = AppScreen.SETTINGS) }
     }
 

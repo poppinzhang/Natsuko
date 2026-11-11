@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="twitter_selection_title">選擇下載範圍</string>
+    <plurals name="twitter_selection_message">
+        <item quantity="other">這則推文含 %1$d 部影片。請選擇只下載目前連結的影片，或下載推文中的所有影片。</item>
+    </plurals>
+    <string name="twitter_selection_current">只下載目前影片</string>
+    <string name="twitter_selection_all">下載所有影片</string>
+    <string name="backend_post_video_link_ambiguous">輸入包含同一則推文的不同影片連結，請只保留一個影片連結。</string>
+    <string name="backend_post_video_index_invalid">無法在這則推文中找到連結指定的影片，請檢查連結或使用推文連結下載所有影片。</string>
+</resources>

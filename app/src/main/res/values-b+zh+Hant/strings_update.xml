@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_update">應用程式更新</string>
+    <string name="update_current_version">目前版本：%1$s</string>
+    <string name="update_hint">僅在點選檢查時連線，從 GitHub 查詢最新發布的版本。</string>
+    <string name="update_check">檢查更新</string>
+    <string name="update_checking">正在檢查更新…</string>
+    <string name="update_up_to_date">已是最新版本。</string>
+    <string name="update_available_title">發現新版本 %1$s</string>
+    <string name="update_available_message">目前版本為 %1$s。更新檔（%2$s）將從 GitHub 下載並安裝；安裝完成後 Natsuko 會關閉，請重新開啟。</string>
+    <string name="update_release_notes">查看更新說明</string>
+    <string name="update_install">更新</string>
+    <string name="update_later">暫不更新</string>
+    <string name="update_downloading_title">正在下載更新</string>
+    <string name="update_download_progress">%1$s / %2$s</string>
+    <string name="update_installing_title">正在安裝更新</string>
+    <string name="update_installing_message">如果系統詢問，請確認安裝。安裝完成後 Natsuko 會關閉，請重新開啟。</string>
+    <string name="update_wait_for_tasks">請等待目前處理或儲存完成後再更新</string>
+    <string name="update_open_page_failed">無法開啟發布頁面</string>
+    <string name="update_error_check_failed">檢查更新失敗，請稍後重試</string>
+    <string name="update_error_network">無法連線 GitHub，請檢查網路後重試</string>
+    <string name="update_error_rate_limited">GitHub 暫時限制了目前網路的請求次數，請稍後重試</string>
+    <string name="update_error_no_release">找不到已發布的版本</string>
+    <string name="update_error_http">GitHub 傳回了錯誤（HTTP %1$d），請稍後重試</string>
+    <string name="update_error_redirect">GitHub 傳回了不支援的下載位址</string>
+    <string name="update_error_invalid_response">無法辨識 GitHub 傳回的版本資訊</string>
+    <string name="update_error_missing_apk">版本 %1$s 的發布中沒有安裝檔</string>
+    <string name="update_error_checksum">下載的更新檔未通過驗證，已刪除，請重試</string>
+    <string name="update_error_invalid_package">下載的檔案不是有效的安裝檔</string>
+    <string name="update_error_package_mismatch">更新檔與目前安裝的 Natsuko 不是同一個應用程式，無法覆蓋安裝</string>
+    <string name="update_error_not_newer">下載的更新檔並未比目前版本新</string>
+    <string name="update_error_install_failed">無法安裝更新</string>
+    <string name="update_error_install_blocked">系統阻止了安裝，請檢查裝置的安全性或管理設定</string>
+    <string name="update_error_install_conflict">更新檔的簽章與已安裝的應用程式不一致，無法覆蓋安裝</string>
+    <string name="update_error_install_incompatible">此更新與目前的裝置不相容</string>
+    <string name="update_error_install_storage">儲存空間不足，無法安裝更新</string>
+</resources>

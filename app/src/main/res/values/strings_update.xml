@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_update">App updates</string>
+    <string name="update_current_version">Current version: %1$s</string>
+    <string name="update_hint">Natsuko connects to GitHub only when you check, and looks up the latest published release.</string>
+    <string name="update_check">Check for updates</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_up_to_date">You have the latest version.</string>
+    <string name="update_available_title">Version %1$s is available</string>
+    <string name="update_available_message">You have version %1$s. The update (%2$s) is downloaded from GitHub and then installed. Natsuko closes when the installation finishes; open it again afterwards.</string>
+    <string name="update_release_notes">View release notes</string>
+    <string name="update_install">Update</string>
+    <string name="update_later">Not now</string>
+    <string name="update_downloading_title">Downloading update</string>
+    <string name="update_download_progress">%1$s / %2$s</string>
+    <string name="update_installing_title">Installing update</string>
+    <string name="update_installing_message">If Android asks, confirm the installation. Natsuko closes when it finishes; open it again afterwards.</string>
+    <string name="update_wait_for_tasks">Wait for processing or saving to finish before updating.</string>
+    <string name="update_open_page_failed">Could not open the release page.</string>
+    <string name="update_error_check_failed">Could not check for updates. Try again later.</string>
+    <string name="update_error_network">Could not reach GitHub. Check your network connection and try again.</string>
+    <string name="update_error_rate_limited">GitHub is temporarily limiting requests from this network. Try again later.</string>
+    <string name="update_error_no_release">No published release was found.</string>
+    <string name="update_error_http">GitHub returned an error (HTTP %1$d). Try again later.</string>
+    <string name="update_error_redirect">GitHub returned a download address that is not supported.</string>
+    <string name="update_error_invalid_response">The release information from GitHub could not be read.</string>
+    <string name="update_error_missing_apk">Version %1$s was published without an installation package.</string>
+    <string name="update_error_checksum">The downloaded update failed verification and was deleted. Try again.</string>
+    <string name="update_error_invalid_package">The downloaded file is not a valid installation package.</string>
+    <string name="update_error_package_mismatch">The update is a different app from the installed Natsuko, so it cannot replace it.</string>
+    <string name="update_error_not_newer">The downloaded update is not newer than the installed version.</string>
+    <string name="update_error_install_failed">The update could not be installed.</string>
+    <string name="update_error_install_blocked">Android blocked the installation. Check the security or management settings of this device.</string>
+    <string name="update_error_install_conflict">The update is signed with a different key from the installed app, so it cannot replace it.</string>
+    <string name="update_error_install_incompatible">This update is not compatible with this device.</string>
+    <string name="update_error_install_storage">There is not enough storage to install the update.</string>
+</resources>

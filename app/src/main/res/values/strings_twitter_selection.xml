@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="twitter_selection_title">Choose videos to download</string>
+    <plurals name="twitter_selection_message">
+        <item quantity="one">This post contains %1$d video. Download only the video in this link, or all videos from the post.</item>
+        <item quantity="other">This post contains %1$d videos. Download only the video in this link, or all videos from the post.</item>
+    </plurals>
+    <string name="twitter_selection_current">Download this video only</string>
+    <string name="twitter_selection_all">Download all videos</string>
+    <string name="backend_post_video_link_ambiguous">The input contains links to different videos in the same post. Keep just one video link.</string>
+    <string name="backend_post_video_index_invalid">The video specified by this link could not be found in the post. Check the link, or use the post link to download all videos.</string>
+</resources>

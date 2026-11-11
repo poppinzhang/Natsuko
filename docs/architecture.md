@@ -8,6 +8,7 @@
 - `data/ShareImportParser`：解析 `ACTION_SEND`、`ACTION_SEND_MULTIPLE`、`ClipData` 和 `EXTRA_STREAM`，去重 URI。
 - `data/DocumentResolver`：从 `ContentResolver` 获取文件名和 MIME 类型。
 - `data/twitter/`：推文链接规范化、X 公开接口解析、HTTPS 流式下载与网络边界校验。
+- `data/update/`：应用更新。GitHub Release 版本信息解析与版本比较、受限 HTTPS 下载与校验，以及通过系统 `PackageInstaller` 覆盖安装。
 - `processing/`：图片/PDF/GIF 处理器、推特下载调度与可单测的布局、黑边检测和帧计划算法；图片调整的几何计算、单次重采样导出与试编码会话。
 - `processing/video/FfmpegVideoEngine`：共用的视频处理入口，负责 FFprobe 元数据探测、FFmpeg 滤镜与编码流程；`FfmpegRunner` 管理原生进程、进度及取消。功能处理器负责 URI 暂存、任务目录和输出管理。当前和后续所有视频资源处理都复用此层。
 - `data/OutputRepository`：创建每次运行的应用专属目录，生成 FileProvider URI；存储层管理持久输出设置，并将成品直接发布到默认 Download 目录或获授权的自定义目录下的功能子目录，不创建用户可见的运行时间戳目录。
@@ -18,7 +19,7 @@
 
 ## 主流程
 
-界面文案通过 Android 语言资源解析；默认资源使用英文，简体中文、繁体中文和韩语资源独立维护。语言选择使用系统 `LocaleManager`，由 Android 保存并与系统应用语言设置同步。状态中的进度、错误及结果说明以资源标识和参数保留，在显示时根据当前配置解析，避免语言切换后残留旧文案。详见 [国际化与语言设置](i18n.md)。
+界面文案通过 Android 语言资源解析；默认资源使用英文，简体中文、繁体中文、韩语和日文资源独立维护，后续功能同步维护全部五种语言。语言选择使用系统 `LocaleManager`，由 Android 保存并与系统应用语言设置同步。状态中的进度、错误及结果说明以资源标识和参数保留，在显示时根据当前配置解析，避免语言切换后残留旧文案。详见 [国际化与语言设置](i18n.md)。
 
 1. 用户在首页选择功能，系统选择器只显示匹配类型；推特下载进入链接输入页。也可在其他应用的分享面板中选择一个 Natsuko 功能。
 2. URI 经过去重、MIME/扩展名校验后进入对应流程。不匹配项被跳过，全部无效时显示错误。“去除黑边”在本地选择或分享导入后立即自动处理；“图片调整”进入单图编辑页，多张分享时先由用户选择其中一张；其余功能进入配置页。
@@ -41,6 +42,8 @@ Manifest 定义八个带独立名称与 MIME 过滤器的 `activity-alias`：图
 ## 推特下载与 GIF 串联
 
 下载器仅向 X 自家公开 syndication 接口请求推文信息，按媒体顺序选择可获取的最高质量 MP4，并流式写入应用专属功能目录的临时文件。完成后通过共用 `FfmpegVideoEngine.probe` 校验视频流、尺寸和时长，再提交成品；网络层不负责视频解码。失败按视频报告，取消和失败清理未完成文件。协议、域名、重定向、响应大小与时间均受限制，远端地址不传给 FFmpeg。
+
+链接解析保留 `/video/序号` 的原始媒体附件位置。多视频推文通过可挂起回调等待用户选择当前视频或全部视频；决策状态保存在 ViewModel，等待时不下载、不创建输出目录，取消仍保留输入链接。图片参与媒体位置编号，输出文件名则沿用原有视频序号。
 
 成品交由原有用户存储层自动保存。结果页可将任一下载视频的应用专属 FileProvider URI 直接交给视频转 GIF 配置流程，使用原有参数、进度、取消和存储逻辑。返回配置页上一级时恢复原下载结果；源视频始终保留。接口支持范围与限制见 [下载推特视频](download_twitter_video.md)。
 
@@ -77,3 +80,9 @@ FFmpeg 与 FFprobe 从官方源码构建，随 APK/AAB 内置，当前提供 `ar
 `CopyLocationProcessor` 将已授权 URI 流式复制到工作文件，由 `LocationMetadataEngine` 使用内置 ExifTool/Perl 读写位置。来源先校验有效坐标；目标逐张处理，通过可挂起回调等待冲突决策，策略限定在单批次内。原文件不修改，结果复用 `OutputRepository` 和 `UserStorageRepository`。
 
 Perl 可执行文件从安装器解压的 `nativeLibraryDir` 启动，受版本控制的 Perl 模块、ExifTool 模块和固定桥接脚本来自 APK assets。外部输入只作为参数和元数据处理，不执行 shell 命令；进程输出有长度限制，可取消并回收。重建资料见 `third_party/metadata/README.md`，交互说明见 [图片地理位置信息复制](copy_location.md)。
+
+## 应用更新
+
+设置页的「检查更新」由 `AppUpdateController` 驱动：检查 → 询问 → 下载 → 安装，每一步都由用户操作触发，不在后台联网。更新状态通过独立的 `StateFlow` 提供，不属于 `NatsukoUiState`，因此文件工作流重置时不会丢失；确认框与进度框显示在所有页面之上。下载和安装期间与处理、保存一样视为忙碌，拒绝新的导入；处理或保存进行中时不能开始更新。
+
+`GitHubAppUpdater` 读取 GitHub 最新正式 Release，只向 GitHub 的 HTTPS 地址请求，下载后校验大小与 SHA-256，再由 `AppUpdateInstaller` 通过 `PackageInstaller` 会话交给系统覆盖安装；包名、版本号在安装前核对，签名由系统校验。应用不执行下载的文件。网络边界、安装包选择规则、权限与发布要求见 [应用更新](app_update.md)。

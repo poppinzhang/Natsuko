@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Natsuko</string>
+    <string name="share_crop_black_border">黒い余白を除去 · Natsuko</string>
+    <string name="share_image_merge">Natsuko · 画像を結合</string>
+    <string name="share_images_to_pdf">Natsuko · 画像をPDFに変換</string>
+    <string name="share_pdf_to_images">Natsuko · PDFを画像に変換</string>
+    <string name="share_video_to_gif">Natsuko · 動画をGIFに変換</string>
+    <string name="share_download_twitter_video">Twitterの動画（GIF）をダウンロード · Natsuko</string>
+    <string name="share_image_adjustment">Natsuko · 画像を調整</string>
+</resources>
