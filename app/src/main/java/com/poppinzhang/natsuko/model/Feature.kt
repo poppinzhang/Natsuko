@@ -14,6 +14,7 @@ enum class Feature(
     PDF_TO_IMAGES(R.string.feature_pdf_to_images, R.string.feature_pdf_to_images_description, "PdfToImages"),
     VIDEO_TO_GIF(R.string.feature_video_to_gif, R.string.feature_video_to_gif_description, "VideoToGif"),
     DOWNLOAD_TWITTER_VIDEO(R.string.feature_download_twitter_video, R.string.feature_download_twitter_video_description, "DownloadTwitterVideo"),
+    COPY_LOCATION(R.string.feature_copy_location, R.string.feature_copy_location_description, "CopyLocation"),
     IMAGE_ADJUSTMENT(R.string.feature_image_adjustment, R.string.feature_image_adjustment_description, "ImageAdjustment");
 
     companion object {
@@ -24,6 +25,7 @@ enum class Feature(
             className?.endsWith("PdfToImagesShare") == true -> PDF_TO_IMAGES
             className?.endsWith("VideoToGifShare") == true -> VIDEO_TO_GIF
             className?.endsWith("DownloadTwitterVideoShare") == true -> DOWNLOAD_TWITTER_VIDEO
+            className?.endsWith("CopyLocationShare") == true -> COPY_LOCATION
             className?.endsWith("ImageAdjustmentShare") == true -> IMAGE_ADJUSTMENT
             else -> null
         }

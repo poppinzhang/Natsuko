@@ -50,6 +50,44 @@
         "LLVM-NOTICE.txt",
         "Android-NDK-SYSROOT-NOTICE.txt"
       ]
+    },
+    {
+      "id": "exiftool",
+      "name": "ExifTool",
+      "version": "13.53",
+      "license": "Artistic-1.0-Perl",
+      "url": "https://exiftool.org/",
+      "description": "内置离线图片位置元数据读写，未修改的 Perl 模块通过独立子进程运行；选择 Perl Artistic 许可分发。",
+      "licenseFiles": [
+        "ExifTool-NOTICE.txt",
+        "Perl-Artistic.txt",
+        "ExifTool-GPL.txt"
+      ]
+    },
+    {
+      "id": "perl",
+      "name": "Perl runtime",
+      "version": "5.40.2",
+      "license": "Artistic-1.0-Perl / BSD-3-Clause / Unicode-3.0",
+      "url": "https://www.perl.org/",
+      "description": "应用内置的独立元数据解释器，静态链接核心扩展；原始源码与构建配置随第三方源码包提供。",
+      "licenseFiles": [
+        "Perl-Artistic.txt",
+        "Perl-Copying.txt",
+        "Perl-Cross-LICENSE.txt",
+        "Perl-THIRD-PARTY.txt"
+      ]
+    },
+    {
+      "id": "metadata-zlib",
+      "name": "zlib (metadata runtime)",
+      "version": "1.3.1",
+      "license": "Zlib",
+      "url": "https://zlib.net/",
+      "description": "Perl Compress::Raw::Zlib 内置的元数据压缩支持。",
+      "licenseFiles": [
+        "zlib-LICENSE.txt"
+      ]
     }
   ],
   "components": {

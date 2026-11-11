@@ -16,6 +16,9 @@ Natsuko 原创代码采用 [Apache License 2.0](LICENSE)。第三方组件保留
 | FFmpeg / FFprobe | 9.0.1 | LGPL-2.1-or-later，含单独许可的部分 | [上游](https://ffmpeg.org/)、[许可](third_party/ffmpeg/notices/FFmpeg-LGPL-2.1.txt)、[版权](third_party/ffmpeg/notices/FFmpeg-NOTICE.txt)、[第三方声明](third_party/ffmpeg/notices/FFmpeg-THIRD-PARTY.txt) |
 | dav1d | 1.5.4 | BSD-2-Clause，含逐文件版权 | [上游](https://code.videolan.org/videolan/dav1d)、[许可](third_party/ffmpeg/notices/dav1d-BSD-2-Clause.txt)、[第三方声明](third_party/ffmpeg/notices/dav1d-THIRD-PARTY.txt) |
 | LLVM compiler runtime / Android NDK components | r28c / Clang 19.0.1 | Apache-2.0 WITH LLVM-exception 及各组件原始许可 | [LLVM 声明](third_party/ffmpeg/notices/LLVM-NOTICE.txt)、[NDK 声明](third_party/ffmpeg/notices/Android-NDK-SYSROOT-NOTICE.txt) |
+| ExifTool | 13.53 | Artistic-1.0-Perl（双许可中选择 Artistic） | [上游](https://exiftool.org/)、[版权与许可说明](third_party/metadata/notices/ExifTool-NOTICE.txt)、[Artistic 全文](third_party/metadata/notices/Perl-Artistic.txt) |
+| Perl runtime / perl-cross | 5.40.2 / 1.6 | Artistic-1.0-Perl；含 BSD-3-Clause 与 Unicode 数据声明 | [Perl](https://www.perl.org/)、[Artistic](third_party/metadata/notices/Perl-Artistic.txt)、[COPYING](third_party/metadata/notices/Perl-Copying.txt)、[perl-cross](third_party/metadata/notices/Perl-Cross-LICENSE.txt)、[第三方声明](third_party/metadata/notices/Perl-THIRD-PARTY.txt) |
+| zlib (metadata runtime) | 1.3.1 | Zlib | [上游](https://zlib.net/)、[许可](third_party/metadata/notices/zlib-LICENSE.txt) |
 
 完整 Maven 坐标（含版本）与审查过的许可文件映射在 [open-source-components.json](third_party/open-source-components.json)。构建按 Debug / Release 实际解析的运行时依赖分别生成清单，包括传递依赖；Debug 的 UI 调试工具仅列入 Debug。AAR/JAR 自带的 LICENSE、NOTICE、COPYING、COPYRIGHT 等文件逐份原样保留在应用 assets 并可阅读。新增或升级坐标如未审查，构建会失败。
 
@@ -30,6 +33,10 @@ FFmpeg 和 dav1d 静态链接在独立的原生可执行文件中；Natsuko 通�
 每次通过 `scripts/package.sh` 打包，同时生成 `natsuko-third-party-sources-<版本>.tar.gz`，含上述对应源码和重建资料。分发 APK/AAB 时，应同时提供该压缩包及本文件、LICENSE、NOTICE；下载页应明确 FFmpeg 的使用和 LGPL 许可，并提供同一发行版对应源码包的下载入口。不能仅给出指向上游最新版源码的链接。重建及替换方式见 [FFmpeg 构建资料](third_party/ffmpeg/README.md)。接收者可按适用许可修改、重建这些组件；本项目不附加禁止相关逆向调试或修改的条款。
 
 Android 的 libc、libm、libz 由设备系统提供，没有将这些系统共享库复制进 FFmpeg 的应用包；编译时带入的运行时/头文件代码声明仍予以保留。
+
+## 图片元数据后端
+
+ExifTool 与 Perl 随 APK/AAB 完整内置，通过独立子进程处理图片，不需要安装其它软件或下载解释器。ExifTool 模块保持上游源码不变；应用桥接脚本属于 Natsuko 原创代码。Perl 使用 perl-cross 和随仓库记录的构建适配补丁编译，核心扩展及其 zlib 静态链接；原始源码、补丁、构建脚本、校验和见 [元数据后端构建资料](third_party/metadata/README.md)，并随发行版的第三方源码包提供。ExifTool 和 Perl 均按其双许可中的 Perl Artistic 许可分发。
 
 ## 构建和测试工具
 

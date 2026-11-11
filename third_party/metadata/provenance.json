@@ -1,0 +1,36 @@
+{
+  "perl": {
+    "version": "5.40.2",
+    "source": "https://www.cpan.org/src/5.0/perl-5.40.2.tar.xz",
+    "license": "Artistic-1.0-Perl"
+  },
+  "perl_cross": {
+    "version": "1.6",
+    "source": "https://github.com/arsv/perl-cross/archive/refs/tags/1.6.tar.gz",
+    "license": "Artistic-1.0-Perl"
+  },
+  "exiftool": {
+    "version": "13.53",
+    "source": "https://github.com/exiftool/exiftool/archive/refs/tags/13.53.tar.gz",
+    "license": "Artistic-1.0-Perl"
+  },
+  "zlib": {
+    "version": "1.3.1",
+    "source": "Included in Perl source cpan/Compress-Raw-Zlib/zlib-src",
+    "license": "Zlib"
+  },
+  "ndk": "28.2.13676358",
+  "target_api": 35,
+  "min_android_api": 36,
+  "abis": [
+    "arm64-v8a",
+    "x86_64"
+  ],
+  "build_script": "scripts/build-metadata-runtime.sh",
+  "local_patches": [
+    "portable-sed.patch",
+    "android-langinfo.patch",
+    "cross-errno.patch"
+  ],
+  "linkage": "Static Perl core and required XS extensions; system libc, libm and libdl only. 16 KB ELF LOAD alignment."
+}

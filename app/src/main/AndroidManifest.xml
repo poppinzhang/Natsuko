@@ -111,6 +111,21 @@
         </activity-alias>
 
         <activity-alias
+            android:name=".share.CopyLocationShare"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/share_copy_location"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
             android:name=".share.DownloadTwitterVideoShare"
             android:exported="true"
             android:icon="@mipmap/ic_launcher"

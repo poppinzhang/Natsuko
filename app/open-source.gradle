@@ -13,6 +13,7 @@ import java.util.zip.ZipInputStream
             'third_party/open-source-components.json', 'third_party/ffmpeg/provenance.json'))
         inputs.dir(rootProject.file('third_party/licenses'))
         inputs.dir(rootProject.file('third_party/ffmpeg/notices'))
+        inputs.dir(rootProject.file('third_party/metadata/notices'))
         inputs.property('versionName', android.defaultConfig.versionName)
         inputs.property('versionSuffix', android.buildTypes[variant].versionNameSuffix ?: '')
         outputs.dir(destination)
@@ -22,7 +23,7 @@ import java.util.zip.ZipInputStream
                 throw new GradleException('Invalid license catalog schema')
             }
             catalog.projects.each { validateNoticeEntry(it, 'licenseFiles') }
-            if (!catalog.projects.collect { it.id }.containsAll(['natsuko', 'ffmpeg', 'dav1d', 'llvm'])) {
+            if (!catalog.projects.collect { it.id }.containsAll(['natsuko', 'ffmpeg', 'dav1d', 'llvm', 'exiftool', 'perl'])) {
                 throw new GradleException('Missing application/native license project')
             }
             def provenance = new JsonSlurper().parse(rootProject.file('third_party/ffmpeg/provenance.json'))
@@ -105,9 +106,9 @@ import java.util.zip.ZipInputStream
             projects.each { project ->
                 project.licenseFiles.each { path ->
                     def file = new File(out, path)
-                    def nativeNotice = rootProject.file("third_party/ffmpeg/notices/$path")
+                    def nativeNotices = ['ffmpeg', 'metadata'].collect { rootProject.file("third_party/$it/notices/$path") }
                     if (!(file.isFile() && file.length() > 0) &&
-                        !(nativeNotice.isFile() && nativeNotice.length() > 0)) {
+                        !nativeNotices.any { it.isFile() && it.length() > 0 }) {
                         throw new GradleException("Missing license asset: $path")
                     }
                 }

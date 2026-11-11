@@ -52,6 +52,19 @@ class ShareImportParserTest {
     }
 
     @Test
+    fun routesLocationSourceShareIncludingRawFiles() {
+        val first = Uri.parse("content://tests/source.cr3")
+        val second = Uri.parse("content://tests/source.nef")
+        val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
+            .setComponent(ComponentName("com.poppinzhang.natsuko", "com.poppinzhang.natsuko.share.CopyLocationShare"))
+            .setType("application/octet-stream")
+            .putParcelableArrayListExtra(Intent.EXTRA_STREAM, arrayListOf(first, second, first))
+
+        assertEquals(Feature.COPY_LOCATION, ShareImportParser.feature(intent))
+        assertEquals(listOf(first, second), ShareImportParser.uris(intent))
+    }
+
+    @Test
     fun invalidSharePayloadProducesNoInputs() {
         val intent = Intent(Intent.ACTION_SEND)
             .setComponent(ComponentName("com.poppinzhang.natsuko", "com.poppinzhang.natsuko.share.ImagesToPdfShare"))

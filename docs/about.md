@@ -11,7 +11,7 @@
 - 根目录 `LICENSE` 为 Apache 官方完整 2.0 文本；`NOTICE` 指明原创代码的适用范围。
 - `THIRD_PARTY_NOTICES.md` 汇总随包组件、对应源码、工具和图标权利边界。
 - `third_party/open-source-components.json` 保存已审查的精确 Maven 坐标和原生项目条目。
-- `third_party/licenses/` 保存官方上游版权和许可原文；`third_party/ffmpeg/notices/` 保存原生许可原文。
+- `third_party/licenses/` 保存官方上游版权和许可原文；`third_party/ffmpeg/notices/` 与 `third_party/metadata/notices/` 保存随包工具的许可原文。
 - `app/open-source.gradle` 在构建时读取各变体的实际 `RuntimeClasspath`，生成 `app/build/generated/openSource/<debug|release>/assets/open_source/index.json` 和离线声明文件。AAR/JAR 内的版权文件原样复制，含嵌套 JAR 内文本。合并而不丢弃公共 META-INF 许可资源。
 
 不在运行时从网络抓取许可证，也不将测试依赖误计为 Release 运行时组件。R8 可能移除未使用的类，清单保守保留该变体全部解析的运行时依赖。
@@ -30,6 +30,7 @@
 ./gradlew testDebugUnitTest lintDebug assembleDebug
 python3 scripts/verify-open-source.py app/build/outputs/apk/debug/app-debug.apk
 python3 scripts/verify-ffmpeg.py app/build/outputs/apk/debug/app-debug.apk
+python3 scripts/verify-metadata.py app/build/outputs/apk/debug/app-debug.apk
 python3 scripts/test_verify_open_source.py
 python3 scripts/test_verify_ffmpeg.py
 ./scripts/test-package.sh

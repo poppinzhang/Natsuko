@@ -1,0 +1,22 @@
+--- a/cnf/configure_version.sh
++++ b/cnf/configure_version.sh
+@@ -2,7 +2,7 @@
+ 
+ # setverpart name NAME
+ verpart() {
+-	q=`grep '#define' patchlevel.h | grep "$2" | head -1 | sed -r -e "s/#define $2\s+//" -e "s/\s.*//"`
++	q=`grep '#define' patchlevel.h | grep "$2" | head -1 | sed -r -e "s/#define $2[[:space:]]+//" -e "s/[[:space:]].*//"`
+ 	define $1 "$q"
+ }
+ 
+--- a/cnf/configure_mods.sh
++++ b/cnf/configure_mods.sh
+@@ -108,7 +108,7 @@
+ }
+ 
+ definetrimspaces() {
+-	v=`echo "$2" | sed -r -e 's/\s+/ /g' -e 's/^\s+//' -e 's/\s+$//'`
++	v=`echo "$2" | sed -r -e 's/[[:space:]]+/ /g' -e 's/^[[:space:]]+//' -e 's/[[:space:]]+$//'`
+ 	define $1 "$v"
+ }
+ 

@@ -85,6 +85,9 @@ release_notes="$(awk -v version="$VERSION_NAME" -v unsigned="$unsigned" '
 # Check these before building so a missing legal file cannot replace an old package.
 compliance_files=(
   LICENSE NOTICE THIRD_PARTY_NOTICES.md
+  third_party/metadata/README.md third_party/metadata/provenance.json third_party/metadata/SHA256SUMS
+  scripts/build-metadata-runtime.sh scripts/prepare-exiftool.py scripts/verify-metadata.py scripts/test-location-metadata.py
+  app/src/main/assets/metadata/location_bridge.pl
   docs/native_licenses.md
   third_party/ffmpeg/README.md
   third_party/ffmpeg/provenance.json
@@ -93,6 +96,8 @@ compliance_files=(
   scripts/build-ffmpeg.sh scripts/verify-ffmpeg.py
 )
 source_directories=(
+  app/src/androidTest/assets/location
+  third_party/metadata/sources third_party/metadata/build-config third_party/metadata/notices
   third_party/ffmpeg/sources
   third_party/ffmpeg/build-config
   third_party/ffmpeg/notices
@@ -149,6 +154,7 @@ for artifact in "${artifacts[@]}"; do
 done
 python3 scripts/verify-open-source.py "${artifacts[@]}"
 python3 scripts/verify-ffmpeg.py "${artifacts[@]}"
+python3 scripts/verify-metadata.py "${artifacts[@]}"
 cp CHANGELOG.md version.properties LICENSE NOTICE THIRD_PARTY_NOTICES.md "$staging_dir/"
 printf '%s\n' "$release_notes" > "$staging_dir/RELEASE_NOTES.md"
 if [[ -f app/build/outputs/mapping/release/mapping.txt ]]; then
@@ -177,12 +183,12 @@ cat > "$source_dir/README.md" <<SOURCE_README
 # Natsuko $VERSION_NAME — corresponding third-party sources
 
 This archive accompanies the Natsuko application artifacts in the same release.
-It contains the original FFmpeg and dav1d source archives, their license notices,
+It contains the original FFmpeg, dav1d, ExifTool, Perl and perl-cross source archives, their license notices,
 source provenance, the shipped executable checksums, build configuration reports,
 and the scripts needed to rebuild both Android ABIs. It also contains the
 application's reviewed dependency inventory and complete license texts under
 third_party/open-source-components.json and third_party/licenses/. See
-third_party/ffmpeg/README.md for tool prerequisites and detailed instructions,
+third_party/ffmpeg/README.md and third_party/metadata/README.md for tool prerequisites and detailed instructions,
 and [docs/native_licenses.md](docs/native_licenses.md) for distribution and
 replacement instructions.
 
@@ -190,6 +196,9 @@ From this extracted directory, with Android NDK r28c installed:
 
     ANDROID_NDK_HOME=/absolute/path/to/android-ndk-r28c ./scripts/build-ffmpeg.sh
     python3 scripts/verify-ffmpeg.py
+    ANDROID_NDK_HOME=/absolute/path/to/android-ndk-r28c ./scripts/build-metadata-runtime.sh
+    python3 scripts/prepare-exiftool.py
+    python3 scripts/verify-metadata.py
 
 The build creates third_party/ffmpeg/jniLibs and refreshes SHA256SUMS. Save a copy
 of the included SHA256SUMS first if you want to retain the shipped binary hashes.

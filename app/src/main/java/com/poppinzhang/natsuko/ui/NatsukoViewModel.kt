@@ -53,6 +53,11 @@ import com.poppinzhang.natsuko.processing.AdjustmentGeometry
 import com.poppinzhang.natsuko.processing.AdjustmentTooLargeException
 import com.poppinzhang.natsuko.processing.ImageAdjustmentProcessor
 import com.poppinzhang.natsuko.processing.ImageAdjustmentSession
+import com.poppinzhang.natsuko.processing.location.CopyLocationProcessor
+import com.poppinzhang.natsuko.processing.location.LocationConflictDecision
+import com.poppinzhang.natsuko.processing.location.LocationSource
+import java.io.File
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -67,7 +72,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class AppScreen { HOME, SETTINGS, ABOUT, CONFIGURE, TWITTER_DOWNLOAD, RESULT, ADJUST_CHOOSE, ADJUST_EDIT, ADJUST_EXPORT }
+enum class AppScreen { HOME, SETTINGS, ABOUT, CONFIGURE, TWITTER_DOWNLOAD, RESULT, ADJUST_CHOOSE, ADJUST_EDIT, ADJUST_EXPORT, COPY_LOCATION_SOURCE, COPY_LOCATION_TARGETS }
 
 data class NatsukoUiState(
     val screen: AppScreen = AppScreen.HOME,
@@ -90,6 +95,7 @@ data class NatsukoUiState(
     val directoryPickerRequested: Boolean = false,
     val aboutProjectId: String? = null,
     val adjustment: ImageAdjustmentState? = null,
+    val copyLocation: CopyLocationUiState? = null,
     /** Several shared images: image adjustment edits only the one the user chooses. */
     val adjustmentChoices: List<InputItem> = emptyList(),
 )
@@ -113,6 +119,10 @@ class NatsukoViewModel @JvmOverloads constructor(
     private val pdfToImagesProcessor = PdfToImagesProcessor(application, outputRepository)
     private val videoToGifProcessor = VideoToGifProcessor(application, outputRepository)
     private val imageAdjustmentProcessor = ImageAdjustmentProcessor(application, outputRepository)
+    private val copyLocationProcessor = CopyLocationProcessor(application, outputRepository)
+    private val locationSources = mutableSetOf<File>()
+    private var locationDecision: CompletableDeferred<LocationConflictDecision>? = null
+    private var locationImportGeneration = 0
     private val mutableState = MutableStateFlow(freshState())
     val state: StateFlow<NatsukoUiState> = mutableState.asStateFlow()
     private val stopObservingStorage = storagePreferences.observe { settings ->
@@ -130,6 +140,7 @@ class NatsukoViewModel @JvmOverloads constructor(
     private sealed interface PendingImport {
         data class Files(val feature: Feature, val uris: List<Uri>) : PendingImport
         data class TwitterLink(val text: String) : PendingImport
+        data object CopyLocation : PendingImport
     }
 
     /** An import that arrived while unexported adjustments were open; it waits for confirmation. */
@@ -144,6 +155,10 @@ class NatsukoViewModel @JvmOverloads constructor(
     private fun isBusy() = mutableState.value.let { it.isProcessing || it.isSavingToUserStorage }
 
     fun acceptSelection(feature: Feature, uris: List<Uri>) {
+        if (feature == Feature.COPY_LOCATION) {
+            importLocationSources(uris)
+            return
+        }
         if (feature == Feature.DOWNLOAD_TWITTER_VIDEO) {
             mutableState.update { it.copy(errorMessage = text(R.string.backend_provide_post_link)) }
             return
@@ -164,6 +179,7 @@ class NatsukoViewModel @JvmOverloads constructor(
                 mutableState.update { it.copy(errorMessage = text(R.string.backend_feature_no_valid_files, text(feature.titleRes))) }
                 return@launch
             }
+            releaseLocationSources()
             if (feature == Feature.IMAGE_ADJUSTMENT) {
                 val skipped = invalid.takeIf { it.isNotEmpty() }?.let { text(R.string.backend_files_skipped, it.size) }
                 if (valid.size == 1) {
@@ -196,6 +212,146 @@ class NatsukoViewModel @JvmOverloads constructor(
                 process()
             }
         }
+    }
+
+    fun openCopyLocation() {
+        if (isBusy()) return
+        if (deferImportForAdjustment(PendingImport.CopyLocation)) return
+        importJob?.cancel()
+        releaseLocationSources()
+        twitterDownloadResult = null
+        discardAdjustment()
+        mutableState.value = freshState().copy(
+            screen = AppScreen.COPY_LOCATION_SOURCE,
+            feature = Feature.COPY_LOCATION,
+            copyLocation = CopyLocationUiState(sourcePickerRequested = true),
+        )
+    }
+
+    fun importLocationSources(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        if (isBusy()) {
+            mutableState.update { it.copy(errorMessage = text(R.string.backend_wait_before_import)) }
+            return
+        }
+        if (deferImportForAdjustment(PendingImport.Files(Feature.COPY_LOCATION, uris))) return
+        openCopyLocation()
+        val generation = locationImportGeneration
+        mutableState.update { it.copy(copyLocation = CopyLocationUiState(isLoading = true)) }
+        importJob = viewModelScope.launch {
+            val staged = mutableListOf<LocationSource>()
+            var published = false
+            try {
+                val candidates = withContext(Dispatchers.IO) {
+                    resolver.resolveAll(uris).map { input ->
+                        try {
+                            val source = copyLocationProcessor.importSource(input)
+                            staged += source // Own it before the cancellable dispatch back to Main.
+                            LocationCandidate(input, source)
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (error: Exception) {
+                            LocationCandidate(input, error = error.userMessage(R.string.location_read_failed))
+                        }
+                    }
+                }
+                if (generation != locationImportGeneration) return@launch
+                locationSources += staged.map { it.file }
+                mutableState.update { it.copy(copyLocation = CopyLocationUiState(candidates = candidates)) }
+                published = true
+                if (candidates.size == 1) candidates.single().source?.let(::chooseLocationSource)
+            } finally {
+                if (!published) staged.forEach { it.file.delete() }
+                if (generation == locationImportGeneration) {
+                    mutableState.update { it.copy(copyLocation = it.copyLocation?.copy(isLoading = false)) }
+                }
+            }
+        }
+    }
+
+    fun chooseLocationSource(source: LocationSource) {
+        val snapshot = mutableState.value
+        val location = snapshot.copyLocation ?: return
+        if (isBusy() || snapshot.screen != AppScreen.COPY_LOCATION_SOURCE || location.isLoading ||
+            !source.location.hasCoordinates || location.candidates.none { it.source == source }) return
+        locationSources.filter { it != source.file }.forEach { it.delete() }
+        locationSources.retainAll(setOf(source.file))
+        mutableState.update {
+            it.copy(screen = AppScreen.COPY_LOCATION_TARGETS,
+                copyLocation = CopyLocationUiState(source = source, targetsPickerRequested = true))
+        }
+    }
+
+    fun onLocationSourcePickerLaunched() = mutableState.update {
+        it.copy(copyLocation = it.copyLocation?.copy(sourcePickerRequested = false))
+    }
+
+    fun onLocationTargetsPickerLaunched() = mutableState.update {
+        it.copy(copyLocation = it.copyLocation?.copy(targetsPickerRequested = false))
+    }
+
+    fun onLocationPickerFailure() = mutableState.update {
+        it.copy(errorMessage = text(R.string.location_picker_failed),
+            copyLocation = it.copyLocation?.copy(targetsPickerRequested = false, sourcePickerRequested = false))
+    }
+
+    fun acceptLocationTargets(uris: List<Uri>) {
+        val snapshot = mutableState.value
+        val source = snapshot.copyLocation?.source ?: return
+        if (uris.isEmpty() || isBusy() || snapshot.screen != AppScreen.COPY_LOCATION_TARGETS) return
+        // Mark busy before launching: duplicate picker results cannot start overlapping batches.
+        mutableState.update { it.copy(isProcessing = true, errorMessage = null,
+            progress = ProcessingProgress(0, 0, text(R.string.location_loading))) }
+        processingJob = viewModelScope.launch {
+            var unpublished: ProcessingOutcome? = null
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val targets = resolver.resolveAll(uris)
+                    copyLocationProcessor.process(source, targets,
+                        onConflict = { conflict ->
+                            withContext(Dispatchers.Main.immediate) {
+                                val decision = CompletableDeferred<LocationConflictDecision>()
+                                locationDecision = decision
+                                mutableState.update { it.copy(copyLocation = it.copyLocation?.copy(conflict = conflict)) }
+                                try { decision.await() } finally {
+                                    locationDecision = null
+                                    mutableState.update { it.copy(copyLocation = it.copyLocation?.copy(conflict = null)) }
+                                }
+                            }
+                        },
+                        onProgress = { completed, total, message ->
+                            mutableState.update { it.copy(progress = ProcessingProgress(completed, total, message)) }
+                        },
+                    ).also { unpublished = it }
+                }
+                val success = result.failures.isEmpty() && result.skipped.isEmpty() && result.outputs.isNotEmpty()
+                mutableState.update { it.copy(
+                    screen = if (success) AppScreen.HOME else AppScreen.RESULT,
+                    isProcessing = false, outcome = result, copyLocation = null,
+                    successMessage = if (success) text(R.string.location_success, result.outputs.size) else null,
+                ) }
+                unpublished = null
+                releaseLocationSources()
+                if (mutableState.value.storageSettings.enabled) saveCurrentOutputs()
+            } catch (_: CancellationException) {
+                mutableState.update { it.copy(isProcessing = false, copyLocation = it.copyLocation?.copy(conflict = null)) }
+            } catch (error: Exception) {
+                mutableState.update { it.copy(isProcessing = false, errorMessage = error.userMessage(R.string.location_copy_failed)) }
+            } finally {
+                unpublished?.outputs?.forEach { it.file.delete() }
+                unpublished?.outputs?.mapNotNull { it.file.parentFile }?.distinct()?.forEach { it.delete() }
+            }
+        }
+    }
+
+    fun chooseLocationConflict(decision: LocationConflictDecision) {
+        locationDecision?.complete(decision)
+    }
+
+    private fun releaseLocationSources() {
+        locationImportGeneration++
+        locationSources.forEach { it.delete() }
+        locationSources.clear()
     }
 
     fun handleShareIntent(intent: Intent) {
@@ -231,6 +387,7 @@ class NatsukoViewModel @JvmOverloads constructor(
     private fun openTwitterDownload(link: String) {
         if (isBusy()) return
         if (deferImportForAdjustment(PendingImport.TwitterLink(link))) return
+        releaseLocationSources()
         importJob?.cancel()
         twitterDownloadResult = null
         discardAdjustment()
@@ -343,6 +500,7 @@ class NatsukoViewModel @JvmOverloads constructor(
         importJob?.cancel()
         val snapshot = mutableState.value
         val feature = snapshot.feature ?: return
+        if (feature == Feature.COPY_LOCATION) return // Targets start their own automatic batch.
         if (feature == Feature.IMAGE_ADJUSTMENT) {
             saveAdjustment()
             return
@@ -394,6 +552,7 @@ class NatsukoViewModel @JvmOverloads constructor(
                             unpublishedDownload = it
                         }
                         Feature.IMAGE_ADJUSTMENT -> error("Image adjustment exports through saveAdjustment()")
+                        Feature.COPY_LOCATION -> error("Location copying starts after target selection")
                     }
                 }
                 val outcome = result.copy(failures = snapshot.importFailures + result.failures)
@@ -534,7 +693,7 @@ class NatsukoViewModel @JvmOverloads constructor(
                 mutableState.update { it.copy(storageFailures = listOf(ProcessingFailure(text(R.string.backend_user_storage_directory), error.userMessage(R.string.backend_save_retry)))) }
             } finally {
                 mutableState.update {
-                    val showFailures = it.feature == Feature.CROP_BLACK_BORDER && it.storageFailures.isNotEmpty()
+                    val showFailures = it.feature in setOf(Feature.CROP_BLACK_BORDER, Feature.COPY_LOCATION) && it.storageFailures.isNotEmpty()
                     it.copy(
                         isSavingToUserStorage = false,
                         screen = if (showFailures) AppScreen.RESULT else it.screen,
@@ -568,12 +727,15 @@ class NatsukoViewModel @JvmOverloads constructor(
         } else {
             twitterDownloadResult = null
             discardAdjustment()
+            releaseLocationSources()
             mutableState.value = freshState()
         }
     }
 
     fun reset() {
-        if (mutableState.value.isSavingToUserStorage) return
+        val snapshot = mutableState.value
+        if (snapshot.isSavingToUserStorage || (snapshot.feature == Feature.COPY_LOCATION && snapshot.isProcessing)) return
+        releaseLocationSources()
         importJob?.cancel()
         processingJob?.cancel()
         twitterDownloadResult = null
@@ -764,6 +926,7 @@ class NatsukoViewModel @JvmOverloads constructor(
         when (pending) {
             is PendingImport.Files -> acceptSelection(pending.feature, pending.uris)
             is PendingImport.TwitterLink -> openTwitterDownload(pending.text)
+            PendingImport.CopyLocation -> openCopyLocation()
             null -> Unit
         }
     }
@@ -928,6 +1091,7 @@ class NatsukoViewModel @JvmOverloads constructor(
     override fun onCleared() {
         stopObservingAppearance()
         stopObservingStorage()
+        releaseLocationSources()
         discardAdjustment()
         super.onCleared()
     }
@@ -941,6 +1105,7 @@ class NatsukoViewModel @JvmOverloads constructor(
             Feature.PDF_TO_IMAGES -> mime == "application/pdf" || extension == "pdf"
             Feature.VIDEO_TO_GIF -> mime.startsWith("video/") || extension in VIDEO_EXTENSIONS
             Feature.DOWNLOAD_TWITTER_VIDEO -> false
+            Feature.COPY_LOCATION -> true // Content validation is performed by the metadata engine.
         }
     }
 

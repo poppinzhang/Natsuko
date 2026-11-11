@@ -19,6 +19,12 @@
 
 更换 FFmpeg 版本、启用编解码器或增加 ABI 时，按 [FFmpeg 构建资料](../third_party/ffmpeg/README.md) 重建并更新所有架构的二进制、源码来源、构建参数、校验和与许可证资料。以该目录记录为版本及构建来源的唯一依据；不要恢复已停更 FFmpegKit 的远端依赖，也不要引入运行时下载器。
 
+## 内置图片元数据工具
+
+图片位置复制使用随包提供的 ExifTool 13.53 / Perl 5.40.2。普通 Gradle 构建校验 `third_party/metadata/SHA256SUMS`，将两种 ABI 的解释器、离线模块与固定桥接脚本打入 APK/AAB。缺少任一组件时构建失败；用户无需另装软件或下载组件。
+
+重建说明及原始源码见 [元数据工具构建资料](../third_party/metadata/README.md)。修改后执行 `python3 scripts/verify-metadata.py app/build/outputs/apk/debug/app-debug.apk`，验证程序、模块、脚本与声明确实随包提供；通过 Android 16 设备测试验证各格式读写与冲突流程。发布源码归档同时包含这些组件及构建补丁。
+
 ## 开源信息和对应源码
 
 应用原创代码使用 Apache-2.0，其他组件保留各自许可。每个构建由实际解析的运行时依赖生成离线「关于」清单；新增/升级依赖必须更新审查清单，详见 [关于与许可维护](about.md)。

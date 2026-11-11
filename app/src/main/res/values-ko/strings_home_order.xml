@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_reorder_hint">기능을 길게 누른 후 드래그하여 순서를 변경하세요</string>
+    <string name="home_feature_position">%2$d개 중 %1$d번째</string>
+    <string name="home_feature_dragging">이동 중 · %1$s</string>
+</resources>

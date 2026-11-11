@@ -10,7 +10,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = "open_source/index.json"
-REQUIRED_PROJECTS = {"natsuko", "ffmpeg", "dav1d", "llvm"}
+REQUIRED_PROJECTS = {"natsuko", "ffmpeg", "dav1d", "llvm", "exiftool", "perl"}
 
 
 def require(condition: bool, message: str) -> None:
@@ -100,8 +100,10 @@ def verify_artifact(path: Path) -> None:
             if name not in expected_assets:
                 # Native notices are supplied as a separate Android asset source set.
                 require(PurePosixPath(name).name == name, f"No generated license asset: {name}")
-                source = ROOT / "third_party" / "ffmpeg" / "notices" / name
-                require(source.is_file(), f"Missing source license notice: {name}")
+                sources = [ROOT / "third_party" / component / "notices" / name for component in ("ffmpeg", "metadata")]
+                matches = [source for source in sources if source.is_file()]
+                require(len(matches) == 1, f"Missing or ambiguous source license notice: {name}")
+                source = matches[0]
                 expected_assets[name] = source.read_bytes()
         for name, data in sorted(expected_assets.items()):
             require(bool(data.strip()), f"Empty generated/source attribution asset: {name}")

@@ -32,6 +32,10 @@ class OpenSourceAuditTest(unittest.TestCase):
         native.mkdir(parents=True)
         for filename in ("FFmpeg-LGPL-2.1.txt", "dav1d-BSD-2-Clause.txt", "LLVM-NOTICE.txt"):
             (native / filename).write_text(f"Original native license: {filename}")
+        metadata = self.root / "third_party" / "metadata" / "notices"
+        metadata.mkdir(parents=True)
+        for filename in ("ExifTool-NOTICE.txt", "Perl-NOTICE.txt"):
+            (metadata / filename).write_text(f"Metadata attribution: {filename}")
         for variant in ("debug", "release"):
             directory = self.root / "app" / "build" / "generated" / "openSource" / variant / "assets"
             self.generated[variant] = directory
@@ -46,6 +50,8 @@ class OpenSourceAuditTest(unittest.TestCase):
                     {"id": "ffmpeg", "licenseFiles": ["FFmpeg-LGPL-2.1.txt"]},
                     {"id": "dav1d", "licenseFiles": ["dav1d-BSD-2-Clause.txt"]},
                     {"id": "llvm", "licenseFiles": ["LLVM-NOTICE.txt"]},
+                    {"id": "exiftool", "licenseFiles": ["ExifTool-NOTICE.txt"]},
+                    {"id": "perl", "licenseFiles": ["Perl-NOTICE.txt"]},
                     {"id": "kotlin", "licenseFiles": ["open_source/licenses/Kotlin-LICENSE.txt"]},
                 ],
                 "dependencies": ["org.jetbrains.kotlin:kotlin-stdlib:2.2.21"],
@@ -66,6 +72,7 @@ class OpenSourceAuditTest(unittest.TestCase):
             for file in self.generated[variant].rglob("*") if file.is_file()
         }
         payload.update({file.name: file.read_bytes() for file in (self.root / "third_party" / "ffmpeg" / "notices").iterdir()})
+        payload.update({file.name: file.read_bytes() for file in (self.root / "third_party" / "metadata" / "notices").iterdir()})
         with zipfile.ZipFile(path, "w") as archive:
             for name, data in payload.items():
                 if name == omit:

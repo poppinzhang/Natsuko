@@ -1,0 +1,8 @@
+4da1e3c6cc4b981aa534705c722428cad6fb46122bea531e844513468b1c873c  assets/metadata/exiftool-13.53.zip
+1a73109c2e4b9f42b92fbe76a48cbf80b09d86ccba1e6ba4134a1ff46edb2aa9  assets/metadata/perl-5.40.2-arm64-v8a.zip
+2d3abf4d2b225d3bf5329be1e54adb0fcd215a540a2ba9e6953397f08d312495  assets/metadata/perl-5.40.2-x86_64.zip
+a3486933311f733a0b536729eb1398f68e1384c68a379cbd505c43f152a955e6  jniLibs/arm64-v8a/libnatsuko_perl.so
+7450099a6552bdcb859a9506e11baf6ffd0572cc151c6c5963ec3de5f26d4dfc  jniLibs/x86_64/libnatsuko_perl.so
+d5224829f4835fd21ccfdde72a407afff29e94bc39b54203bf94e8d884675348  sources/exiftool-13.53.tar.gz
+0551c717458e703ef7972307ab19385edfa231198d88998df74e12226abf563b  sources/perl-5.40.2.tar.xz
+685724ac1f6c3fb9a31e53200cb9a2ffd6634c033a6f425184f7161322b3b7e6  sources/perl-cross-1.6.tar.gz

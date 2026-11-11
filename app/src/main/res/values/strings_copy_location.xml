@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_copy_location">Copy image location</string>
+    <string name="feature_copy_location_description">Copy GPS coordinates and place names to multiple images</string>
+    <string name="share_copy_location">Natsuko · Copy image location</string>
+    <string name="location_source_title">1. Choose a location source</string>
+    <string name="location_source_hint">Choose an image with GPS coordinates. Images without readable coordinates cannot be used as the source.</string>
+    <string name="location_pick_source">Choose source image</string>
+    <string name="location_targets_title">2. Choose target images</string>
+    <string name="location_targets_hint">Select one or more images. Copying starts automatically; existing locations are checked one image at a time.</string>
+    <string name="location_source_label">Source location</string>
+    <string name="location_pick_targets">Choose target images</string>
+    <string name="location_copies_hint">Results are saved as new copies in the app image directory. Original files are preserved. Coordinates and stored place names are copied without looking up an address online.</string>
+    <string name="location_formats_hint">JPEG / PNG / WebP / HEIF / HEIC / TIFF / ARW / CR3 / CR2 / NEF / RAF / RW2</string>
+    <string name="location_conflict_title">This image already has a location</string>
+    <string name="location_before">Before: %1$s</string>
+    <string name="location_after">After: %1$s</string>
+    <string name="location_conflict_hint">An “all” choice applies to this image and later images that already have a location in this batch.</string>
+    <string name="location_overwrite">Overwrite</string>
+    <string name="location_skip">Skip</string>
+    <string name="location_overwrite_all">Overwrite all remaining</string>
+    <string name="location_skip_all">Skip all remaining</string>
+    <string name="location_abort">Abort batch</string>
+    <string name="location_success">Location copied to %1$d images.</string>
+    <string name="location_loading">Reading image locations…</string>
+    <string name="location_invalid_source">This image has no valid GPS coordinates and cannot be used as the source.</string>
+    <string name="location_unsupported_format">This image format is not supported for location copying.</string>
+    <string name="location_read_failed">Could not read this image. Check the file and access permission.</string>
+    <string name="location_copy_failed">Could not copy the image location.</string>
+    <string name="location_processing">%1$d/%2$d · %3$s</string>
+    <string name="location_skipped">Skipped because the image already has a location.</string>
+    <string name="location_aborted">Batch processing was stopped. Completed copies have been kept.</string>
+    <string name="location_choose_one_source">Choose one image as the location source.</string>
+    <string name="location_picker_failed">Could not open the file picker. Try again.</string>
+    <string name="location_metadata_failed">Unable to read or write image location metadata.</string>
+    <string name="location_format_unsupported">Unsupported image format.</string>
+    <string name="location_backend_missing">Embedded metadata engine unavailable.</string>
+    <string name="location_write_verification_failed">Could not verify the copied location.</string>
+    <string name="location_skipped_summary">Skipped or not processed: %1$d</string>
+</resources>

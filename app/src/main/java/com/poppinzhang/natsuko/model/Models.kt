@@ -36,9 +36,14 @@ data class ProcessingFailure(
     constructor(source: String, reason: String) : this(UiText.Literal(source), UiText.Literal(reason))
 }
 
+data class ProcessingSkipped(val source: UiText, val reason: UiText) {
+    constructor(source: String, reason: UiText) : this(UiText.Literal(source), reason)
+}
+
 data class ProcessingOutcome(
     val outputs: List<OutputArtifact>,
     val failures: List<ProcessingFailure> = emptyList(),
+    val skipped: List<ProcessingSkipped> = emptyList(),
 )
 
 data class ProcessingProgress(

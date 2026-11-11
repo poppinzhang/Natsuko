@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_copy_location">複製圖片位置</string>
+    <string name="feature_copy_location_description">將座標和地點名稱批次複製到圖片</string>
+    <string name="share_copy_location">Natsuko · 複製圖片位置</string>
+    <string name="location_source_title">1. 選擇來源資訊圖片</string>
+    <string name="location_source_hint">選擇一張帶有 GPS 座標的圖片。無法讀取座標的圖片不能作為來源資訊圖片。</string>
+    <string name="location_pick_source">選擇來源資訊圖片</string>
+    <string name="location_targets_title">2. 選擇複製目標圖片</string>
+    <string name="location_targets_hint">選擇一張或多張圖片後自動開始複製。遇到已有位置資訊的圖片時，會逐張詢問處理方式。</string>
+    <string name="location_source_label">來源位置資訊</string>
+    <string name="location_pick_targets">選擇複製目標圖片</string>
+    <string name="location_copies_hint">處理結果以新副本儲存至應用程式專屬圖片目錄，保留原始檔案。複製座標及圖片中已有的地點名稱，不連網查詢地址。</string>
+    <string name="location_formats_hint">JPEG / PNG / WebP / HEIF / HEIC / TIFF / ARW / CR3 / CR2 / NEF / RAF / RW2</string>
+    <string name="location_conflict_title">圖片已有位置資訊</string>
+    <string name="location_before">複製前地址：%1$s</string>
+    <string name="location_after">複製後地址：%1$s</string>
+    <string name="location_conflict_hint">「後續全部」同時套用至目前圖片及本批次之後所有已有位置的圖片。</string>
+    <string name="location_overwrite">覆寫</string>
+    <string name="location_skip">略過</string>
+    <string name="location_overwrite_all">後續全部覆寫</string>
+    <string name="location_skip_all">後續全部略過</string>
+    <string name="location_abort">中止</string>
+    <string name="location_success">已將位置資訊複製至 %1$d 張圖片。</string>
+    <string name="location_loading">正在讀取圖片位置資訊…</string>
+    <string name="location_invalid_source">此圖片沒有有效的 GPS 座標，無法作為來源資訊圖片。</string>
+    <string name="location_unsupported_format">此圖片格式不支援複製位置資訊。</string>
+    <string name="location_read_failed">無法讀取此圖片，請檢查檔案及存取權限。</string>
+    <string name="location_copy_failed">無法複製圖片位置資訊。</string>
+    <string name="location_processing">%1$d/%2$d · %3$s</string>
+    <string name="location_skipped">已略過具有位置資訊的圖片。</string>
+    <string name="location_aborted">批次處理已中止，已完成的副本已保留。</string>
+    <string name="location_choose_one_source">請選擇一張圖片作為位置資訊來源。</string>
+    <string name="location_picker_failed">無法開啟檔案選擇器，請重試。</string>
+    <string name="location_metadata_failed">無法讀取或寫入圖片位置資訊。</string>
+    <string name="location_format_unsupported">不支援的圖片格式。</string>
+    <string name="location_backend_missing">內建中繼資料處理引擎無法使用。</string>
+    <string name="location_write_verification_failed">無法驗證已複製的位置資訊。</string>
+    <string name="location_skipped_summary">已略過或未處理：%1$d</string>
+</resources>

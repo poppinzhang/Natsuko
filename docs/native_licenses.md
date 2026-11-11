@@ -105,6 +105,23 @@ dav1d sources needed for rebuilding the standalone executables; application
 objects are not statically linked into them. The Android toolchain and normal
 system libraries remain separately available build/platform prerequisites.
 
+## Embedded ExifTool and Perl
+
+The image-location workflow bundles ExifTool 13.53 and a Perl 5.40.2 interpreter
+for both Android ABIs. ExifTool and Perl retain their upstream dual Artistic/GPL
+terms. The complete corresponding upstream archives, perl-cross build support,
+local portability patches, module packaging script and original notices are
+under `third_party/metadata/` and are included in the release source archive.
+The original application is not linked into Perl; it invokes the interpreter
+from Android's installed native-library directory with a fixed bridge script.
+
+The offline About catalog includes ExifTool and Perl and their full notices.
+`third_party/metadata/README.md` documents the pinned NDK, build configuration
+and module set. Rebuild using `scripts/build-metadata-runtime.sh`; verify both
+ABI executables, assets, checksums and 16 KB alignment using
+`python3 scripts/verify-metadata.py`. Pass an APK or AAB to also verify that all
+runtime payloads, the bridge and notices are present unchanged in the artifact.
+
 ## AndroidX Graphics Path
 
 `androidx.graphics:graphics-path:1.0.1` includes

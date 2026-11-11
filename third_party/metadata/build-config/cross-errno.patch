@@ -1,0 +1,10 @@
+--- a/ext/Errno/Errno_pm.PL
++++ b/ext/Errno/Errno_pm.PL
+@@ -166,6 +166,7 @@
+ 		die "Cannot run '$Config{cpprun} $Config{cppflags} errno.c'";
+ 	} else {
+ 	    my $cpp = default_cpp();
++        $cpp =~ s/ -P\b//g; # Keep line markers while discovering target headers.
+ 	    open(CPPO,"$cpp < errno.c |") or
+ 		die "Cannot exec $cpp";
+ 	}

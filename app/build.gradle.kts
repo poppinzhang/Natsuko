@@ -98,6 +98,40 @@ val verifyEmbeddedFfmpeg = tasks.register("verifyEmbeddedFfmpeg") {
 }
 tasks.matching { it.name == "preBuild" }.configureEach { dependsOn(verifyEmbeddedFfmpeg) }
 
+val verifyEmbeddedMetadata = tasks.register("verifyEmbeddedMetadata") {
+    val vendorRoot = rootProject.file("third_party/metadata")
+    val checksums = vendorRoot.resolve("SHA256SUMS")
+    val packagedFiles = listOf("arm64-v8a", "x86_64").flatMap { abi ->
+        listOf("jniLibs/$abi/libnatsuko_perl.so", "assets/metadata/perl-5.40.2-$abi.zip")
+    } + "assets/metadata/exiftool-13.53.zip"
+    inputs.files(packagedFiles.map(vendorRoot::resolve), checksums)
+    doLast {
+        check(checksums.isFile) { "Embedded metadata checksum manifest missing; see third_party/metadata/README.md" }
+        val expected = checksums.readLines().filter(String::isNotBlank).associate { line ->
+            val parts = line.trim().split(Regex("\\s+"), limit = 2)
+            check(parts.size == 2 && Regex("[0-9a-f]{64}").matches(parts[0])) { "Invalid metadata checksum entry" }
+            parts[1] to parts[0]
+        }
+        packagedFiles.forEach { relativePath ->
+            val file = vendorRoot.resolve(relativePath)
+            check(file.isFile && file.length() > 0) { "Embedded metadata asset missing: $relativePath" }
+            val digest = MessageDigest.getInstance("SHA-256")
+            file.inputStream().use { input ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    digest.update(buffer, 0, count)
+                }
+            }
+            check(digest.digest().joinToString("") { "%02x".format(it) } == expected[relativePath]) {
+                "Embedded metadata checksum mismatch: $relativePath"
+            }
+        }
+    }
+}
+tasks.matching { it.name == "preBuild" }.configureEach { dependsOn(verifyEmbeddedMetadata) }
+
 android {
     namespace = "com.poppinzhang.natsuko"
     compileSdk = 36
@@ -168,6 +202,9 @@ android {
 
     sourceSets["main"].jniLibs.srcDir(rootProject.file("third_party/ffmpeg/jniLibs"))
     sourceSets["main"].assets.srcDir(rootProject.file("third_party/ffmpeg/notices"))
+    sourceSets["main"].jniLibs.srcDir(rootProject.file("third_party/metadata/jniLibs"))
+    sourceSets["main"].assets.srcDir(rootProject.file("third_party/metadata/assets"))
+    sourceSets["main"].assets.srcDir(rootProject.file("third_party/metadata/notices"))
 
     testOptions {
         unitTests.isReturnDefaultValues = true

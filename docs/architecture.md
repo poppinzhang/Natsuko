@@ -30,7 +30,7 @@
 
 ## 分享入口
 
-Manifest 定义七个带独立名称与 MIME 过滤器的 `activity-alias`：图片拼接、去除黑边、图片转 PDF、PDF 转图片、视频转 GIF、下载推特视频（GIF）、图片调整。入口组件名决定功能，URI 同时从 `ClipData` 和 extras 读取，以兼容不同发送方。`CropBlackBorderShare` 接收 `image/*` 的 `ACTION_SEND` 和 `ACTION_SEND_MULTIPLE`，支持单张截图和多图分享导入。
+Manifest 定义八个带独立名称与 MIME 过滤器的 `activity-alias`：图片拼接、去除黑边、图片转 PDF、PDF 转图片、视频转 GIF、下载推特视频（GIF）、图片调整、复制图片位置。入口组件名决定功能，URI 同时从 `ClipData` 和 extras 读取，以兼容不同发送方。`CropBlackBorderShare` 接收 `image/*` 的 `ACTION_SEND` 和 `ACTION_SEND_MULTIPLE`，支持单张截图和多图分享导入。
 
 分享导入会自动进入所选功能的处理流程。“去除黑边”使用固定的保守检测规则，导入后直接开始自动处理；四项文件配置功能在正式处理前保留配置确认。`ImageAdjustmentShare` 接收单张或多张 `image/*`，进入同一编辑页，不触发自动处理；存在未导出编辑时，新的导入需先确认放弃。`DownloadTwitterVideoShare` 只接收 `text/plain` 的 `ACTION_SEND`，从 `EXTRA_TEXT` 与 `ClipData.text` 提取唯一推文链接，进入链接页后由用户点击下载，不解引用分享方提供的文件 URI。
 
@@ -70,3 +70,10 @@ FFmpeg 与 FFprobe 从官方源码构建，随 APK/AAB 内置，当前提供 `ar
 - 视频暂存会占用与输入文件大小相当的缓存空间；空间不足或 URI 读取失败会报告明确错误。容器、编码和配置文件的支持由内置 FFmpeg 构建决定。
 
 应用不请求媒体库或全盘存储权限。默认用户目录使用 `MediaStore.Downloads`；自定义目录通过系统目录选择器取得持久读写授权。用户目录中的成品可独立于应用保留，应用专属副本会随卸载移除。
+
+
+## 图片位置复制
+
+`CopyLocationProcessor` 将已授权 URI 流式复制到工作文件，由 `LocationMetadataEngine` 使用内置 ExifTool/Perl 读写位置。来源先校验有效坐标；目标逐张处理，通过可挂起回调等待冲突决策，策略限定在单批次内。原文件不修改，结果复用 `OutputRepository` 和 `UserStorageRepository`。
+
+Perl 可执行文件从安装器解压的 `nativeLibraryDir` 启动，受版本控制的 Perl 模块、ExifTool 模块和固定桥接脚本来自 APK assets。外部输入只作为参数和元数据处理，不执行 shell 命令；进程输出有长度限制，可取消并回收。重建资料见 `third_party/metadata/README.md`，交互说明见 [图片地理位置信息复制](copy_location.md)。

@@ -36,6 +36,8 @@ jobs:
           ./scripts/test-package.sh
           python3 scripts/test_verify_open_source.py
           python3 scripts/test_verify_ffmpeg.py
+          python3 scripts/test_verify_metadata.py
+          python3 scripts/test-location-metadata.py
 
       - name: Test, lint and package signed release
         id: package-release

@@ -44,12 +44,17 @@ write_version() { printf 'VERSION_NAME=1.0.0\nVERSION_CODE=3\n' > version.proper
 write_changelog() { printf '# Changelog\n\n## unstaged\n\n## 1.0.0\n\n- Current features.\n\n## 0.9.0\n\n- Old features.\n' > CHANGELOG.md; }
 compliance_files=(
   LICENSE NOTICE THIRD_PARTY_NOTICES.md
+  third_party/metadata/README.md third_party/metadata/provenance.json third_party/metadata/SHA256SUMS
+  scripts/build-metadata-runtime.sh scripts/prepare-exiftool.py scripts/verify-metadata.py scripts/test-location-metadata.py
+  app/src/main/assets/metadata/location_bridge.pl
   docs/native_licenses.md
   third_party/ffmpeg/README.md third_party/ffmpeg/provenance.json
   third_party/open-source-components.json
   third_party/ffmpeg/SHA256SUMS scripts/build-ffmpeg.sh scripts/verify-ffmpeg.py
 )
 source_directories=(
+  app/src/androidTest/assets/location
+  third_party/metadata/sources third_party/metadata/build-config third_party/metadata/notices
   third_party/ffmpeg/sources third_party/ffmpeg/build-config third_party/ffmpeg/notices
   third_party/licenses
 )
@@ -75,13 +80,18 @@ assert artifacts[0] == "app/build/outputs/apk/debug/app-debug.apk"
 assert artifacts[1] in ("app/build/outputs/apk/release/app-release.apk", "app/build/outputs/apk/release/app-release-unsigned.apk")
 assert artifacts[2] == "app/build/outputs/bundle/release/app-release.aab"
 assert all(Path(path).is_file() for path in artifacts)
-failure_flag = "FAIL_LICENSE_AUDIT" if name == "verify-open-source.py" else "FAIL_NATIVE_AUDIT"
+failure_flag = {
+    "verify-open-source.py": "FAIL_LICENSE_AUDIT",
+    "verify-ffmpeg.py": "FAIL_NATIVE_AUDIT",
+    "verify-metadata.py": "FAIL_METADATA_AUDIT",
+}[name]
 if os.environ.get(failure_flag) == "true":
     raise SystemExit(f"Artifact compliance audit failed: {name}")
 with open("verification-calls", "a") as log:
     log.write(name + "\n")
 MOCK
   cp scripts/verify-open-source.py scripts/verify-ffmpeg.py
+  cp scripts/verify-open-source.py scripts/verify-metadata.py
 }
 expect_failure() {
   local expected="$1"
@@ -101,7 +111,7 @@ write_version
 write_changelog
 write_compliance
 expect_failure '缺少签名配置 NATSUKO_KEYSTORE' ./scripts/package.sh
-[[ ! -d app && ! -d dist ]]
+[[ ! -d app/build && ! -d dist ]]
 expect_failure 'NATSUKO_VERSION_NAME 与 version.properties 不一致' env NATSUKO_VERSION_NAME=2.0.0 ./scripts/package.sh --unsigned
 expect_failure '发布标签必须为 v1.0.0' ./scripts/package.sh --tag v2.0.0
 expect_failure '发布标签必须为 v1.0.0' ./scripts/package.sh --tag 1.0.0
@@ -150,6 +160,7 @@ done
 [[ ! -d "dist/1.0.0/$source_name" ]]
 [[ "$(awk '/^verify-open-source.py$/ { count++ } END { print count }' verification-calls)" == 2 ]]
 [[ "$(awk '/^verify-ffmpeg.py$/ { count++ } END { print count }' verification-calls)" == 2 ]]
+[[ "$(awk '/^verify-metadata.py$/ { count++ } END { print count }' verification-calls)" == 2 ]]
 [[ "$(cat github-output)" == version=1.0.0 ]]
 [[ "$(cat dist/1.0.0.backup.*/previous-package)" == previous ]]
 awk '/SIGNING_STATUS=signed-release/ { found = 1 } END { exit !found }' dist/1.0.0/BUILD_INFO.properties
@@ -185,6 +196,10 @@ expect_failure 'Artifact compliance audit failed: verify-open-source.py' env FAI
 cmp previous-checksums dist/1.0.0/SHA256SUMS
 expect_failure 'Artifact compliance audit failed: verify-ffmpeg.py' env FAIL_NATIVE_AUDIT=true ./scripts/package.sh
 cmp previous-checksums dist/1.0.0/SHA256SUMS
+expect_failure 'Artifact compliance audit failed: verify-metadata.py' env FAIL_METADATA_AUDIT=true ./scripts/package.sh
+cmp previous-checksums dist/1.0.0/SHA256SUMS
+# Verify the previous payloads too, rather than only retaining their checksum file.
+(cd dist/1.0.0 && shasum -a 256 -c SHA256SUMS) > test.log
 expect_failure '' env FAIL_BUILD=true ./scripts/package.sh
 cmp previous-checksums dist/1.0.0/SHA256SUMS
 expect_failure '' env FAIL_SIGNATURE=true ./scripts/package.sh

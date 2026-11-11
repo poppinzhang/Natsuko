@@ -16,7 +16,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,11 +39,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ExitToApp
-import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.outlined.AccountBox
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Create
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
@@ -77,12 +73,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -92,7 +84,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -144,6 +135,38 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
     val adjustmentPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         uri?.let { viewModel.acceptSelection(Feature.IMAGE_ADJUSTMENT, listOf(it)) }
     }
+    val locationSourcePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { viewModel.importLocationSources(listOf(it)) }
+    }
+    val locationTargetsPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) {
+        viewModel.acceptLocationTargets(it)
+    }
+    val pickLocationSource: () -> Unit = {
+        try {
+            locationSourcePicker.launch(arrayOf("*/*"))
+        } catch (_: Exception) {
+            viewModel.onLocationPickerFailure()
+        }
+    }
+    val pickLocationTargets: () -> Unit = {
+        try {
+            locationTargetsPicker.launch(arrayOf("*/*"))
+        } catch (_: Exception) {
+            viewModel.onLocationPickerFailure()
+        }
+    }
+    LaunchedEffect(state.copyLocation?.sourcePickerRequested) {
+        if (state.copyLocation?.sourcePickerRequested == true) {
+            viewModel.onLocationSourcePickerLaunched()
+            pickLocationSource()
+        }
+    }
+    LaunchedEffect(state.copyLocation?.targetsPickerRequested) {
+        if (state.copyLocation?.targetsPickerRequested == true) {
+            viewModel.onLocationTargetsPickerLaunched()
+            pickLocationTargets()
+        }
+    }
     val directoryPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
         viewModel.onUserStorageDirectorySelected(it)
     }
@@ -166,6 +189,7 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
             Feature.PDF_TO_IMAGES -> pdfPicker.launch(arrayOf("application/pdf"))
             Feature.VIDEO_TO_GIF -> videoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
             Feature.DOWNLOAD_TWITTER_VIDEO -> viewModel.openTwitterDownload()
+            Feature.COPY_LOCATION -> viewModel.openCopyLocation()
             Feature.IMAGE_ADJUSTMENT -> adjustmentPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
     }
@@ -201,6 +225,22 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
             onDownload = viewModel::downloadTwitterVideo,
             onBack = viewModel::back,
         )
+        AppScreen.COPY_LOCATION_SOURCE -> state.copyLocation?.let {
+            CopyLocationSourceScreen(
+                state = it,
+                onBack = viewModel::back,
+                onPick = pickLocationSource,
+                onChoose = viewModel::chooseLocationSource,
+            )
+        }
+        AppScreen.COPY_LOCATION_TARGETS -> state.copyLocation?.let {
+            CopyLocationTargetsScreen(
+                state = it,
+                isBusy = state.isProcessing || state.isSavingToUserStorage,
+                onBack = viewModel::back,
+                onPick = pickLocationTargets,
+            )
+        }
         AppScreen.CONFIGURE -> ConfigurationScreen(
             state = state,
             onBack = viewModel::back,
@@ -258,203 +298,11 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
         )
     }
 
-    if (state.isProcessing) ProcessingDialog(state.progress, viewModel::cancelProcessing)
-}
-
-@Composable
-private fun HomeScreen(
-    state: NatsukoUiState,
-    onFeature: (Feature) -> Unit,
-    onSettings: () -> Unit,
-    onResults: () -> Unit,
-    onAbout: () -> Unit,
-) {
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().testTag("home-list"),
-            contentPadding = PaddingValues(
-                start = 20.dp,
-                end = 20.dp,
-                top = padding.calculateTopPadding() + 28.dp,
-                bottom = padding.calculateBottomPadding() + 28.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            item {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.weight(1f)) { Hero() }
-                    TextButton(onClick = onSettings, modifier = Modifier.testTag("home-settings")) { Text(stringResource(R.string.main_settings)) }
-                }
-            }
-            state.successMessage?.let { message ->
-                item {
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-                        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(message.asString(), fontWeight = FontWeight.Bold)
-                            if (state.isSavingToUserStorage) {
-                                UserStorageProgress(state.progress)
-                            } else {
-                                Text(
-                                    if (state.outcome?.outputs?.all { it.userStorage != null } == true) stringResource(R.string.main_saved_user_directory) else stringResource(R.string.main_saved_app_directory),
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                            }
-                            TextButton(onClick = onResults, modifier = Modifier.testTag("home-crop-results")) { Text(stringResource(R.string.main_view_results)) }
-                        }
-                    }
-                }
-            }
-            item { SectionLabel(stringResource(R.string.main_images)) }
-            item {
-                FeatureCard(
-                    icon = Icons.AutoMirrored.Outlined.List,
-                    feature = Feature.IMAGE_MERGE,
-                    accent = Color(0xFF84546F),
-                    onClick = onFeature,
-                )
-            }
-            item {
-                FeatureCard(
-                    icon = Icons.Outlined.KeyboardArrowDown,
-                    feature = Feature.DOWNLOAD_TWITTER_VIDEO,
-                    accent = Color(0xFF3E6F78),
-                    onClick = onFeature,
-                )
-            }
-            item {
-                FeatureCard(
-                    icon = Icons.Outlined.Create,
-                    feature = Feature.IMAGES_TO_PDF,
-                    accent = Color(0xFF9B493F),
-                    onClick = onFeature,
-                )
-            }
-            item {
-                FeatureCard(
-                    icon = Icons.Outlined.Create,
-                    feature = Feature.CROP_BLACK_BORDER,
-                    accent = Color(0xFF3F7D55),
-                    onClick = onFeature,
-                )
-            }
-            item {
-                FeatureCard(
-                    icon = AdjustmentIcons.Crop,
-                    feature = Feature.IMAGE_ADJUSTMENT,
-                    accent = Color(0xFF5C5A8E),
-                    onClick = onFeature,
-                )
-            }
-            item { SectionLabel(stringResource(R.string.main_documents)) }
-            item {
-                FeatureCard(
-                    icon = Icons.Outlined.AccountBox,
-                    feature = Feature.PDF_TO_IMAGES,
-                    accent = Color(0xFF3E6F78),
-                    onClick = onFeature,
-                )
-            }
-            item { SectionLabel(stringResource(R.string.main_video_animation)) }
-            item {
-                FeatureCard(
-                    icon = Icons.Outlined.PlayArrow,
-                    feature = Feature.VIDEO_TO_GIF,
-                    accent = Color(0xFF6C6534),
-                    onClick = onFeature,
-                )
-            }
-            item {
-                Text(
-                    stringResource(R.string.main_storage_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-            item {
-                TextButton(onClick = onAbout, modifier = Modifier.fillMaxWidth().testTag("home-about")) {
-                    Text(stringResource(R.string.main_about))
-                }
-            }
-        }
+    state.copyLocation?.conflict?.let { conflict ->
+        CopyLocationConflictDialog(conflict, viewModel::chooseLocationConflict)
     }
-}
-
-@Composable
-private fun Hero() {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Surface(
-            modifier = Modifier.size(76.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.primaryContainer,
-        ) {
-            Image(
-                painter = painterResource(R.drawable.ic_launcher_foreground),
-                contentDescription = stringResource(R.string.app_name),
-                modifier = Modifier.padding(4.dp),
-            )
-        }
-        Spacer(Modifier.width(18.dp))
-        Column {
-            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text(
-                stringResource(R.string.main_tagline),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 8.dp, start = 4.dp),
-    )
-}
-
-@Composable
-private fun FeatureCard(icon: ImageVector, feature: Feature, accent: Color, onClick: (Feature) -> Unit) {
-    val iconAccent = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) {
-        lerp(accent, Color.White, 0.45f)
-    } else accent
-    Card(
-        onClick = { onClick(feature) },
-        modifier = Modifier.fillMaxWidth().then(
-            when (feature) {
-                Feature.DOWNLOAD_TWITTER_VIDEO -> Modifier.testTag("home-download-twitter")
-                Feature.IMAGE_ADJUSTMENT -> Modifier.testTag("home-image-adjustment")
-                else -> Modifier
-            },
-        ),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier.size(52.dp).clip(RoundedCornerShape(17.dp)).background(iconAccent.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(icon, contentDescription = null, tint = iconAccent, modifier = Modifier.size(27.dp))
-            }
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(feature.titleRes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(3.dp))
-                Text(stringResource(feature.subtitleRes), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
+    if (state.isProcessing && state.copyLocation?.conflict == null) {
+        ProcessingDialog(state.progress, viewModel::cancelProcessing)
     }
 }
 
@@ -522,7 +370,7 @@ private fun ConfigurationScreen(
             }
             item { HorizontalDivider() }
             when (feature) {
-                Feature.CROP_BLACK_BORDER, Feature.DOWNLOAD_TWITTER_VIDEO, Feature.IMAGE_ADJUSTMENT -> Unit
+                Feature.CROP_BLACK_BORDER, Feature.DOWNLOAD_TWITTER_VIDEO, Feature.IMAGE_ADJUSTMENT, Feature.COPY_LOCATION -> Unit
                 Feature.IMAGE_MERGE -> item { MergeSettings(state.mergeOptions, onMergeDirection, onMergeColor) }
                 Feature.IMAGES_TO_PDF -> item {
                     PdfSettings(state.imagesToPdfOptions, onPdfMode, onPdfPage, onPdfOrientation, onPdfMargin)
@@ -1006,6 +854,18 @@ private fun ResultScreen(
                     conversionEnabled = !state.isSavingToUserStorage,
                     conversionTag = "twitter-convert-gif-$index",
                 )
+            }
+            outcome?.skipped?.takeIf { it.isNotEmpty() }?.let { skipped ->
+                item {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(stringResource(R.string.location_skipped_summary, skipped.size), fontWeight = FontWeight.Bold)
+                            skipped.forEach {
+                                Text(stringResource(R.string.main_failure_detail, it.source.asString(), it.reason.asString()), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
             }
             outcome?.failures?.takeIf { it.isNotEmpty() }?.let { failures ->
                 item {
