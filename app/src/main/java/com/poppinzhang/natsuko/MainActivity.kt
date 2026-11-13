@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.poppinzhang.natsuko.data.AppearancePreferences
+import com.poppinzhang.natsuko.data.ShareImportParser
 import com.poppinzhang.natsuko.data.applyApplicationTheme
 import com.poppinzhang.natsuko.ui.NatsukoViewModel
 import com.poppinzhang.natsuko.ui.NatsukoApp
@@ -39,7 +40,8 @@ class MainActivity : ComponentActivity() {
                 NatsukoApp(viewModel)
             }
         }
-        if (savedInstanceState == null && (intent.action == Intent.ACTION_SEND || intent.action == Intent.ACTION_SEND_MULTIPLE)) {
+        // Neither a recreated activity nor a task reopened from Recents imports its share again.
+        if (savedInstanceState == null && ShareImportParser.isNewShare(intent)) {
             viewModel.handleShareIntent(intent)
         }
     }

@@ -122,9 +122,67 @@ class BitmapLoaderPreviewTest {
     }
 
     @Test
+    fun processingDecodeKeepsFullColorDepthOfOpaqueImages() {
+        for (format in listOf(Bitmap.CompressFormat.PNG, Bitmap.CompressFormat.JPEG)) {
+            val file = createImage("opaque-$format", 64, 48, format) {
+                it.eraseColor(Color.RED)
+                it.setHasAlpha(false)
+            }
+            val processed = loader.decode(fixtureUri(file))
+            try {
+                // A 16-bit decode would band gradients in merged images and PDF pages.
+                assertEquals("Opaque $format", Bitmap.Config.ARGB_8888, processed.config)
+            } finally {
+                processed.recycle()
+            }
+        }
+    }
+
+    @Test
+    fun processingSizeComesFromTheHeaderAndMatchesTheProcessingDecode() {
+        val rotated = createImage("header-rotated.jpg", 1000, 400, Bitmap.CompressFormat.JPEG)
+        ExifInterface(rotated.absolutePath).apply {
+            setAttribute(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_ROTATE_90.toString())
+            saveAttributes()
+        }
+        val expected = mapOf(
+            createImage("header-oversized.png", 8000, 1200) to ImageSize(4096, 614),
+            createImage("header-small.png", 80, 40) to ImageSize(80, 40),
+            rotated to ImageSize(400, 1000),
+        )
+        for ((file, size) in expected) {
+            val uri = fixtureUri(file)
+            assertEquals(file.name, size, loader.processingSize(uri))
+            val processed = loader.decode(uri)
+            try {
+                assertEquals(file.name, size, processed.size())
+            } finally {
+                processed.recycle()
+            }
+        }
+    }
+
+    @Test
+    fun decodesDirectlyAtTheSizeAnImageIsDrawn() {
+        val uri = fixtureUri(createImage("target.png", 1600, 800) {
+            it.eraseColor(Color.BLUE)
+            it.setHasAlpha(false)
+        })
+        val drawn = loader.decode(uri, ImageSize(200, 100))
+        try {
+            assertEquals(ImageSize(200, 100), drawn.size())
+            assertEquals(Bitmap.Config.ARGB_8888, drawn.config)
+            assertEquals(Color.BLUE, drawn.getPixel(100, 50))
+        } finally {
+            drawn.recycle()
+        }
+    }
+
+    @Test
     fun invalidImageFailsInsteadOfProducingAPreview() {
         val file = File(fixtureDirectory, "invalid.png").apply { writeText("not an image") }
         assertTrue(runCatching { loader.decodePreview(fixtureUri(file)) }.isFailure)
+        assertTrue(runCatching { loader.processingSize(fixtureUri(file)) }.isFailure)
     }
 
     private fun createImage(

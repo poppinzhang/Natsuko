@@ -8,6 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.poppinzhang.natsuko.data.ShareImportParser
 import com.poppinzhang.natsuko.model.Feature
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -70,5 +71,18 @@ class ShareImportParserTest {
             .setComponent(ComponentName("com.poppinzhang.natsuko", "com.poppinzhang.natsuko.share.ImagesToPdfShare"))
 
         assertTrue(ShareImportParser.uris(intent).isEmpty())
+    }
+
+    @Test
+    fun onlySharesThatWereNotHandledBeforeAreNew() {
+        val share = Intent(Intent.ACTION_SEND)
+            .setComponent(ComponentName("com.poppinzhang.natsuko", "com.poppinzhang.natsuko.share.CropBlackBorderShare"))
+            .putExtra(Intent.EXTRA_STREAM, Uri.parse("content://tests/screenshot.png"))
+
+        assertTrue(ShareImportParser.isNewShare(share))
+        assertTrue(ShareImportParser.isNewShare(Intent(share).setAction(Intent.ACTION_SEND_MULTIPLE)))
+        // Reopening the finished task from Recents repeats the intent with this flag.
+        assertFalse(ShareImportParser.isNewShare(Intent(share).addFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY)))
+        assertFalse(ShareImportParser.isNewShare(Intent(Intent.ACTION_MAIN)))
     }
 }
