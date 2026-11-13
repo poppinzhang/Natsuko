@@ -24,9 +24,37 @@ import com.poppinzhang.natsuko.model.ProcessingOutcome
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 object PdfPageLayout {
     private val a4Portrait = ImageSize(595, 842)
+
+    /**
+     * PdfDocument keeps the pixels of every finished page until the file is written, so the
+     * images of one document share this many pixels: about 640 MB of full-colour bitmaps.
+     */
+    const val DOCUMENT_PIXEL_BUDGET = 160_000_000L
+
+    /** A page with fewer pixels is hardly legible; only a very long document goes over budget. */
+    const val MIN_PAGE_PIXELS = 500_000L
+
+    /** The equal share of [budget] for each page of a document with [pageCount] pages. */
+    fun pagePixelLimit(pageCount: Int, budget: Long = DOCUMENT_PIXEL_BUDGET): Long {
+        require(pageCount > 0)
+        return (budget / pageCount).coerceAtLeast(MIN_PAGE_PIXELS)
+    }
+
+    /** [image] reduced in proportion to at most [maxPixels]; a smaller image keeps its size. */
+    fun decodeSize(image: ImageSize, maxPixels: Long): ImageSize {
+        val pixels = image.width.toLong() * image.height
+        if (pixels <= maxPixels) return image
+        val scale = sqrt(maxPixels.toDouble() / pixels)
+        // Rounding down keeps the product within the limit.
+        return ImageSize(
+            (image.width * scale).toInt().coerceAtLeast(1),
+            (image.height * scale).toInt().coerceAtLeast(1),
+        )
+    }
 
     fun pageSize(image: ImageSize, options: ImagesToPdfOptions): ImageSize {
         val natural = if (options.pagePreset == PdfPagePreset.A4) {
@@ -67,6 +95,7 @@ object PdfPageLayout {
 class ImagesToPdfProcessor(
     context: Context,
     private val outputRepository: OutputRepository,
+    private val documentPixelBudget: Long = PdfPageLayout.DOCUMENT_PIXEL_BUDGET,
 ) {
     private val bitmapLoader = BitmapLoader(context)
 
@@ -109,17 +138,22 @@ class ImagesToPdfProcessor(
         onProgress: (Int, Int, UiText) -> Unit,
     ): Int {
         val document = PdfDocument()
+        // Recycling a bitmap does not release pixels a finished page still refers to, so the
+        // pages of this document divide one budget instead of each taking up to 4096 px.
+        val pagePixels = PdfPageLayout.pagePixelLimit(inputs.size, documentPixelBudget)
         var pageNumber = 0
         try {
             inputs.forEachIndexed { index, input ->
                 onProgress(index, inputs.size, text(R.string.backend_converting_image, input.displayName))
-                val bitmap = runCatching { bitmapLoader.decode(input.uri) }
-                    .getOrElse { error ->
-                        failures += ProcessingFailure(input.displayName, error.userMessage(R.string.backend_decode_image_failed))
-                        return@forEachIndexed
-                    }
+                // The page is laid out from the size used in processing; only the pixels shrink.
+                val (imageSize, bitmap) = runCatching {
+                    val size = bitmapLoader.processingSize(input.uri)
+                    size to bitmapLoader.decode(input.uri, PdfPageLayout.decodeSize(size, pagePixels))
+                }.getOrElse { error ->
+                    failures += ProcessingFailure(input.displayName, error.userMessage(R.string.backend_decode_image_failed))
+                    return@forEachIndexed
+                }
                 try {
-                    val imageSize = ImageSize(bitmap.width, bitmap.height)
                     val pageSize = PdfPageLayout.pageSize(imageSize, options)
                     pageNumber += 1
                     val pageInfo = PdfDocument.PageInfo.Builder(pageSize.width, pageSize.height, pageNumber).create()

@@ -132,56 +132,75 @@ class ImageMergeProcessor(
     ): ProcessingOutcome {
         requireText(inputs.isNotEmpty()) { text(R.string.backend_select_image) }
         val failures = mutableListOf<ProcessingFailure>()
-        val loaded = inputs.mapIndexedNotNull { index, input ->
-            onProgress(index, inputs.size + 1, text(R.string.backend_reading_image, input.displayName))
-            runCatching { input to bitmapLoader.decode(input.uri) }
+        val steps = inputs.size + 1
+        // Only headers are read here. Pixels are decoded one image at a time while drawing, so
+        // memory is the output canvas plus a single input, however many images are merged.
+        var remaining = inputs.mapNotNull { input ->
+            onProgress(0, steps, text(R.string.backend_reading_image, input.displayName))
+            runCatching { input to bitmapLoader.processingSize(input.uri) }
                 .getOrElse { error ->
                     failures += ProcessingFailure(input.displayName, error.userMessage(R.string.backend_decode_image_failed))
                     null
                 }
         }
-        checkText(loaded.isNotEmpty()) { text(R.string.backend_images_unreadable) }
 
-        try {
-            val plan = MergeLayout.calculate(
-                loaded.map { ImageSize(it.second.width, it.second.height) },
-                options.direction,
-            )
-            onProgress(inputs.size, inputs.size + 1, text(R.string.backend_merging_images))
+        while (true) {
+            checkText(remaining.isNotEmpty()) { text(R.string.backend_images_unreadable) }
+            val plan = MergeLayout.calculate(remaining.map { it.second }, options.direction)
             val output = createBitmap(plan.width, plan.height)
             try {
                 val canvas = Canvas(output)
                 canvas.drawColor(options.fillColor)
                 val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-                loaded.zip(plan.placements).forEach { (entry, placement) ->
-                    val bitmap = entry.second
-                    canvas.drawBitmap(
-                        bitmap,
-                        null,
-                        Rect(
-                            placement.left,
-                            placement.top,
-                            placement.left + placement.width,
-                            placement.top + placement.height,
-                        ),
-                        paint,
+                val undecodable = mutableSetOf<Int>()
+                remaining.zip(plan.placements).forEachIndexed { index, (entry, placement) ->
+                    val (input, size) = entry
+                    onProgress(index, steps, text(R.string.backend_reading_image, input.displayName))
+                    // Decode directly at the size drawn. A grid may enlarge a small image, which
+                    // stays the canvas's job: decoding never produces more pixels than the source.
+                    val drawn = ImageSize(placement.width, placement.height)
+                    val target = if (drawn.width <= size.width && drawn.height <= size.height) drawn else size
+                    val bitmap = runCatching { bitmapLoader.decode(input.uri, target) }
+                        .getOrElse { error ->
+                            failures += ProcessingFailure(input.displayName, error.userMessage(R.string.backend_decode_image_failed))
+                            undecodable += index
+                            return@forEachIndexed
+                        }
+                    try {
+                        canvas.drawBitmap(
+                            bitmap,
+                            null,
+                            Rect(
+                                placement.left,
+                                placement.top,
+                                placement.left + placement.width,
+                                placement.top + placement.height,
+                            ),
+                            paint,
+                        )
+                    } finally {
+                        bitmap.recycle()
+                    }
+                }
+                if (undecodable.isEmpty()) {
+                    onProgress(inputs.size, steps, text(R.string.backend_merging_images))
+                    val directory = outputRepository.createRunDirectory(Feature.IMAGE_MERGE)
+                    val file = directory.resolve("merged.png")
+                    FileOutputStream(file).use { stream ->
+                        checkText(output.compress(Bitmap.CompressFormat.PNG, 100, stream)) { text(R.string.backend_merge_write_failed) }
+                    }
+                    onProgress(steps, steps, text(R.string.backend_merge_complete))
+                    return ProcessingOutcome(
+                        outputs = listOf(OutputArtifact(file, "image/png", text(R.string.backend_merged_image))),
+                        failures = failures,
                     )
                 }
-                val directory = outputRepository.createRunDirectory(Feature.IMAGE_MERGE)
-                val file = directory.resolve("merged.png")
-                FileOutputStream(file).use { stream ->
-                    checkText(output.compress(Bitmap.CompressFormat.PNG, 100, stream)) { text(R.string.backend_merge_write_failed) }
-                }
-                onProgress(inputs.size + 1, inputs.size + 1, text(R.string.backend_merge_complete))
-                return ProcessingOutcome(
-                    outputs = listOf(OutputArtifact(file, "image/png", text(R.string.backend_merged_image))),
-                    failures = failures,
-                )
+                // A header can be intact while the pixel data is not. Such an image leaves the
+                // layout, as an unreadable one always has, and the rest are laid out again.
+                remaining = remaining.filterIndexed { index, _ -> index !in undecodable }
             } finally {
                 output.recycle()
             }
-        } finally {
-            loaded.forEach { (_, bitmap) -> bitmap.recycle() }
         }
     }
 }

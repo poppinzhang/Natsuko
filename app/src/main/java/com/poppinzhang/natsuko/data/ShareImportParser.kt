@@ -8,6 +8,15 @@ import android.net.Uri
 import com.poppinzhang.natsuko.model.Feature
 
 object ShareImportParser {
+    /**
+     * A share that has not been imported yet. Reopening a finished share task from Recents
+     * delivers the intent that created it once more, marked as launched from history; that share
+     * was already handled, and importing it again would repeat automatic processing.
+     */
+    fun isNewShare(intent: Intent): Boolean =
+        (intent.action == Intent.ACTION_SEND || intent.action == Intent.ACTION_SEND_MULTIPLE) &&
+            intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0
+
     fun feature(intent: Intent): Feature? = Feature.fromShareComponent(intent.component?.className)
 
     /** Read text only; never dereference a URI or HTML supplied by another application. */

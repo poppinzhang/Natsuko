@@ -107,6 +107,8 @@ import com.poppinzhang.natsuko.processing.ImageSize
 import com.poppinzhang.natsuko.processing.PdfPageLayout
 import java.text.NumberFormat
 import java.util.ArrayList
+import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -707,7 +709,8 @@ private fun PdfSettings(
         Text(stringResource(R.string.main_page_orientation), fontWeight = FontWeight.Medium)
         ChoiceChips(listOf(PdfOrientation.AUTO to stringResource(R.string.main_automatic), PdfOrientation.PORTRAIT to stringResource(R.string.main_portrait), PdfOrientation.LANDSCAPE to stringResource(R.string.main_landscape)), options.orientation, onOrientation)
         Text(stringResource(R.string.main_page_margin, options.marginPoints), fontWeight = FontWeight.Medium)
-        Slider(value = options.marginPoints.toFloat(), onValueChange = { onMargin(it.toInt()) }, valueRange = 0f..72f, steps = 11)
+        // A stepped slider reports values such as 5.9999995 for the step at 6: round, never truncate.
+        Slider(value = options.marginPoints.toFloat(), onValueChange = { onMargin(it.roundToInt()) }, valueRange = 0f..72f, steps = 11)
     }
 }
 
@@ -726,7 +729,7 @@ private fun PdfImageSettings(
         Slider(value = options.scale, onValueChange = onScale, valueRange = 1f..3f, steps = 3)
         if (options.format == ImageOutputFormat.JPEG) {
             Text(stringResource(R.string.main_jpeg_quality, options.jpegQuality), fontWeight = FontWeight.Medium)
-            Slider(value = options.jpegQuality.toFloat(), onValueChange = { onQuality(it.toInt()) }, valueRange = 60f..100f, steps = 7)
+            Slider(value = options.jpegQuality.toFloat(), onValueChange = { onQuality(it.roundToInt()) }, valueRange = 60f..100f, steps = 7)
         }
     }
 }
@@ -745,9 +748,10 @@ private fun GifSettings(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SettingsTitle(stringResource(R.string.main_gif_settings), stringResource(R.string.main_gif_settings_hint))
         Text(stringResource(R.string.main_gif_fps, fps), fontWeight = FontWeight.Medium)
-        Slider(value = fps.toFloat(), onValueChange = { onFps(it.toInt()) }, valueRange = 1f..30f, steps = 28)
+        // Stepped sliders report values such as 15.999999 for the step at 16: round, never truncate.
+        Slider(value = fps.toFloat(), onValueChange = { onFps(it.roundToInt()) }, valueRange = 1f..30f, steps = 28)
         Text(stringResource(R.string.main_gif_interval, interval), fontWeight = FontWeight.Medium)
-        Slider(value = interval.toFloat(), onValueChange = { onInterval(it.toLong()) }, valueRange = 50f..1000f, steps = 18)
+        Slider(value = interval.toFloat(), onValueChange = { onInterval(it.roundToLong()) }, valueRange = 50f..1000f, steps = 18)
         Text(stringResource(R.string.main_maximum_width), fontWeight = FontWeight.Medium)
         ChoiceChips(listOf(360, 480, 720, 1080).map { it to stringResource(R.string.main_pixel_width, it) }, width, onWidth)
         Text(stringResource(R.string.main_loop, if (loop == 0) stringResource(R.string.main_infinite) else pluralStringResource(R.plurals.main_loop_count, loop, loop)), fontWeight = FontWeight.Medium)

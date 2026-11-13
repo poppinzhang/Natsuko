@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
@@ -45,26 +46,7 @@ class CropBlackBorderShareActivityTest {
         var viewModel: NatsukoViewModel? = null
         preferences.setEnabled(false)
         try {
-            val bitmap = Bitmap.createBitmap(20, 16, Bitmap.Config.ARGB_8888).apply {
-                eraseColor(Color.BLACK)
-                for (y in 4 until 12) {
-                    for (x in 4 until 16) setPixel(x, y, Color.WHITE)
-                }
-            }
-            try {
-                fixture.outputStream().use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
-            } finally {
-                bitmap.recycle()
-            }
-            val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", fixture)
-            val intent = Intent(Intent.ACTION_SEND)
-                .setComponent(ComponentName(context, "com.poppinzhang.natsuko.share.CropBlackBorderShare"))
-                .setType("image/png")
-                .putExtra(Intent.EXTRA_STREAM, uri)
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                .apply { clipData = ClipData.newRawUri("Screenshot", uri) }
-
-            val launched = ActivityScenario.launch<MainActivity>(intent)
+            val launched = ActivityScenario.launch<MainActivity>(shareIntent(borderedScreenshot(fixture)))
             scenario = launched
             launched.onActivity { activity ->
                 viewModel = ViewModelProvider(activity)[NatsukoViewModel::class.java]
@@ -111,4 +93,59 @@ class CropBlackBorderShareActivityTest {
             preferences.setEnabled(originalSettings.enabled)
         }
     }
+
+    @Test
+    fun reopeningAFinishedShareFromRecentsDoesNotProcessItAgain() = runBlocking {
+        val fixture = File(context.filesDir, "crop-share-history-${UUID.randomUUID()}.png")
+        var scenario: ActivityScenario<MainActivity>? = null
+        var viewModel: NatsukoViewModel? = null
+        try {
+            // Android reopens a finished task from Recents with the intent that created it,
+            // marked as launched from history. That share was handled before the user left.
+            val intent = shareIntent(borderedScreenshot(fixture)).addFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY)
+
+            val launched = ActivityScenario.launch<MainActivity>(intent)
+            scenario = launched
+            launched.onActivity { activity ->
+                assertTrue(activity.intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0)
+                viewModel = ViewModelProvider(activity)[NatsukoViewModel::class.java]
+            }
+            val model = checkNotNull(viewModel)
+
+            // Observe briefly because an import would start on the IO dispatcher.
+            val imported = withTimeoutOrNull(1_500) {
+                model.state.first { it.feature != null || it.isProcessing || it.outcome != null || it.errorMessage != null }
+            }
+            assertNull("A share reopened from Recents must not be imported again", imported)
+            assertEquals(AppScreen.HOME, model.state.value.screen)
+        } finally {
+            val outputs = viewModel?.state?.value?.outcome?.outputs.orEmpty()
+            scenario?.close()
+            outputs.map { it.file }.distinct().forEach { it.delete() }
+            fixture.delete()
+        }
+    }
+
+    /** A white rectangle inside a black border, as in a letterboxed screenshot. */
+    private fun borderedScreenshot(file: File): Uri {
+        val bitmap = Bitmap.createBitmap(20, 16, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(Color.BLACK)
+            for (y in 4 until 12) {
+                for (x in 4 until 16) setPixel(x, y, Color.WHITE)
+            }
+        }
+        try {
+            file.outputStream().use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
+        } finally {
+            bitmap.recycle()
+        }
+        return FileProvider.getUriForFile(context, "${context.packageName}.files", file)
+    }
+
+    private fun shareIntent(uri: Uri): Intent = Intent(Intent.ACTION_SEND)
+        .setComponent(ComponentName(context, "com.poppinzhang.natsuko.share.CropBlackBorderShare"))
+        .setType("image/png")
+        .putExtra(Intent.EXTRA_STREAM, uri)
+        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        .apply { clipData = ClipData.newRawUri("Screenshot", uri) }
 }
