@@ -22,6 +22,6 @@
 - 约 12 张 1200 万像素的照片以内不受影响；100 页时每页约 160 万像素。超过 320 页后每页保持 50 万像素，总量随页数继续增长。
 - 逐图生成时每份 PDF 只有一页，不缩小。
 
-完整色深与像素预算尚未发布，记录于 [CHANGELOG 的 unstaged 条目](../CHANGELOG.md#unstaged)。
+完整色深与像素预算自 1.3.5 起提供，记录于 [CHANGELOG 的 1.3.5 条目](../CHANGELOG.md#135)。
 
 默认输出目录：应用专属 `Documents/Natsuko/ImagesToPdf/<时间戳>/`。开启“保存至用户存储目录”后，合并或逐图生成的 PDF 自动保存到 `Download/Natsuko/ImagesToPdf/` 或自定义目录下的 `ImagesToPdf/`，不再增加时间戳目录；也可在处理完成页开启开关并立即补存本次结果。详见 [输出存储](output_storage.md)。

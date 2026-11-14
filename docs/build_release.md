@@ -36,8 +36,8 @@
 根目录 `version.properties` 是构建、归档目录和 CI 的共同版本来源：
 
 ```properties
-VERSION_NAME=1.3.4
-VERSION_CODE=11
+VERSION_NAME=1.3.5
+VERSION_CODE=12
 ```
 
 `VERSION_NAME` 使用 `主版本.次版本.修订号`；`VERSION_CODE` 每次正式发布递增。1.0.0 的内部版本号为 3，因为旧试打包已经使用 1 和 2。Gradle 不再回退到硬编码版本。旧 `NATSUKO_VERSION_NAME` / `NATSUKO_VERSION_CODE` 环境变量如存在，必须与文件一致，不能覆盖文件中的版本。
@@ -108,10 +108,10 @@ NATSUKO_KEY_PASSWORD=replace-with-your-key-password
 确认签名 APK 的包名为 `com.poppinzhang.natsuko`、版本与 `version.properties` 一致、最低 Android 版本为 API 36，并使用 SDK Build Tools 验证签名和对齐。例如在项目根目录运行（工具路径按本机 SDK 调整）：
 
 ```bash
-"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs dist/1.3.4/Natsuko-1.3.4.apk
-"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 dist/1.3.4/Natsuko-1.3.4.apk
-"$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging dist/1.3.4/Natsuko-1.3.4.apk
-(cd dist/1.3.4 && shasum -a 256 -c SHA256SUMS)
+"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs dist/1.3.5/Natsuko-1.3.5.apk
+"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 dist/1.3.5/Natsuko-1.3.5.apk
+"$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging dist/1.3.5/Natsuko-1.3.5.apk
+(cd dist/1.3.5 && shasum -a 256 -c SHA256SUMS)
 ```
 
 具备设备/模拟器时运行仪器测试，并安装正式 APK 验证能启动、显示正确版本和功能入口。视频改动还应在安装包中检查两种 ABI 的 FFmpeg/FFprobe 已实际打包，并在断网状态下验证视频元数据读取、GIF 转换、损坏输入与取消清理。构建通过不等于全部设备、文件格式均已验证；视频兼容性取决于内置 FFmpeg 构建支持的容器、编解码器及输入文件本身。

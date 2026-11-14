@@ -35,7 +35,7 @@ Manifest 定义八个带独立名称与 MIME 过滤器的 `activity-alias`：图
 
 分享导入会自动进入所选功能的处理流程。“去除黑边”使用固定的保守检测规则，导入后直接开始自动处理；四项文件配置功能在正式处理前保留配置确认。`ImageAdjustmentShare` 接收单张或多张 `image/*`，进入同一编辑页，不触发自动处理；存在未导出编辑时，新的导入需先确认放弃。`DownloadTwitterVideoShare` 只接收 `text/plain` 的 `ACTION_SEND`，从 `EXTRA_TEXT` 与 `ClipData.text` 提取唯一推文链接，进入链接页后由用户点击下载，不解引用分享方提供的文件 URI。
 
-一次分享只导入一次。活动因配置变化重建时沿用已有工作流；用户按返回键结束分享任务后，再从最近任务打开它，系统会重新投递创建该任务的分享 Intent，并带上 `FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY`。`ShareImportParser.isNewShare` 将它识别为已经处理过的分享，应用直接显示首页，不重复导入或自动处理。此行为尚未发布，记录于 [CHANGELOG 的 unstaged 条目](../CHANGELOG.md#unstaged)。
+一次分享只导入一次。活动因配置变化重建时沿用已有工作流；用户按返回键结束分享任务后，再从最近任务打开它，系统会重新投递创建该任务的分享 Intent，并带上 `FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY`。`ShareImportParser.isNewShare` 将它识别为已经处理过的分享，应用直接显示首页，不重复导入或自动处理。此行为自 1.3.5 起提供，记录于 [CHANGELOG 的 1.3.5 条目](../CHANGELOG.md#135)。
 
 ## 图片调整
 
