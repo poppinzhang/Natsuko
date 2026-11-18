@@ -13,5 +13,4 @@ data class CopyLocationUiState(
     val isLoading: Boolean = false,
     val conflict: LocationConflict? = null,
     val targetsPickerRequested: Boolean = false,
-    val sourcePickerRequested: Boolean = false,
 )

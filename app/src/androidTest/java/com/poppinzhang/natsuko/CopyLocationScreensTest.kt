@@ -2,6 +2,7 @@ package com.poppinzhang.natsuko
 
 import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -23,6 +24,7 @@ import com.poppinzhang.natsuko.ui.LocationCandidate
 import com.poppinzhang.natsuko.ui.theme.NatsukoTheme
 import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -32,6 +34,26 @@ import org.junit.runner.RunWith
 class CopyLocationScreensTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun initialSourceScreenWaitsForButtonClickBeforePicking() {
+        var picked = false
+        composeRule.setContent {
+            NatsukoTheme {
+                CopyLocationSourceScreen(
+                    state = CopyLocationUiState(),
+                    onBack = {},
+                    onPick = { picked = true },
+                    onChoose = {},
+                )
+            }
+        }
+        composeRule.onNodeWithTag("location-source-screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("location-pick-source").assertIsDisplayed().assertIsEnabled()
+        composeRule.runOnIdle { assertFalse(picked) }
+        composeRule.onNodeWithTag("location-pick-source").performClick()
+        composeRule.runOnIdle { assertTrue(picked) }
+    }
 
     @Test
     fun imageWithoutCoordinatesCannotBeChosenAsSource() {

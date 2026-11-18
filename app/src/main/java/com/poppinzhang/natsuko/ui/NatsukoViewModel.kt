@@ -295,7 +295,7 @@ class NatsukoViewModel @JvmOverloads constructor(
         mutableState.value = freshState().copy(
             screen = AppScreen.COPY_LOCATION_SOURCE,
             feature = Feature.COPY_LOCATION,
-            copyLocation = CopyLocationUiState(sourcePickerRequested = true),
+            copyLocation = CopyLocationUiState(),
         )
     }
 
@@ -353,17 +353,13 @@ class NatsukoViewModel @JvmOverloads constructor(
         }
     }
 
-    fun onLocationSourcePickerLaunched() = mutableState.update {
-        it.copy(copyLocation = it.copyLocation?.copy(sourcePickerRequested = false))
-    }
-
     fun onLocationTargetsPickerLaunched() = mutableState.update {
         it.copy(copyLocation = it.copyLocation?.copy(targetsPickerRequested = false))
     }
 
     fun onLocationPickerFailure() = mutableState.update {
         it.copy(errorMessage = text(R.string.location_picker_failed),
-            copyLocation = it.copyLocation?.copy(targetsPickerRequested = false, sourcePickerRequested = false))
+            copyLocation = it.copyLocation?.copy(targetsPickerRequested = false))
     }
 
     fun acceptLocationTargets(uris: List<Uri>) {

@@ -158,12 +158,6 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
             viewModel.onLocationPickerFailure()
         }
     }
-    LaunchedEffect(state.copyLocation?.sourcePickerRequested) {
-        if (state.copyLocation?.sourcePickerRequested == true) {
-            viewModel.onLocationSourcePickerLaunched()
-            pickLocationSource()
-        }
-    }
     LaunchedEffect(state.copyLocation?.targetsPickerRequested) {
         if (state.copyLocation?.targetsPickerRequested == true) {
             viewModel.onLocationTargetsPickerLaunched()

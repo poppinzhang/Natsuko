@@ -6,6 +6,23 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
+import androidx.activity.compose.LocalActivityResultRegistryOwner
+import androidx.activity.result.ActivityResultRegistry
+import androidx.activity.result.ActivityResultRegistryOwner
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -18,8 +35,10 @@ import com.poppinzhang.natsuko.model.OutputArtifact
 import com.poppinzhang.natsuko.processing.location.LocationConflictDecision
 import com.poppinzhang.natsuko.processing.location.LocationMetadataEngine
 import com.poppinzhang.natsuko.ui.AppScreen
+import com.poppinzhang.natsuko.ui.NatsukoApp
 import com.poppinzhang.natsuko.ui.NatsukoUiState
 import com.poppinzhang.natsuko.ui.NatsukoViewModel
+import com.poppinzhang.natsuko.ui.theme.NatsukoTheme
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.flow.first
@@ -33,12 +52,16 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /** End-to-end state transitions use the bundled engine and a real GPS / place-name fixture. */
 @RunWith(AndroidJUnit4::class)
 class CopyLocationWorkflowTest {
+    @get:Rule
+    val composeRule = createComposeRule()
+
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
     private val preferences = OutputStoragePreferences(context)
@@ -73,6 +96,89 @@ class CopyLocationWorkflowTest {
             fixtures.forEach { it.delete() }
             preferences.setDirectory(originalSettings.treeUri, originalSettings.directoryLabel)
             preferences.setEnabled(originalSettings.enabled)
+        }
+    }
+
+    @Test
+    fun openingFeatureFromHomeShowsSourceScreenBeforeLaunchingPicker() = runBlocking {
+        val viewModel = newViewModel()
+        val launched = mutableListOf<Pair<Class<*>, List<*>?>>()
+        val source = sourceFile()
+        val pendingSourceResults = ArrayDeque<Uri?>(listOf(null, uri(source)))
+        val mainHandler = Handler(Looper.getMainLooper())
+        val registryOwner = object : ActivityResultRegistryOwner {
+            override val activityResultRegistry = object : ActivityResultRegistry() {
+                override fun <I, O> onLaunch(
+                    requestCode: Int,
+                    contract: ActivityResultContract<I, O>,
+                    input: I,
+                    options: ActivityOptionsCompat?,
+                ) {
+                    launched += contract::class.java to (input as? Array<*>)?.toList()
+                    when (contract) {
+                        is ActivityResultContracts.OpenDocument -> {
+                            @Suppress("UNCHECKED_CAST")
+                            val result = pendingSourceResults.removeFirst() as O
+                            mainHandler.post { dispatchResult(requestCode, result) }
+                        }
+                        is ActivityResultContracts.OpenMultipleDocuments -> {
+                            @Suppress("UNCHECKED_CAST")
+                            val result = emptyList<Uri>() as O
+                            mainHandler.post { dispatchResult(requestCode, result) }
+                        }
+                    }
+                }
+            }
+        }
+        composeRule.setContent {
+            CompositionLocalProvider(LocalActivityResultRegistryOwner provides registryOwner) {
+                NatsukoTheme { NatsukoApp(viewModel) }
+            }
+        }
+
+        composeRule.onNodeWithTag("home-list").performScrollToNode(hasTestTag("home-copy-location"))
+        composeRule.onNodeWithTag("home-copy-location").performClick()
+
+        composeRule.onNodeWithTag("location-source-screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("location-pick-source").assertIsDisplayed().assertIsEnabled()
+        composeRule.runOnIdle {
+            assertEquals(AppScreen.COPY_LOCATION_SOURCE, viewModel.state.value.screen)
+            assertEquals(Feature.COPY_LOCATION, viewModel.state.value.feature)
+            assertTrue(launched.isEmpty())
+        }
+
+        composeRule.onNodeWithTag("location-pick-source").performClick()
+        composeRule.runOnIdle {
+            assertEquals(
+                listOf(ActivityResultContracts.OpenDocument::class.java to listOf("*/*")),
+                launched,
+            )
+            assertEquals(AppScreen.COPY_LOCATION_SOURCE, viewModel.state.value.screen)
+        }
+        composeRule.onNodeWithTag("location-source-screen").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("location-pick-source").performClick()
+        val ready = awaitSource(viewModel)
+        assertEquals(uri(source), ready.copyLocation!!.source!!.input.uri)
+        assertEquals(AppScreen.COPY_LOCATION_TARGETS, ready.screen)
+        composeRule.onNodeWithTag("location-targets-screen").assertIsDisplayed()
+        Unit
+    }
+
+    @Test
+    fun navigatingBackFromInitialSourceScreenReturnsHome() {
+        val viewModel = newViewModel()
+        composeRule.setContent { NatsukoTheme { NatsukoApp(viewModel) } }
+
+        composeRule.onNodeWithTag("home-list").performScrollToNode(hasTestTag("home-copy-location"))
+        composeRule.onNodeWithTag("home-copy-location").performClick()
+        composeRule.onNodeWithTag("location-source-screen").assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription(context.getString(R.string.main_back)).performClick()
+        composeRule.onNodeWithTag("home-list").assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertEquals(AppScreen.HOME, viewModel.state.value.screen)
+            assertNull(viewModel.state.value.copyLocation)
         }
     }
 
