@@ -18,7 +18,7 @@
     <string name="adjust_aspect_free">自由</string>
     <string name="adjust_aspect_original">元の縦横比</string>
     <string name="adjust_aspect_ratio">%1$d:%2$d</string>
-    <string name="adjust_aspect_portrait">縦向き</string>
+    <string name="adjust_aspect_portrait">縦横切替</string>
     <string name="adjust_aspect_swap_description">横向きと縦向きを切り替え</string>
     <string name="adjust_crop_hint">枠の辺や角、または枠全体をドラッグできます。</string>
     <string name="adjust_reset_crop">切り抜きをリセット</string>
@@ -67,14 +67,14 @@
     <string name="adjust_unavailable">取得できません</string>
     <string name="adjust_retry">再試行</string>
     <string name="adjust_note_png">PNGは可逆圧縮で、透明度を保持します。</string>
-    <string name="adjust_note_jpeg" formatted="false">JPEGは100%でも非可逆圧縮です。</string>
+    <string name="adjust_note_jpeg" formatted="false">JPEGは非可逆形式です（100%品質を含む）。</string>
     <string name="adjust_note_jpeg_background">JPEGは透明度に対応していません。透明部分には選択した背景色を使用します。</string>
     <string name="adjust_note_webp_lossless">可逆圧縮のWebPは、編集後のすべてのピクセルと透明度を保持します。</string>
     <string name="adjust_note_webp_lossy">非可逆圧縮のWebPも透明度を保持します。</string>
-    <string name="adjust_note_quality">パーセント値はエンコーダーの設定です。元の画質やファイルサイズがその割合で維持されるという意味ではありません。</string>
-    <string name="adjust_note_reencode">書き出し時に再エンコードするため、元のファイルより大きくなることがあります。形式や品質を変えてもピクセル数は変わりません。</string>
+    <string name="adjust_note_quality">品質のパーセント値は圧縮パラメータであり、画質やファイルサイズの維持率ではありません。</string>
+    <string name="adjust_note_reencode">書き出し時に再エンコードされます。形式や品質を変えてもピクセル数は変わりません。</string>
     <string name="adjust_note_color">この画像は広色域またはHDRを使用しています。標準のsRGBに変換して書き出します。</string>
-    <string name="adjust_note_metadata">撮影場所、端末、撮影日時などのメタデータはコピーされません。</string>
+    <string name="adjust_note_metadata">書き出しファイルには撮影場所、端末、撮影日時などのメタデータは含まれません。</string>
     <string name="adjust_save">保存</string>
     <string name="adjust_output_detail">%1$d × %2$d px · %3$s</string>
     <string name="adjust_continue_editing">調整を続ける</string>
@@ -84,6 +84,6 @@
     <string name="adjust_discard_keep">編集を続ける</string>
     <string name="adjust_choose_title">画像を1枚選択</string>
     <plurals name="adjust_choose_hint">
-        <item quantity="other">画像が%1$d枚共有されました。画像の調整は1枚ずつ行い、選択した画像のみを処理します。</item>
+        <item quantity="other">画像が%1$d枚共有されました。画像の調整は1回につき1枚のみ処理します。編集する画像を選択してください。</item>
     </plurals>
 </resources>

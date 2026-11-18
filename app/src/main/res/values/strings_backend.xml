@@ -101,7 +101,7 @@
     <string name="backend_download_incomplete">The download is incomplete and the file size does not match. Try again.</string>
     <string name="backend_ffmpeg_missing">The bundled video processing components are missing. Reinstall the complete Natsuko app.</string>
     <string name="backend_ffmpeg_probe_failed">Unable to read the video. Check that the file is complete and contains supported video frames.</string>
-    <string name="backend_ffmpeg_conversion_failed">Video conversion failed. Check for file corruption and sufficient storage.</string>
+    <string name="backend_ffmpeg_conversion_failed">Video conversion failed. Check that the file is intact.</string>
     <string name="backend_ffmpeg_result_failed">Unable to read the video processing result.</string>
     <string name="backend_storage_full">Storage is full.</string>
     <string name="backend_file_permission_denied">File access permission is missing.</string>
@@ -149,7 +149,7 @@
     <string name="backend_saving_user_storage">Saving to the user storage directory</string>
     <string name="backend_user_storage_directory">User storage directory</string>
     <string name="backend_save_retry">Saving failed. Try again.</string>
-    <string name="backend_save_storage_error">Failed to save to the user storage directory: %1$s</string>
+    <string name="backend_save_storage_error">Save failed (%1$s)</string>
     <string name="backend_ffmpeg_error_detail">%1$s %2$s</string>
     <string name="backend_post_video_label">Post %1$s · Video %2$s</string>
     <string name="backend_post_gif_label">Post %1$s · GIF %2$s</string>
@@ -162,7 +162,7 @@
     <string name="backend_adjust_source_changed">The image changed after it was opened. Select it again.</string>
     <string name="backend_adjust_source_unreadable">Unable to read the image. Select or share it again.</string>
     <string name="backend_adjust_webp_too_large">WebP supports at most %1$d px per side. Use Reduce size, or choose PNG or JPEG.</string>
-    <string name="backend_adjust_too_large">This export needs %1$.1f megapixels of image memory; the limit is %2$.1f. Use Reduce size to export a smaller image.</string>
+    <string name="backend_adjust_too_large">This export requires processing %1$.1f MP, exceeding the %2$.1f MP limit. Use Reduce size before exporting.</string>
     <string name="backend_adjust_out_of_memory">Not enough memory to process this image. Use Reduce size and try again.</string>
     <string name="backend_adjust_reading">Reading the original image</string>
     <string name="backend_adjust_rendering">Applying edits</string>

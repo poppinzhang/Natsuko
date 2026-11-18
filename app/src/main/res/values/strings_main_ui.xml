@@ -11,11 +11,11 @@
     <string name="main_video_animation">Videos &amp; GIFs</string>
     <string name="main_storage_hint">Enable automatic saving to your storage folder in Settings.</string>
     <string name="main_about">About</string>
-    <string name="main_tagline">Give images and documents a fresh start.</string>
+    <string name="main_tagline">Give images, documents, and GIFs a fresh start.</string>
     <string name="main_back">Back</string>
     <string name="main_start_processing">Start processing</string>
     <string name="main_merge_reorder_hint">Tap to select an image. Touch and hold to drag it into order.</string>
-    <string name="main_pdf_reorder_hint">Scroll to preview pages in their PDF order.</string>
+    <string name="main_pdf_reorder_hint">Scroll to preview pages, reorder them, or remove images.</string>
     <string name="main_output_order_hint">Files will be processed in the order shown below.</string>
     <string name="main_select_again">Select again</string>
     <string name="main_move_up">Move up</string>
@@ -43,7 +43,7 @@
     <string name="main_image_settings_hint">Each PDF page becomes a separate image.</string>
     <string name="main_format">Format</string>
     <string name="main_gif_settings">GIF settings</string>
-    <string name="main_gif_settings_hint">Convert MP4, MKV, and MOV videos with H.264, H.265, or AV1 codecs offline.</string>
+    <string name="main_gif_settings_hint">Samples frames from the video at the chosen interval and plays them at the selected frame rate.</string>
     <string name="main_maximum_width">Maximum width</string>
     <string name="main_infinite">Infinite</string>
     <string name="main_gif_frame_limit">Each conversion is limited to 300 frames to manage memory and file size.</string>
@@ -154,5 +154,5 @@
     <string name="main_color_blue">Light blue</string>
     <string name="main_color_pink">Light pink</string>
     <string name="feature_image_adjustment">Adjust image</string>
-    <string name="feature_image_adjustment_description">Crop, straighten, rotate, mirror, reduce size, and export one image</string>
+    <string name="feature_image_adjustment_description">Crop, straighten, rotate, mirror, resize, and convert formats</string>
 </resources>

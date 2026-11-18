@@ -5,7 +5,7 @@
     <string name="twitter_auth_sign_in">Sign in to X</string>
     <string name="twitter_auth_session_active">Your X login is saved on this device and will be reused after restarting the app.</string>
     <string name="twitter_auth_sign_out">Disconnect X login</string>
-    <string name="twitter_auth_manual_hint">You can also sign in before retrying a post whose availability could not be determined. Signing in does not guarantee access.</string>
+    <string name="twitter_auth_manual_hint">If a post fails without a clear reason, you can also try signing in first (access is not guaranteed).</string>
     <string name="twitter_auth_session_load_failed">Saved X login could not be read. Please try again.</string>
     <string name="twitter_auth_session_save_failed">X login could not be saved. Please try signing in again.</string>
     <string name="twitter_auth_session_clear_failed">X login could not be fully cleared. Please try again.</string>

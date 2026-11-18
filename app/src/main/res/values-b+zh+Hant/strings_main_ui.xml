@@ -9,13 +9,13 @@
     <string name="main_images">圖片</string>
     <string name="main_documents">文件</string>
     <string name="main_video_animation">影片與動畫圖片</string>
-    <string name="main_storage_hint">成品可在設定中開啟自動儲存至使用者儲存資料夾。</string>
+    <string name="main_storage_hint">可在「設定」中開啟自動儲存，將成品存至使用者儲存資料夾。</string>
     <string name="main_about">關於</string>
-    <string name="main_tagline">圖片與文件，重新修好。</string>
+    <string name="main_tagline">圖片、文件與動圖，全修！</string>
     <string name="main_back">返回</string>
     <string name="main_start_processing">開始處理</string>
     <string name="main_merge_reorder_hint">輕觸選取圖片，長按拖曳調整拼接順序</string>
-    <string name="main_pdf_reorder_hint">上下滑動預覽；序號即 PDF 頁面順序</string>
+    <string name="main_pdf_reorder_hint">上下滑動預覽頁面，可調整順序或移除圖片</string>
     <string name="main_output_order_hint">輸出順序與下方順序一致</string>
     <string name="main_select_again">重新選擇</string>
     <string name="main_move_up">上移</string>
@@ -43,7 +43,7 @@
     <string name="main_image_settings_hint">每個 PDF 頁面會產生一張獨立圖片</string>
     <string name="main_format">格式</string>
     <string name="main_gif_settings">GIF 設定</string>
-    <string name="main_gif_settings_hint">支援 MP4、MKV、MOV；H.264、H.265、AV1 影片可離線轉換</string>
+    <string name="main_gif_settings_hint">依取樣間隔從原影片擷取影格，再依播放影格率合成動圖</string>
     <string name="main_maximum_width">最大寬度</string>
     <string name="main_infinite">無限</string>
     <string name="main_gif_frame_limit">為控制記憶體和檔案大小，單次最多產生 300 影格。</string>
@@ -75,10 +75,10 @@
     <string name="main_page_move_down">第 %1$d 頁下移</string>
     <string name="main_remove_named">移除 %1$s</string>
     <string name="main_page_margin">頁面邊界：%1$d pt</string>
-    <string name="main_image_scale">清晰度：%1$.1f×</string>
+    <string name="main_image_scale">解析度倍率：%1$.1f×</string>
     <string name="main_jpeg_quality">JPEG 品質：%1$d</string>
     <string name="main_gif_fps">播放影格率：%1$d fps</string>
-    <string name="main_gif_interval">影片取樣間隔：%1$d ms</string>
+    <string name="main_gif_interval">擷取間隔：%1$d ms</string>
     <string name="main_loop">重複播放：%1$s</string>
     <string name="main_failure_detail">%1$s：%2$s</string>
     <string name="main_save_location">儲存位置\n%1$s</string>
@@ -144,5 +144,5 @@
     <string name="main_color_blue">淺藍色</string>
     <string name="main_color_pink">淺粉色</string>
     <string name="feature_image_adjustment">圖片調整</string>
-    <string name="feature_image_adjustment_description">裁切、拉直、旋轉、鏡射、縮小尺寸後匯出單張圖片</string>
+    <string name="feature_image_adjustment_description">裁切、拉直、旋轉、鏡射與縮小尺寸，支援轉換格式</string>
 </resources>

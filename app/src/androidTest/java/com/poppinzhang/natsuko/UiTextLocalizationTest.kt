@@ -51,11 +51,11 @@ class UiTextLocalizationTest {
         assertEquals("正在儲存 拼接圖片", progress.message.resolve(traditional))
         assertEquals("합친 이미지 저장 중", progress.message.resolve(korean))
         assertEquals("結合した画像を保存中", progress.message.resolve(japanese))
-        assertEquals("Failed to save to the user storage directory: Storage is full.", failure.reason.resolve(english))
-        assertEquals("保存至用户存储目录失败：存储空间不足", failure.reason.resolve(chinese))
-        assertEquals("儲存至使用者儲存資料夾失敗：儲存空間不足", failure.reason.resolve(traditional))
-        assertEquals("사용자 저장 폴더에 저장하지 못했습니다: 저장 공간이 가득 찼습니다.", failure.reason.resolve(korean))
-        assertEquals("ユーザーの保存先フォルダに保存できませんでした：空き容量がありません", failure.reason.resolve(japanese))
+        assertEquals("Save failed (Storage is full.)", failure.reason.resolve(english))
+        assertEquals("保存失败（存储空间不足）", failure.reason.resolve(chinese))
+        assertEquals("儲存失敗（儲存空間不足）", failure.reason.resolve(traditional))
+        assertEquals("저장 실패(저장 공간이 가득 찼습니다.)", failure.reason.resolve(korean))
+        assertEquals("保存失敗（空き容量がありません）", failure.reason.resolve(japanese))
         // The same retained object can switch back; no resolved locale was captured by the backend.
         assertEquals("Saving Merged image", progress.message.resolve(english))
     }

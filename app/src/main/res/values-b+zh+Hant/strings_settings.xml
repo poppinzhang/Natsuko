@@ -14,7 +14,7 @@
     <string name="settings_output_storage">成品儲存</string>
     <string name="settings_storage_description">開啟後，圖片、PDF、GIF 和影片成品將自動儲存到下方資料夾</string>
     <string name="settings_storage_directory">使用者儲存資料夾</string>
-    <string name="settings_storage_grouping">成品按功能和處理時間存放，方便尋找。</string>
+    <string name="settings_storage_grouping">成品依功能分資料夾存放，方便尋找。</string>
     <string name="settings_storage_change">更改儲存資料夾</string>
     <string name="settings_storage_restore">還原預設資料夾 Download/Natsuko</string>
     <string name="settings_storage_help">預設資料夾無需額外儲存權限。選擇其他資料夾時，請在系統選擇器中允許存取。關閉此選項不會刪除已儲存的成品。</string>

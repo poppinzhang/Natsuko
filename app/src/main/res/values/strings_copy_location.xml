@@ -2,15 +2,15 @@
 <resources>
     <string name="feature_copy_location">Copy image location</string>
     <string name="feature_copy_location_description">Copy GPS coordinates and place names to multiple images</string>
-    <string name="share_copy_location">Natsuko · Copy image location</string>
+    <string name="share_copy_location">Copy image location · Natsuko</string>
     <string name="location_source_title">1. Choose a location source</string>
-    <string name="location_source_hint">Choose an image with GPS coordinates. Images without readable coordinates cannot be used as the source.</string>
+    <string name="location_source_hint">Choose an image with valid GPS coordinates as the location source.</string>
     <string name="location_pick_source">Choose source image</string>
     <string name="location_targets_title">2. Choose target images</string>
     <string name="location_targets_hint">Select one or more images. Copying starts automatically; existing locations are checked one image at a time.</string>
     <string name="location_source_label">Source location</string>
     <string name="location_pick_targets">Choose target images</string>
-    <string name="location_copies_hint">Results are saved as new copies in the app image directory. Original files are preserved. Coordinates and stored place names are copied without looking up an address online.</string>
+    <string name="location_copies_hint">Copies coordinates and stored place names to new files without modifying originals or looking up addresses online.</string>
     <string name="location_formats_hint">JPEG / PNG / WebP / HEIF / HEIC / TIFF / ARW / CR3 / CR2 / NEF / RAF / RW2</string>
     <string name="location_conflict_title">This image already has a location</string>
     <string name="location_before">Before: %1$s</string>

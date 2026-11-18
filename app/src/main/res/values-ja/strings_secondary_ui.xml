@@ -18,10 +18,10 @@
     <string name="about_project_llvm_description">同梱のネイティブ実行ファイルが使用するコンパイラーランタイムとNDKコンポーネントです。各コンポーネントのライセンスは原文をご確認ください。</string>
     <string name="twitter_download_start">ダウンロードを開始</string>
     <string name="twitter_link_title">投稿のリンクを貼り付け</string>
-    <string name="twitter_link_description">X / Twitterの投稿リンクを入力して、動画やGIFをダウンロードできます。Xがログインを必要とすると明示した場合は、ログインして再試行できます。</string>
+    <string name="twitter_link_description">X / Twitterの投稿リンクから動画やGIFをダウンロードします。ログインが必要な場合は、ログイン後に再試行できます。</string>
     <string name="twitter_link_label">投稿リンク</string>
     <string name="twitter_link_placeholder">https://x.com/username/status/post_id</string>
     <string name="twitter_gif_title">ダウンロードした動画をGIFに変換</string>
-    <string name="twitter_gif_description">XのGIFは通常、MP4動画として配信されています。ダウンロード後は動画ファイルとして保存されます。結果画面で「動画をGIFに変換」を選び、フレームレートとサイズを設定して変換できます。</string>
-    <string name="twitter_storage_description">ダウンロードしたファイルには、アプリの出力先設定が適用されます。自動保存が有効な場合は、選択した保存先フォルダにも保存されます。</string>
+    <string name="twitter_gif_description">XのGIFはMP4動画として保存されます。ダウンロード後、結果画面の「動画をGIFに変換」から変換できます。</string>
+    <string name="twitter_storage_description">保存先は「設定」の出力先設定に従います。</string>
 </resources>

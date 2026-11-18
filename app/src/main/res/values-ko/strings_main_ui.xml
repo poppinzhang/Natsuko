@@ -11,11 +11,11 @@
     <string name="main_video_animation">동영상 및 GIF</string>
     <string name="main_storage_hint">설정에서 사용자 저장 폴더에 자동 저장을 켜세요.</string>
     <string name="main_about">정보</string>
-    <string name="main_tagline">이미지와 문서를 새롭게.</string>
+    <string name="main_tagline">이미지, 문서, GIF를 새롭게.</string>
     <string name="main_back">뒤로</string>
     <string name="main_start_processing">처리 시작</string>
     <string name="main_merge_reorder_hint">탭하여 이미지를 선택하세요. 길게 누른 채 드래그하여 순서를 바꿀 수 있습니다.</string>
-    <string name="main_pdf_reorder_hint">스크롤하여 PDF에 들어갈 순서대로 페이지를 미리 확인하세요.</string>
+    <string name="main_pdf_reorder_hint">스크롤하여 페이지를 미리 보고 순서를 바꾸거나 이미지를 제거할 수 있습니다.</string>
     <string name="main_output_order_hint">아래에 표시된 순서대로 파일을 처리합니다.</string>
     <string name="main_select_again">다시 선택</string>
     <string name="main_move_up">위로 이동</string>
@@ -43,7 +43,7 @@
     <string name="main_image_settings_hint">PDF의 각 페이지를 개별 이미지로 변환합니다.</string>
     <string name="main_format">형식</string>
     <string name="main_gif_settings">GIF 설정</string>
-    <string name="main_gif_settings_hint">H.264, H.265 또는 AV1 코덱을 사용하는 MP4, MKV, MOV 동영상을 오프라인으로 변환합니다.</string>
+    <string name="main_gif_settings_hint">지정한 간격으로 동영상에서 프레임을 추출하여 선택한 프레임 속도로 재생되는 GIF를 만듭니다.</string>
     <string name="main_maximum_width">최대 너비</string>
     <string name="main_infinite">무한 반복</string>
     <string name="main_gif_frame_limit">메모리 사용량과 파일 크기를 관리하기 위해 변환당 최대 300프레임으로 제한됩니다.</string>
@@ -78,7 +78,7 @@
     <string name="main_image_scale">해상도 배율: %1$.1f×</string>
     <string name="main_jpeg_quality">JPEG 품질: %1$d</string>
     <string name="main_gif_fps">재생 프레임 속도: %1$d fps</string>
-    <string name="main_gif_interval">프레임 샘플링 간격: %1$d ms</string>
+    <string name="main_gif_interval">프레임 추출 간격: %1$d ms</string>
     <string name="main_loop">반복: %1$s</string>
     <string name="main_failure_detail">%1$s: %2$s</string>
     <string name="main_save_location">저장 위치\n%1$s</string>
@@ -144,5 +144,5 @@
     <string name="main_color_blue">연한 파란색</string>
     <string name="main_color_pink">연한 분홍색</string>
     <string name="feature_image_adjustment">이미지 조정</string>
-    <string name="feature_image_adjustment_description">이미지 한 장을 자르기, 수평 맞추기, 회전, 뒤집기, 크기 줄이기 및 내보내기</string>
+    <string name="feature_image_adjustment_description">자르기, 수평 맞추기, 회전, 뒤집기, 크기 줄이기 및 형식 변환</string>
 </resources>

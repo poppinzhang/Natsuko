@@ -18,7 +18,7 @@
     <string name="adjust_aspect_free">Free</string>
     <string name="adjust_aspect_original">Original</string>
     <string name="adjust_aspect_ratio">%1$d:%2$d</string>
-    <string name="adjust_aspect_portrait">Portrait</string>
+    <string name="adjust_aspect_portrait">Swap orientation</string>
     <string name="adjust_aspect_swap_description">Switch between landscape and portrait</string>
     <string name="adjust_crop_hint">Drag an edge, a corner, or the crop box.</string>
     <string name="adjust_reset_crop">Reset crop</string>
@@ -67,14 +67,14 @@
     <string name="adjust_unavailable">Unavailable</string>
     <string name="adjust_retry">Retry</string>
     <string name="adjust_note_png">PNG is lossless and keeps transparency.</string>
-    <string name="adjust_note_jpeg" formatted="false">JPEG is always lossy, even at 100%.</string>
+    <string name="adjust_note_jpeg" formatted="false">JPEG is a lossy format, even at 100%.</string>
     <string name="adjust_note_jpeg_background">JPEG cannot store transparency. Transparent areas use the selected background.</string>
     <string name="adjust_note_webp_lossless">Lossless WebP keeps every edited pixel and its transparency.</string>
     <string name="adjust_note_webp_lossy">Lossy WebP also keeps transparency.</string>
-    <string name="adjust_note_quality">The percentage is an encoder setting. It is not the share of original quality or file size that is kept.</string>
-    <string name="adjust_note_reencode">Exporting re-encodes the image, so the file may be larger than the original. Format and quality never change the pixel size.</string>
+    <string name="adjust_note_quality">Quality percentage is a compression setting, not a ratio of quality or file size.</string>
+    <string name="adjust_note_reencode">Exporting re-encodes the image; format and quality do not change pixel dimensions.</string>
     <string name="adjust_note_color">This image uses a wide color gamut or HDR. It is exported as standard sRGB.</string>
-    <string name="adjust_note_metadata">Location, device, and capture time metadata are not copied.</string>
+    <string name="adjust_note_metadata">Exported files exclude location, device, and capture time metadata.</string>
     <string name="adjust_save">Save</string>
     <string name="adjust_output_detail">%1$d × %2$d px · %3$s</string>
     <string name="adjust_continue_editing">Continue editing</string>
@@ -84,7 +84,7 @@
     <string name="adjust_discard_keep">Keep editing</string>
     <string name="adjust_choose_title">Choose one image</string>
     <plurals name="adjust_choose_hint">
-        <item quantity="one">%1$d image was shared. Image adjustment edits one image at a time; only the image you choose is processed.</item>
-        <item quantity="other">%1$d images were shared. Image adjustment edits one image at a time; only the image you choose is processed.</item>
+        <item quantity="one">%1$d image was shared. Image adjustment processes one image at a time—select the one to edit.</item>
+        <item quantity="other">%1$d images were shared. Image adjustment processes one image at a time—select the one to edit.</item>
     </plurals>
 </resources>

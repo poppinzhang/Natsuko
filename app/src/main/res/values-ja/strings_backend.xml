@@ -99,7 +99,7 @@
     <string name="backend_download_incomplete">ダウンロードが完了しておらず、ファイルサイズが一致しません。やり直してください。</string>
     <string name="backend_ffmpeg_missing">内蔵の動画処理コンポーネントがありません。完全なNatsukoアプリを再インストールしてください。</string>
     <string name="backend_ffmpeg_probe_failed">動画を読み込めませんでした。ファイルが完全で、対応する動画フレームが含まれているか確認してください。</string>
-    <string name="backend_ffmpeg_conversion_failed">動画の変換に失敗しました。ファイルが破損していないか、空き容量が十分にあるか確認してください。</string>
+    <string name="backend_ffmpeg_conversion_failed">動画の変換に失敗しました。ファイルが破損していないか確認してください。</string>
     <string name="backend_ffmpeg_result_failed">動画の処理結果を読み込めませんでした。</string>
     <string name="backend_storage_full">空き容量がありません</string>
     <string name="backend_file_permission_denied">ファイルへのアクセス権がありません。</string>
@@ -146,7 +146,7 @@
     <string name="backend_saving_user_storage">ユーザーの保存先フォルダに保存中</string>
     <string name="backend_user_storage_directory">ユーザーの保存先フォルダ</string>
     <string name="backend_save_retry">保存に失敗しました。やり直してください。</string>
-    <string name="backend_save_storage_error">ユーザーの保存先フォルダに保存できませんでした：%1$s</string>
+    <string name="backend_save_storage_error">保存失敗（%1$s）</string>
     <string name="backend_ffmpeg_error_detail">%1$s %2$s</string>
     <string name="backend_post_video_label">投稿%1$s · 動画%2$s</string>
     <string name="backend_post_gif_label">投稿%1$s · GIF %2$s</string>
@@ -159,7 +159,7 @@
     <string name="backend_adjust_source_changed">画像を開いた後に内容が変更されました。選択し直してください。</string>
     <string name="backend_adjust_source_unreadable">画像を読み込めませんでした。選択し直すか、再度共有してください。</string>
     <string name="backend_adjust_webp_too_large">WebPの各辺は最大%1$d pxです。「縮小」を使うか、PNGまたはJPEGを選択してください。</string>
-    <string name="backend_adjust_too_large">この書き出しには%1$.1fメガピクセル分の画像メモリが必要ですが、上限は%2$.1fです。「縮小」で画像を小さくしてください。</string>
+    <string name="backend_adjust_too_large">この書き出しでは%1$.1f MPを処理する必要があり、上限（%2$.1f MP）を超えています。「縮小」を使ってから書き出してください。</string>
     <string name="backend_adjust_out_of_memory">画像を処理するためのメモリが不足しています。「縮小」を使ってやり直してください。</string>
     <string name="backend_adjust_reading">元の画像を読み込み中</string>
     <string name="backend_adjust_rendering">編集を適用中</string>

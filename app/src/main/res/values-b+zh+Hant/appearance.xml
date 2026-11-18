@@ -4,6 +4,6 @@
     <string name="appearance_color_mode">顏色模式</string>
     <string name="appearance_color_mode_hint">隨時切換，選擇後立即生效。</string>
     <string name="appearance_system">依照系統</string>
-    <string name="appearance_light">淺色（Light）</string>
-    <string name="appearance_dark">深色（Dark）</string>
+    <string name="appearance_light">淺色</string>
+    <string name="appearance_dark">深色</string>
 </resources>

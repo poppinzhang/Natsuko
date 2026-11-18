@@ -11,11 +11,11 @@
     <string name="main_video_animation">動画とGIF</string>
     <string name="main_storage_hint">設定で、ユーザーの保存先フォルダへの自動保存を有効にできます。</string>
     <string name="main_about">このアプリについて</string>
-    <string name="main_tagline">画像もドキュメントも、きれいに仕上げる。</string>
+    <string name="main_tagline">画像・ドキュメント・GIFを、全修！</string>
     <string name="main_back">戻る</string>
     <string name="main_start_processing">処理を開始</string>
     <string name="main_merge_reorder_hint">タップで画像を選択し、長押ししてドラッグすると順序を変更できます。</string>
-    <string name="main_pdf_reorder_hint">スクロールして、PDFのページ順にプレビューできます。</string>
+    <string name="main_pdf_reorder_hint">スクロールしてページをプレビューし、順序の変更や画像の削除ができます。</string>
     <string name="main_output_order_hint">ファイルは以下の順序で処理されます。</string>
     <string name="main_select_again">選び直す</string>
     <string name="main_move_up">上に移動</string>
@@ -43,7 +43,7 @@
     <string name="main_image_settings_hint">PDFの各ページを個別の画像に変換します。</string>
     <string name="main_format">形式</string>
     <string name="main_gif_settings">GIF設定</string>
-    <string name="main_gif_settings_hint">H.264、H.265、AV1のMP4、MKV、MOV動画をオフラインで変換できます。</string>
+    <string name="main_gif_settings_hint">指定した間隔で動画からフレームを抽出し、設定したフレームレートで再生するGIFを作成します。</string>
     <string name="main_maximum_width">最大幅</string>
     <string name="main_infinite">無限</string>
     <string name="main_gif_frame_limit">メモリ使用量とファイルサイズを抑えるため、1回の変換は最大300フレームです。</string>
@@ -144,5 +144,5 @@
     <string name="main_color_blue">水色</string>
     <string name="main_color_pink">薄いピンク</string>
     <string name="feature_image_adjustment">画像を調整</string>
-    <string name="feature_image_adjustment_description">切り抜き、傾き補正、回転、反転、縮小を行い、画像を書き出し</string>
+    <string name="feature_image_adjustment_description">切り抜き、傾き補正、回転、反転、縮小、形式変換</string>
 </resources>

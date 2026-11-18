@@ -9,13 +9,13 @@
     <string name="main_images">图片</string>
     <string name="main_documents">文档</string>
     <string name="main_video_animation">视频与动图</string>
-    <string name="main_storage_hint">成品可在设置中开启自动保存至用户存储目录。</string>
+    <string name="main_storage_hint">可在「设置」中开启自动保存，将成品存至用户存储目录。</string>
     <string name="main_about">关于</string>
-    <string name="main_tagline">图片与文档，重新修好。</string>
+    <string name="main_tagline">图片、文档与动图，全修！</string>
     <string name="main_back">返回</string>
     <string name="main_start_processing">开始处理</string>
     <string name="main_merge_reorder_hint">轻触选中图片，长按拖动调整拼接顺序</string>
-    <string name="main_pdf_reorder_hint">上下滑动预览；序号即 PDF 页面顺序</string>
+    <string name="main_pdf_reorder_hint">上下滑动预览页面，可调整顺序或移除图片</string>
     <string name="main_output_order_hint">输出顺序与下方顺序一致</string>
     <string name="main_select_again">重新选择</string>
     <string name="main_move_up">上移</string>
@@ -43,7 +43,7 @@
     <string name="main_image_settings_hint">每个 PDF 页面会生成一张独立图片</string>
     <string name="main_format">格式</string>
     <string name="main_gif_settings">GIF 设置</string>
-    <string name="main_gif_settings_hint">支持 MP4、MKV、MOV；H.264、H.265、AV1 视频可离线转换</string>
+    <string name="main_gif_settings_hint">按采样间隔从原视频抽帧，再按播放帧率合成动图</string>
     <string name="main_maximum_width">最大宽度</string>
     <string name="main_infinite">无限</string>
     <string name="main_gif_frame_limit">为控制内存和文件大小，单次最多生成 300 帧。</string>
@@ -75,10 +75,10 @@
     <string name="main_page_move_down">第 %1$d 页下移</string>
     <string name="main_remove_named">移除 %1$s</string>
     <string name="main_page_margin">页边距：%1$d pt</string>
-    <string name="main_image_scale">清晰度：%1$.1f×</string>
+    <string name="main_image_scale">分辨率倍率：%1$.1f×</string>
     <string name="main_jpeg_quality">JPEG 质量：%1$d</string>
     <string name="main_gif_fps">播放帧率：%1$d fps</string>
-    <string name="main_gif_interval">视频采样间隔：%1$d ms</string>
+    <string name="main_gif_interval">抽帧间隔：%1$d ms</string>
     <string name="main_loop">循环：%1$s</string>
     <string name="main_failure_detail">%1$s：%2$s</string>
     <string name="main_save_location">保存位置\n%1$s</string>
@@ -144,5 +144,5 @@
     <string name="main_color_blue">浅蓝色</string>
     <string name="main_color_pink">浅粉色</string>
     <string name="feature_image_adjustment">图片调整</string>
-    <string name="feature_image_adjustment_description">裁剪、拉直、旋转、镜像、缩小尺寸后导出单张图片</string>
+    <string name="feature_image_adjustment_description">裁剪、拉直、旋转、镜像与缩小尺寸，支持转换格式</string>
 </resources>

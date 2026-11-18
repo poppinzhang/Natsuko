@@ -14,7 +14,7 @@
     <string name="settings_output_storage">결과물 저장</string>
     <string name="settings_storage_description">완성된 이미지, PDF, GIF, 동영상을 아래 폴더에 자동으로 저장합니다.</string>
     <string name="settings_storage_directory">사용자 저장 폴더</string>
-    <string name="settings_storage_grouping">결과물은 기능과 처리 시간별로 정리됩니다.</string>
+    <string name="settings_storage_grouping">결과물은 기능별 폴더에 정리되어 찾기 쉽습니다.</string>
     <string name="settings_storage_change">폴더 변경</string>
     <string name="settings_storage_restore">기본 폴더로 복원: Download/Natsuko</string>
     <string name="settings_storage_help">기본 폴더에는 추가 저장소 권한이 필요하지 않습니다. 다른 폴더를 선택할 때는 시스템 선택 화면에서 접근을 허용하세요. 자동 저장을 꺼도 이전에 저장한 결과물은 유지됩니다.</string>

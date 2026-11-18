@@ -21,8 +21,8 @@
     <string name="backend_directory_not_writable_settings">所選資料夾無法寫入，請在設定中重新選擇資料夾</string>
     <string name="backend_write_file_failed">無法寫入檔案</string>
     <string name="backend_outputs_processed">已處理 %1$s/%2$s 個成品</string>
-    <string name="backend_download_file_create_failed">無法建立下載檔案</string>
-    <string name="backend_download_file_finish_failed">無法完成下載檔案的儲存</string>
+    <string name="backend_download_file_create_failed">無法在 Download 資料夾中建立檔案</string>
+    <string name="backend_download_file_finish_failed">無法完成向 Download 資料夾儲存檔案</string>
     <string name="backend_directory_file_create_failed">無法在所選資料夾中建立檔案</string>
     <string name="backend_output_open_failed">無法開啟輸出檔案</string>
     <string name="backend_directory_create_failed">無法建立輸出資料夾：%1$s</string>
@@ -90,8 +90,8 @@
     <string name="backend_download_url_unsupported">下載網址不是受支援的 X 官方 HTTPS 網址</string>
     <string name="backend_download_redirect_limit">X 下載網址重新導向次數過多</string>
     <string name="backend_download_redirect_invalid">X 傳回了無效的下載重新導向</string>
-    <string name="backend_x_access_denied">X 拒絕了此請求。此回應無法確認登入後是否能夠存取。</string>
-    <string name="backend_x_media_missing">X 在此位址找不到請求的推文或影片。</string>
+    <string name="backend_x_access_denied">X 拒絕了存取請求，且無法確認登入後是否可查看。</string>
+    <string name="backend_x_media_missing">X 找不到該連結對應的推文或影片。</string>
     <string name="backend_x_rate_limited">向 X 發送的請求過於頻繁，請稍後重試</string>
     <string name="backend_x_server_error">X 服務暫時無法使用（HTTP %1$s），請稍後重試</string>
     <string name="backend_x_http_error">X 下載請求失敗（HTTP %1$s）</string>
@@ -99,7 +99,7 @@
     <string name="backend_download_incomplete">下載未完成，檔案長度不一致，請重試</string>
     <string name="backend_ffmpeg_missing">安裝套件缺少影片處理元件，請重新安裝完整的 Natsuko 應用程式</string>
     <string name="backend_ffmpeg_probe_failed">無法讀取影片，請確認檔案完整且包含受支援的影片畫面</string>
-    <string name="backend_ffmpeg_conversion_failed">影片轉換失敗，請檢查檔案是否損壞及儲存空間是否充足</string>
+    <string name="backend_ffmpeg_conversion_failed">影片轉換失敗，請檢查檔案是否完整</string>
     <string name="backend_ffmpeg_result_failed">無法讀取影片處理結果</string>
     <string name="backend_storage_full">儲存空間不足</string>
     <string name="backend_file_permission_denied">沒有檔案存取權限</string>
@@ -146,8 +146,8 @@
     <string name="backend_saving_user_storage">正在儲存至使用者儲存資料夾</string>
     <string name="backend_user_storage_directory">使用者儲存資料夾</string>
     <string name="backend_save_retry">儲存失敗，請重試</string>
-    <string name="backend_save_storage_error">儲存至使用者儲存資料夾失敗：%1$s</string>
-    <string name="backend_ffmpeg_error_detail">%1$s %2$s</string>
+    <string name="backend_save_storage_error">儲存失敗（%1$s）</string>
+    <string name="backend_ffmpeg_error_detail">%1$s（%2$s）</string>
     <string name="backend_post_video_label">推文 %1$s · 影片 %2$s</string>
     <string name="backend_post_gif_label">推文 %1$s · GIF %2$s</string>
     <string name="backend_internal_storage">內部儲存</string>
@@ -159,7 +159,7 @@
     <string name="backend_adjust_source_changed">圖片在開啟後已變更，請重新選擇。</string>
     <string name="backend_adjust_source_unreadable">無法讀取圖片，請重新選擇或分享。</string>
     <string name="backend_adjust_webp_too_large">WebP 每邊最多 %1$d px。請使用「縮小尺寸」，或改用 PNG、JPEG。</string>
-    <string name="backend_adjust_too_large">本次匯出需要容納 %1$.1f 百萬像素的記憶體，像素上限為 %2$.1f 百萬。請使用「縮小尺寸」匯出較小的圖片。</string>
+    <string name="backend_adjust_too_large">本次匯出需處理 %1$.1f MP（百萬像素），超出上限 %2$.1f MP。請先使用「縮小尺寸」再匯出。</string>
     <string name="backend_adjust_out_of_memory">記憶體不足，無法處理此圖片。請使用「縮小尺寸」後重試。</string>
     <string name="backend_adjust_reading">正在讀取原圖</string>
     <string name="backend_adjust_rendering">正在套用編輯</string>

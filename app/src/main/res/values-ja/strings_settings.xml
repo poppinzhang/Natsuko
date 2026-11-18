@@ -14,7 +14,7 @@
     <string name="settings_output_storage">出力先</string>
     <string name="settings_storage_description">処理後の画像、PDF、GIF、動画を以下のフォルダに自動保存します。</string>
     <string name="settings_storage_directory">ユーザーの保存先フォルダ</string>
-    <string name="settings_storage_grouping">出力ファイルは機能ごとのフォルダに保存されます。</string>
+    <string name="settings_storage_grouping">結果は機能ごとのフォルダに分けて保存されます。</string>
     <string name="settings_storage_change">フォルダを変更</string>
     <string name="settings_storage_restore">既定に戻す：Download/Natsuko</string>
     <string name="settings_storage_help">既定のフォルダには追加のストレージ権限は不要です。別のフォルダを選ぶ場合は、システムの選択画面でアクセスを許可してください。自動保存をオフにしても、保存済みのファイルは残ります。</string>

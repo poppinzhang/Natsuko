@@ -6,7 +6,7 @@
     <string name="adjust_export">匯出</string>
     <string name="adjust_loading">正在讀取圖片</string>
     <string name="adjust_load_failed">無法開啟此圖片</string>
-    <string name="adjust_preview_description">圖片預覽，%1$d × %2$d px</string>
+    <string name="adjust_preview_description">圖片預覽（%1$d × %2$d px）</string>
     <string name="adjust_output_size">輸出 %1$d × %2$d px</string>
     <string name="adjust_output_size_reduced">輸出 %1$d × %2$d px（%3$s）</string>
     <string name="adjust_dimensions">%1$d × %2$d px</string>
@@ -18,7 +18,7 @@
     <string name="adjust_aspect_free">自由</string>
     <string name="adjust_aspect_original">原圖比例</string>
     <string name="adjust_aspect_ratio">%1$d:%2$d</string>
-    <string name="adjust_aspect_portrait">直向</string>
+    <string name="adjust_aspect_portrait">橫直切換</string>
     <string name="adjust_aspect_swap_description">切換橫向與直向</string>
     <string name="adjust_crop_hint">拖曳邊緣、四角或裁切框。</string>
     <string name="adjust_reset_crop">重置裁切</string>
@@ -38,7 +38,7 @@
     <string name="adjust_flip_vertical">上下翻轉</string>
     <string name="adjust_mirror_hint">以目前看到的畫面方向翻轉，不改變像素尺寸。</string>
     <string name="adjust_reset_mirror">重置鏡射</string>
-    <string name="adjust_resize_base">縮小前的編輯尺寸：%1$d × %2$d px</string>
+    <string name="adjust_resize_base">縮小前尺寸：%1$d × %2$d px</string>
     <string name="adjust_percent">%1$d%%</string>
     <string name="adjust_target_width">寬度（px）</string>
     <string name="adjust_target_height">高度（px）</string>
@@ -47,7 +47,7 @@
     <string name="adjust_resize_hint">按目前畫面比例等比縮小，不放大，也不個別拉伸寬或高。</string>
     <string name="adjust_reset_resize" formatted="false">還原 100%</string>
     <string name="adjust_export_title">匯出設定</string>
-    <string name="adjust_export_preview_description">匯出預覽，%1$d × %2$d px</string>
+    <string name="adjust_export_preview_description">匯出預覽（%1$d × %2$d px）</string>
     <string name="adjust_format">格式</string>
     <string name="adjust_format_png">PNG</string>
     <string name="adjust_format_webp">WebP</string>
@@ -67,14 +67,14 @@
     <string name="adjust_unavailable">無法取得</string>
     <string name="adjust_retry">重試</string>
     <string name="adjust_note_png">PNG 為無失真格式，保留透明度。</string>
-    <string name="adjust_note_jpeg" formatted="false">JPEG 一律採用有失真編碼，即使設為 100% 也不例外。</string>
+    <string name="adjust_note_jpeg" formatted="false">JPEG 為有失真格式（含 100% 品質）。</string>
     <string name="adjust_note_jpeg_background">JPEG 不支援透明，透明區域使用所選背景色。</string>
     <string name="adjust_note_webp_lossless">無失真 WebP 保留編輯結果的全部像素與透明度。</string>
     <string name="adjust_note_webp_lossy">有失真 WebP 同樣保留透明度。</string>
-    <string name="adjust_note_quality">百分比是編碼參數，不代表保留相同比例的原始畫質或檔案大小。</string>
-    <string name="adjust_note_reencode">匯出會重新編碼，檔案不一定比原檔案小；格式和品質不會改變像素尺寸。</string>
+    <string name="adjust_note_quality">品質百分比為壓縮參數，不等同於畫質或檔案大小比例。</string>
+    <string name="adjust_note_reencode">匯出會重新編碼，切換格式與品質不改變像素尺寸。</string>
     <string name="adjust_note_color">此圖片使用廣色域或 HDR，將轉換為標準 sRGB 匯出。</string>
-    <string name="adjust_note_metadata">不複製拍攝位置、裝置和拍攝時間等中繼資料。</string>
+    <string name="adjust_note_metadata">匯出檔案不包含位置、裝置、拍攝時間等中繼資料。</string>
     <string name="adjust_save">儲存</string>
     <string name="adjust_output_detail">%1$d × %2$d px · %3$s</string>
     <string name="adjust_continue_editing">繼續調整</string>
@@ -84,6 +84,6 @@
     <string name="adjust_discard_keep">繼續編輯</string>
     <string name="adjust_choose_title">選擇一張圖片</string>
     <plurals name="adjust_choose_hint">
-        <item quantity="other">已分享 %1$d 張圖片。圖片調整一次只編輯一張，僅處理所選圖片。</item>
+        <item quantity="other">已分享 %1$d 張圖片。圖片調整每次僅處理一張，請選擇要編輯的圖片。</item>
     </plurals>
 </resources>
