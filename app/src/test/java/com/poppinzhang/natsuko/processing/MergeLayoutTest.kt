@@ -1,11 +1,17 @@
 package com.poppinzhang.natsuko.processing
 
 import com.poppinzhang.natsuko.model.MergeDirection
+import com.poppinzhang.natsuko.model.MergeOptions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MergeLayoutTest {
+    @Test
+    fun mergeOptionsDefaultsToHorizontalDirection() {
+        assertEquals(MergeDirection.HORIZONTAL, MergeOptions().direction)
+    }
+
     @Test
     fun horizontalCentersShorterImages() {
         val plan = MergeLayout.calculate(

@@ -727,8 +727,8 @@ private fun MergeSettings(
         Text(stringResource(R.string.main_layout), fontWeight = FontWeight.Medium)
         ChoiceChips(
             listOf(
-                MergeDirection.VERTICAL to stringResource(R.string.main_vertical),
                 MergeDirection.HORIZONTAL to stringResource(R.string.main_horizontal),
+                MergeDirection.VERTICAL to stringResource(R.string.main_vertical),
                 MergeDirection.GRID to stringResource(R.string.main_grid),
             ),
             options.direction,

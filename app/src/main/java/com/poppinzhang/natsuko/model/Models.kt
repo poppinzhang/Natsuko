@@ -69,7 +69,7 @@ object MergeGridLayout {
 }
 
 data class MergeOptions(
-    val direction: MergeDirection = MergeDirection.VERTICAL,
+    val direction: MergeDirection = MergeDirection.HORIZONTAL,
     val fillColor: Int = 0xFFFFFFFF.toInt(),
     val spacingPx: Int = 0,
 ) {

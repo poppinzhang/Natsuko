@@ -205,11 +205,11 @@ class TwitterImageDownloadWorkflowTest {
         val configured = viewModel.state.value
         assertEquals(AppScreen.CONFIGURE, configured.screen)
         assertEquals(Feature.IMAGE_MERGE, configured.feature)
+        assertEquals(MergeDirection.HORIZONTAL, configured.mergeOptions.direction)
         assertEquals(originalOutputs.map { it.file.name }, configured.inputs.map { it.displayName })
         assertTrue(configured.inputs.all { it.uri.scheme == "content" && it.uri.authority == "${context.packageName}.files" })
         assertNull(configured.outcome)
 
-        viewModel.updateMergeDirection(MergeDirection.HORIZONTAL)
         viewModel.process()
         val mergedState = awaitPublicCopy(viewModel)
         val mergedArtifact = mergedState.outcome!!.outputs.single()

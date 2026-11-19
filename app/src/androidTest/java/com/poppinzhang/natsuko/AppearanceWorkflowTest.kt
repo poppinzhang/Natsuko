@@ -200,7 +200,7 @@ class AppearanceWorkflowTest {
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         instrumentation.runOnMainSync { viewModel.handleShareIntent(intent) }
         composeRule.waitUntil(5_000) { viewModel.state.value.screen == AppScreen.CONFIGURE }
-        instrumentation.runOnMainSync { viewModel.updateMergeDirection(MergeDirection.HORIZONTAL) }
+        instrumentation.runOnMainSync { viewModel.updateMergeDirection(MergeDirection.VERTICAL) }
         val configured = viewModel.state.value
         assertEquals(Feature.IMAGE_MERGE, configured.feature)
         assertEquals(1, configured.inputs.size)

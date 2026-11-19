@@ -201,8 +201,8 @@ class DocumentProcessorsTest {
         assertTrue("Merging grew the native heap by ${growth shr 20} MiB", growth < 96L shl 20)
         val bitmap = BitmapFactory.decodeFile(checkNotNull(merged).absolutePath)
         try {
-            assertTrue(bitmap.height in 8191..8192 && bitmap.width in 272..274)
-            assertEquals(Color.RED, bitmap.getPixel(bitmap.width / 2, bitmap.height - 1))
+            assertTrue(bitmap.width in 8191..8192 && bitmap.height in 272..274)
+            assertEquals(Color.RED, bitmap.getPixel(bitmap.width - 1, bitmap.height / 2))
         } finally {
             bitmap.recycle()
         }

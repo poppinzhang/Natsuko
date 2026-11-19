@@ -11,8 +11,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -20,6 +23,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.core.content.FileProvider
@@ -46,20 +50,39 @@ class MergePreviewLayoutTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test
+    fun mergeDefaultsToHorizontalLayoutAndChipSelection() {
+        val viewModel = showPreview(List(2) { index -> createImage("default-$index.png", 120, 80) })
+        waitForItems(0, 1)
+
+        assertEquals(MergeDirection.HORIZONTAL, viewModel.state.value.mergeOptions.direction)
+        val first = itemBounds(0)
+        val second = itemBounds(1)
+        assertEquals(first.center.y, second.center.y, 1f)
+        assertTrue(second.left > first.left)
+
+        composeRule.onNodeWithTag("configure-list")
+            .performScrollToNode(hasText(context.getString(R.string.main_horizontal)))
+        composeRule.onNodeWithText(context.getString(R.string.main_horizontal)).assertIsSelected()
+        composeRule.onNodeWithText(context.getString(R.string.main_vertical)).assertIsNotSelected()
+        composeRule.onNodeWithText(context.getString(R.string.main_grid)).assertIsNotSelected()
+    }
+
+    @Test
     fun previewPositionsFollowSelectedMergeDirection() {
         val viewModel = showPreview(List(4) { index -> createImage("preview-$index.png", 120, 80) })
         waitForItems(0, 1, 2, 3)
 
-        val verticalFirst = itemBounds(0)
-        val verticalSecond = itemBounds(1)
-        assertEquals(verticalFirst.center.x, verticalSecond.center.x, 1f)
-        assertTrue(verticalSecond.top > verticalFirst.top)
-
-        composeRule.runOnIdle { viewModel.updateMergeDirection(MergeDirection.HORIZONTAL) }
+        assertEquals(MergeDirection.HORIZONTAL, viewModel.state.value.mergeOptions.direction)
         val horizontalFirst = itemBounds(0)
         val horizontalSecond = itemBounds(1)
         assertEquals(horizontalFirst.center.y, horizontalSecond.center.y, 1f)
         assertTrue(horizontalSecond.left > horizontalFirst.left)
+
+        composeRule.runOnIdle { viewModel.updateMergeDirection(MergeDirection.VERTICAL) }
+        val verticalFirst = itemBounds(0)
+        val verticalSecond = itemBounds(1)
+        assertEquals(verticalFirst.center.x, verticalSecond.center.x, 1f)
+        assertTrue(verticalSecond.top > verticalFirst.top)
 
         composeRule.runOnIdle { viewModel.updateMergeDirection(MergeDirection.GRID) }
         val gridFirst = itemBounds(0)
@@ -231,9 +254,9 @@ class MergePreviewLayoutTest {
         val canvas = bounds("merge-preview-canvas")
         val first = itemBounds(0)
         val last = itemBounds(2)
-        assertEquals(0.5f, canvas.width / canvas.height, 0.02f)
-        assertEquals(first.bottom, last.top, 2f)
-        assertEquals(first.center.x, last.center.x, 2f)
+        assertEquals(1.125f, canvas.width / canvas.height, 0.02f)
+        assertEquals(first.right, last.left, 2f)
+        assertEquals(first.center.y, last.center.y, 2f)
         assertCompleteImageEdges(0)
         assertCompleteImageEdges(2)
         composeRule.onNodeWithText(context.getString(R.string.main_next_image)).performScrollTo().performClick()
