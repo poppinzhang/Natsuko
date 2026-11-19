@@ -16,7 +16,8 @@ enum class Feature(
     DOWNLOAD_TWITTER_VIDEO(R.string.feature_download_twitter_video, R.string.feature_download_twitter_video_description, "DownloadTwitterVideo"),
     DOWNLOAD_TWITTER_IMAGES(R.string.feature_download_twitter_images, R.string.feature_download_twitter_images_description, "DownloadTwitterImages"),
     COPY_LOCATION(R.string.feature_copy_location, R.string.feature_copy_location_description, "CopyLocation"),
-    IMAGE_ADJUSTMENT(R.string.feature_image_adjustment, R.string.feature_image_adjustment_description, "ImageAdjustment");
+    IMAGE_ADJUSTMENT(R.string.feature_image_adjustment, R.string.feature_image_adjustment_description, "ImageAdjustment"),
+    IMAGE_SPLIT(R.string.feature_image_split, R.string.feature_image_split_description, "ImageSplit");
 
     companion object {
         fun fromShareComponent(className: String?): Feature? = when {
@@ -29,6 +30,7 @@ enum class Feature(
             className?.endsWith("DownloadTwitterImagesShare") == true -> DOWNLOAD_TWITTER_IMAGES
             className?.endsWith("CopyLocationShare") == true -> COPY_LOCATION
             className?.endsWith("ImageAdjustmentShare") == true -> IMAGE_ADJUSTMENT
+            className?.endsWith("ImageSplitShare") == true -> IMAGE_SPLIT
             else -> null
         }
     }

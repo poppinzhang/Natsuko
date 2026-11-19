@@ -34,6 +34,7 @@ Natsuko 是一款 Android 图片、PDF 与视频处理工具。安装 APK 后，
 | 功能 | 可以做什么 |
 | :-- | :-- |
 | 图片拼接 | 把多张图片横向、纵向或按网格拼在一起，拖动调整顺序，设置图片间距与留白颜色，预览整体效果。 |
+| 图片分割（开发版新增，尚未发布） | 把单张图片横向或纵向切分为 2–20 份，支持均等与自由拖动分割线、可调分割线宽度（用于多图间隔衔接）、自适应横竖屏全屏操作以及可调间隔与背景底色的排列预览。 |
 | 去除黑边 | 自动裁去图片四周连续的完整黑边，支持批量处理，保存为 PNG。 |
 | 图片调整 | 裁剪、拉直、旋转、镜像或缩小图片；支持撤销与重做，导出 PNG、JPEG 或 WebP，并在保存前查看预计文件大小。 |
 | 图片转 PDF | 把多张图片合成一份 PDF，或每张分别生成一份；可调整纸张、方向和页边距。 |
@@ -83,7 +84,7 @@ X 上的动图下载后保存为 MP4；需要 GIF 文件时，在结果页点「
 | :-- | :-- |
 | [更新记录](CHANGELOG.md) | 已发布与未发布的变化 |
 | [保存与输出](docs/output_storage.md) | 保存位置、目录授权和失败重试 |
-| [图片拼接](docs/image_merge.md) · [去除黑边](docs/crop_black_border.md) · [图片调整](docs/image_adjustment.md) | 图片处理的选项与限制 |
+| [图片拼接](docs/image_merge.md) · [图片分割](docs/image_split.md) · [去除黑边](docs/crop_black_border.md) · [图片调整](docs/image_adjustment.md) | 图片处理的选项与限制 |
 | [图片转 PDF](docs/image2pdf.md) · [PDF 转图片](docs/pdf2image.md) | 文档转换的选项与限制 |
 | [视频转 GIF](docs/video2gif.md) · [下载推特视频](docs/download_twitter_video.md) · [下载推特图片](docs/download_twitter_images.md) | 视频格式、转换参数、下载范围与批量图片下载 |
 | [复制图片位置](docs/copy_location.md) | 支持的图片格式与位置冲突处理 |

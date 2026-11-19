@@ -9,4 +9,5 @@
     <string name="share_download_twitter_video">下载推特视频（GIF） · Natsuko</string>
     <string name="share_download_twitter_images">下载推特图片 · Natsuko</string>
     <string name="share_image_adjustment">图片调整 · Natsuko</string>
+    <string name="share_image_split">图片分割 · Natsuko</string>
 </resources>

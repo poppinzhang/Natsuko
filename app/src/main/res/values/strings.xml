@@ -9,4 +9,5 @@
     <string name="share_download_twitter_video">Download Twitter videos (GIFs) · Natsuko</string>
     <string name="share_download_twitter_images">Download Twitter images · Natsuko</string>
     <string name="share_image_adjustment">Adjust image · Natsuko</string>
+    <string name="share_image_split">Split image · Natsuko</string>
 </resources>

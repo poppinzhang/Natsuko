@@ -9,4 +9,5 @@
     <string name="share_download_twitter_video">Twitter 동영상(GIF) 다운로드 · Natsuko</string>
     <string name="share_download_twitter_images">Twitter 이미지 다운로드 · Natsuko</string>
     <string name="share_image_adjustment">이미지 조정 · Natsuko</string>
+    <string name="share_image_split">이미지 분할 · Natsuko</string>
 </resources>

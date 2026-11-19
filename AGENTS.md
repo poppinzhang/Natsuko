@@ -120,6 +120,7 @@ Read the relevant feature document before changing behavior. Keep parameter limi
 | Area | Reference |
 | :-- | :-- |
 | Image merge, preview, ordering, horizontal/vertical/grid layouts, fill color, and size limits | [Image merge](docs/image_merge.md) |
+| Single-image horizontal/vertical splitting (2–20 parts), equal/free guides, orientation-adaptive fullscreen, arranged preview with spacing/background, and lossless PNG export | [Image split](docs/image_split.md) |
 | Automatic screenshot processing and conservative black-border detection | [Crop black border](docs/crop_black_border.md) |
 | Crop, straighten, rotate, mirror, resize, undo/redo, and export size estimation | [Image adjustment](docs/image_adjustment.md) |
 | Combined/per-image PDF output, page size, orientation, and margins | [Images to PDF](docs/image2pdf.md) |
@@ -135,7 +136,7 @@ Read the relevant feature document before changing behavior. Keep parameter limi
 | Manual update check against GitHub Releases, download verification, and installation through Android's package installer | [App update](docs/app_update.md) |
 | Offline dependency notices and license maintenance | [About](docs/about.md) and [native licenses](docs/native_licenses.md) |
 
-Share targets must preserve each feature's workflow: black-border removal starts automatic processing; a shared post opens download confirmation; image adjustment opens the editor after choosing one image when necessary; location copying validates a source before selecting targets. The remaining conversion features open their configuration screens. Keep activity aliases, MIME filters, and parser tests aligned with these workflows.
+Share targets must preserve each feature's workflow: black-border removal starts automatic processing; a shared post opens download confirmation; image adjustment and image split open their editors after choosing one image when necessary; location copying validates a source before selecting targets. The remaining conversion features open their configuration screens. Keep activity aliases, MIME filters, and parser tests aligned with these workflows.
 
 Generated files first go to app-specific storage. Optional user-directory saving uses `Download/Natsuko/<feature>/` or an authorized custom directory, without an additional timestamp folder in the user-visible destination. Preserve app-specific results when user-directory saving fails, and retry only files that have not been saved successfully.
 

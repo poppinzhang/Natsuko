@@ -50,9 +50,14 @@ import com.poppinzhang.natsuko.model.PixelRect
 import com.poppinzhang.natsuko.model.ProcessingOutcome
 import com.poppinzhang.natsuko.model.ProcessingFailure
 import com.poppinzhang.natsuko.model.ProcessingProgress
+import com.poppinzhang.natsuko.model.SplitDirection
+import com.poppinzhang.natsuko.model.SplitMode
+import com.poppinzhang.natsuko.model.SplitOptions
 import com.poppinzhang.natsuko.model.ThemeMode
 import com.poppinzhang.natsuko.model.LocalizedIOException
 import com.poppinzhang.natsuko.processing.ImageMergeProcessor
+import com.poppinzhang.natsuko.processing.ImageSplitGeometry
+import com.poppinzhang.natsuko.processing.ImageSplitProcessor
 import com.poppinzhang.natsuko.processing.CropBlackBorderProcessor
 import com.poppinzhang.natsuko.processing.ImagesToPdfProcessor
 import com.poppinzhang.natsuko.processing.PdfToImagesProcessor
@@ -84,7 +89,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class AppScreen { HOME, SETTINGS, ABOUT, CONFIGURE, TWITTER_DOWNLOAD, RESULT, ADJUST_CHOOSE, ADJUST_EDIT, ADJUST_EXPORT, COPY_LOCATION_SOURCE, COPY_LOCATION_TARGETS }
+enum class AppScreen { HOME, SETTINGS, ABOUT, CONFIGURE, TWITTER_DOWNLOAD, RESULT, ADJUST_CHOOSE, ADJUST_EDIT, ADJUST_EXPORT, COPY_LOCATION_SOURCE, COPY_LOCATION_TARGETS, SPLIT_CHOOSE, SPLIT_EDIT, SPLIT_FULLSCREEN, SPLIT_PREVIEW }
 
 enum class TwitterLoginStep { CONSENT, SIGN_IN }
 
@@ -119,6 +124,9 @@ data class NatsukoUiState(
     val copyLocation: CopyLocationUiState? = null,
     /** Several shared images: image adjustment edits only the one the user chooses. */
     val adjustmentChoices: List<InputItem> = emptyList(),
+    val split: ImageSplitState? = null,
+    /** Several shared images: image split slices only the one the user chooses. */
+    val splitChoices: List<InputItem> = emptyList(),
 )
 
 class NatsukoViewModel @JvmOverloads constructor(
@@ -149,6 +157,7 @@ class NatsukoViewModel @JvmOverloads constructor(
     private val pdfToImagesProcessor = PdfToImagesProcessor(application, outputRepository)
     private val videoToGifProcessor = VideoToGifProcessor(application, outputRepository)
     private val imageAdjustmentProcessor = ImageAdjustmentProcessor(application, outputRepository)
+    private val imageSplitProcessor = ImageSplitProcessor(application, outputRepository)
     private val copyLocationProcessor = CopyLocationProcessor(application, outputRepository)
     private val locationSources = mutableSetOf<File>()
     private var locationDecision: CompletableDeferred<LocationConflictDecision>? = null
@@ -183,6 +192,8 @@ class NatsukoViewModel @JvmOverloads constructor(
     private var adjustmentSession: ImageAdjustmentSession? = null
     private var adjustmentLoadJob: Job? = null
     private var estimateJob: Job? = null
+    private var splitLoadJob: Job? = null
+    private var splitLoadGeneration = 0
     private sealed interface PendingImport {
         data class Files(val feature: Feature, val uris: List<Uri>) : PendingImport
         data class TwitterLink(val feature: Feature, val text: String) : PendingImport
@@ -263,6 +274,7 @@ class NatsukoViewModel @JvmOverloads constructor(
             releaseLocationSources()
             if (feature == Feature.IMAGE_ADJUSTMENT) {
                 val skipped = invalid.takeIf { it.isNotEmpty() }?.let { text(R.string.backend_files_skipped, it.size) }
+                discardSplit()
                 if (valid.size == 1) {
                     startAdjustment(valid.single(), skipped)
                 } else {
@@ -277,7 +289,25 @@ class NatsukoViewModel @JvmOverloads constructor(
                 }
                 return@launch
             }
+            if (feature == Feature.IMAGE_SPLIT) {
+                val skipped = invalid.takeIf { it.isNotEmpty() }?.let { text(R.string.backend_files_skipped, it.size) }
+                discardAdjustment()
+                if (valid.size == 1) {
+                    startSplit(valid.single(), skipped)
+                } else {
+                    // Never silently pick the first image: one image is split at a time.
+                    discardSplit()
+                    mutableState.value = freshState().copy(
+                        screen = AppScreen.SPLIT_CHOOSE,
+                        feature = feature,
+                        splitChoices = valid,
+                        errorMessage = skipped,
+                    )
+                }
+                return@launch
+            }
             discardAdjustment()
+            discardSplit()
             val automatic = feature == Feature.CROP_BLACK_BORDER
             mutableState.value = NatsukoUiState(
                 screen = if (automatic) AppScreen.HOME else AppScreen.CONFIGURE,
@@ -302,6 +332,7 @@ class NatsukoViewModel @JvmOverloads constructor(
         releaseLocationSources()
         clearTwitterChaining()
         discardAdjustment()
+        discardSplit()
         mutableState.value = freshState().copy(
             screen = AppScreen.COPY_LOCATION_SOURCE,
             feature = Feature.COPY_LOCATION,
@@ -473,6 +504,7 @@ class NatsukoViewModel @JvmOverloads constructor(
         importJob?.cancel()
         clearTwitterChaining()
         discardAdjustment()
+        discardSplit()
         mutableState.value = freshState().copy(
             screen = AppScreen.TWITTER_DOWNLOAD,
             feature = feature,
@@ -788,6 +820,12 @@ class NatsukoViewModel @JvmOverloads constructor(
                 mutableState.update { it.copy(errorMessage = error.userMessage(R.string.backend_enter_valid_post_link)) }
                 return
             }
+        } else if (feature == Feature.IMAGE_SPLIT) {
+            val split = snapshot.split
+            if (split?.source == null || split.plan == null) {
+                mutableState.update { it.copy(errorMessage = text(R.string.split_axis_too_small)) }
+                return
+            }
         } else if (snapshot.inputs.isEmpty()) {
             mutableState.update { it.copy(errorMessage = text(R.string.backend_select_file)) }
             return
@@ -846,6 +884,16 @@ class NatsukoViewModel @JvmOverloads constructor(
                         }.also {
                             // Retain ownership across withContext's cancellable dispatch back to Main.
                             unpublishedDownload = it
+                        }
+                        Feature.IMAGE_SPLIT -> {
+                            val split = checkNotNull(snapshot.split)
+                            imageSplitProcessor.process(
+                                input = split.input,
+                                source = checkNotNull(split.source),
+                                plan = checkNotNull(split.plan),
+                                checkpoint = { workContext.ensureActive() },
+                                onProgress = progress,
+                            )
                         }
                         Feature.IMAGE_ADJUSTMENT -> error("Image adjustment exports through saveAdjustment()")
                         Feature.COPY_LOCATION -> error("Location copying starts after target selection")
@@ -1049,12 +1097,17 @@ class NatsukoViewModel @JvmOverloads constructor(
         } else if (screen == AppScreen.ADJUST_EDIT && hasUnexportedAdjustment()) {
             pendingImport = null
             mutableState.update { it.copy(adjustment = it.adjustment?.copy(confirmDiscard = true, gesture = null)) }
+        } else if (screen == AppScreen.SPLIT_FULLSCREEN) {
+            exitSplitFullscreen()
+        } else if (screen == AppScreen.SPLIT_PREVIEW) {
+            closeSplitPreview()
         } else if (twitterDownloadResult != null && mutableState.value.feature in setOf(Feature.VIDEO_TO_GIF, Feature.IMAGE_MERGE)) {
             mutableState.value = checkNotNull(twitterDownloadResult).copy(storageSettings = storagePreferences.read())
             clearTwitterChaining()
         } else {
             clearTwitterChaining()
             discardAdjustment()
+            discardSplit()
             releaseLocationSources()
             mutableState.value = freshState()
         }
@@ -1068,6 +1121,7 @@ class NatsukoViewModel @JvmOverloads constructor(
         processingJob?.cancel()
         clearTwitterChaining()
         discardAdjustment()
+        discardSplit()
         mutableState.value = freshState()
     }
 
@@ -1439,6 +1493,275 @@ class NatsukoViewModel @JvmOverloads constructor(
         if (adjustment?.exportRequest != request) state else state.copy(adjustment = adjustment.copy(estimate = estimate))
     }
 
+    fun chooseSplitImage(item: InputItem) {
+        val state = mutableState.value
+        if (isBusy() || state.screen != AppScreen.SPLIT_CHOOSE || item !in state.splitChoices) return
+        startSplit(item)
+    }
+
+    fun updateSplitDirection(direction: SplitDirection) = mutableState.update { state ->
+        val split = state.split ?: return@update state
+        if (isBusy() || split.options.direction == direction) return@update state
+        val source = split.source
+        val maxParts = source?.let {
+            ImageSplitGeometry.maxPartsFor(it.width, it.height, direction)
+        } ?: SplitOptions.MAX_PARTS
+        val clampedParts = split.options.parts.coerceIn(SplitOptions.MIN_PARTS, maxParts.coerceAtLeast(SplitOptions.MIN_PARTS))
+        val maxDividerWidth = source?.let {
+            ImageSplitGeometry.maxDividerWidthFor(it.width, it.height, direction, clampedParts)
+        } ?: SplitOptions.MAX_DIVIDER_WIDTH_PX
+        val clampedDividerWidth = split.options.dividerWidthPx.coerceIn(SplitOptions.MIN_DIVIDER_WIDTH_PX, maxDividerWidth)
+        val equalDividers = source?.let {
+            ImageSplitGeometry.equalDividerFractions(
+                ImageSplitGeometry.axisLength(it.width, it.height, direction),
+                clampedParts,
+                clampedDividerWidth,
+            )
+        } ?: ImageSplitGeometry.equalDividers(clampedParts)
+        state.copy(
+            split = split.copy(
+                options = split.options.copy(
+                    direction = direction,
+                    parts = clampedParts,
+                    dividerWidthPx = clampedDividerWidth,
+                    freeDividers = equalDividers,
+                ),
+                selectedDividerIndex = null,
+            ),
+        )
+    }
+
+    fun updateSplitParts(parts: Int) = mutableState.update { state ->
+        val split = state.split ?: return@update state
+        if (isBusy()) return@update state
+        val source = split.source
+        val maxParts = split.effectiveMaxParts.coerceAtLeast(SplitOptions.MIN_PARTS)
+        val clamped = parts.coerceIn(SplitOptions.MIN_PARTS, maxParts)
+        val maxDividerWidth = source?.let {
+            ImageSplitGeometry.maxDividerWidthFor(it.width, it.height, split.options.direction, clamped)
+        } ?: SplitOptions.MAX_DIVIDER_WIDTH_PX
+        val clampedDividerWidth = split.options.dividerWidthPx.coerceIn(SplitOptions.MIN_DIVIDER_WIDTH_PX, maxDividerWidth)
+        if (clamped == split.options.parts &&
+            clampedDividerWidth == split.options.dividerWidthPx &&
+            split.options.freeDividers.size == clamped - 1
+        ) return@update state
+        val equalDividers = source?.let {
+            ImageSplitGeometry.equalDividerFractions(
+                ImageSplitGeometry.axisLength(it.width, it.height, split.options.direction),
+                clamped,
+                clampedDividerWidth,
+            )
+        } ?: ImageSplitGeometry.equalDividers(clamped)
+        state.copy(
+            split = split.copy(
+                options = split.options.copy(
+                    parts = clamped,
+                    dividerWidthPx = clampedDividerWidth,
+                    freeDividers = equalDividers,
+                ),
+                selectedDividerIndex = null,
+            ),
+        )
+    }
+
+    fun updateSplitDividerWidth(widthPx: Int) = mutableState.update { state ->
+        val split = state.split ?: return@update state
+        if (isBusy()) return@update state
+        val clamped = widthPx.coerceIn(SplitOptions.MIN_DIVIDER_WIDTH_PX, split.effectiveMaxDividerWidthPx)
+        if (clamped == split.options.dividerWidthPx) return@update state
+        val source = split.source
+        val updatedFree = if (split.options.mode == SplitMode.EQUAL && source != null) {
+            ImageSplitGeometry.equalDividerFractions(
+                ImageSplitGeometry.axisLength(source.width, source.height, split.options.direction),
+                split.options.parts,
+                clamped,
+            )
+        } else {
+            split.options.freeDividers
+        }
+        state.copy(
+            split = split.copy(
+                options = split.options.copy(
+                    dividerWidthPx = clamped,
+                    freeDividers = updatedFree,
+                ),
+            ),
+        )
+    }
+
+    fun updateSplitMode(mode: SplitMode) = mutableState.update { state ->
+        val split = state.split ?: return@update state
+        if (isBusy() || split.options.mode == mode) return@update state
+        val source = split.source
+        val parts = split.options.parts.coerceIn(SplitOptions.MIN_PARTS, split.effectiveMaxParts.coerceAtLeast(SplitOptions.MIN_PARTS))
+        val equalDividers = source?.let {
+            ImageSplitGeometry.equalDividerFractions(
+                ImageSplitGeometry.axisLength(it.width, it.height, split.options.direction),
+                parts,
+                split.options.dividerWidthPx,
+            )
+        } ?: ImageSplitGeometry.equalDividers(parts)
+        val dividers = when (mode) {
+            SplitMode.EQUAL -> equalDividers
+            SplitMode.FREE -> if (split.options.freeDividers.size == parts - 1 && split.options.mode == SplitMode.FREE) {
+                split.options.freeDividers
+            } else {
+                equalDividers
+            }
+        }
+        state.copy(
+            split = split.copy(
+                options = split.options.copy(mode = mode, freeDividers = dividers),
+                selectedDividerIndex = if (mode == SplitMode.EQUAL) null else split.selectedDividerIndex,
+            ),
+        )
+    }
+
+    fun selectSplitDivider(index: Int?) = mutableState.update { state ->
+        val split = state.split ?: return@update state
+        if (split.options.mode != SplitMode.FREE) return@update state
+        val valid = index?.takeIf { it in 0 until (split.options.parts - 1) }
+        state.copy(split = split.copy(selectedDividerIndex = valid))
+    }
+
+    fun moveSplitDivider(dividerIndex: Int, targetFraction: Double) = mutableState.update { state ->
+        val split = state.split ?: return@update state
+        val source = split.source ?: return@update state
+        if (isBusy() || split.options.mode != SplitMode.FREE) return@update state
+        val updated = ImageSplitGeometry.moveDivider(source.width, source.height, split.options, dividerIndex, targetFraction)
+        state.copy(
+            split = split.copy(
+                options = split.options.copy(freeDividers = updated),
+                selectedDividerIndex = dividerIndex.takeIf { it in updated.indices },
+            ),
+        )
+    }
+
+    fun nudgeSplitDivider(dividerIndex: Int, deltaPx: Int) = mutableState.update { state ->
+        val split = state.split ?: return@update state
+        val source = split.source ?: return@update state
+        if (isBusy() || split.options.mode != SplitMode.FREE) return@update state
+        val updated = ImageSplitGeometry.nudgeDivider(source.width, source.height, split.options, dividerIndex, deltaPx)
+        state.copy(
+            split = split.copy(
+                options = split.options.copy(freeDividers = updated),
+                selectedDividerIndex = dividerIndex.takeIf { it in updated.indices },
+            ),
+        )
+    }
+
+    fun resetSplitDividers() = mutableState.update { state ->
+        val split = state.split ?: return@update state
+        if (isBusy()) return@update state
+        val source = split.source
+        val equalDividers = source?.let {
+            ImageSplitGeometry.equalDividerFractions(
+                ImageSplitGeometry.axisLength(it.width, it.height, split.options.direction),
+                split.options.parts,
+                split.options.dividerWidthPx,
+            )
+        } ?: ImageSplitGeometry.equalDividers(split.options.parts)
+        state.copy(
+            split = split.copy(
+                options = split.options.copy(freeDividers = equalDividers),
+                selectedDividerIndex = null,
+            ),
+        )
+    }
+
+    fun openSplitFullscreen() = mutableState.update { state ->
+        val split = state.split
+        if (isBusy() || state.screen != AppScreen.SPLIT_EDIT || split?.source == null || split.preview == null) state
+        else state.copy(screen = AppScreen.SPLIT_FULLSCREEN)
+    }
+
+    fun exitSplitFullscreen() = mutableState.update { state ->
+        if (state.screen != AppScreen.SPLIT_FULLSCREEN) state else state.copy(screen = AppScreen.SPLIT_EDIT)
+    }
+
+    fun openSplitPreview() = mutableState.update { state ->
+        val split = state.split
+        if (isBusy() ||
+            (state.screen != AppScreen.SPLIT_EDIT && state.screen != AppScreen.SPLIT_FULLSCREEN) ||
+            split?.canSplit != true || split.plan == null
+        ) state
+        else state.copy(screen = AppScreen.SPLIT_PREVIEW)
+    }
+
+    fun closeSplitPreview() = mutableState.update { state ->
+        if (state.screen != AppScreen.SPLIT_PREVIEW) state else state.copy(screen = AppScreen.SPLIT_EDIT)
+    }
+
+    fun updateSplitPreviewSpacing(spacingPx: Int) = mutableState.update { state ->
+        val split = state.split ?: return@update state
+        if (isBusy()) return@update state
+        val clamped = spacingPx.coerceIn(SplitOptions.MIN_PREVIEW_SPACING_PX, SplitOptions.MAX_PREVIEW_SPACING_PX)
+        state.copy(split = split.copy(options = split.options.copy(previewSpacingPx = clamped)))
+    }
+
+    fun updateSplitPreviewBackground(color: Int) = mutableState.update { state ->
+        val split = state.split ?: return@update state
+        if (isBusy()) return@update state
+        state.copy(split = split.copy(options = split.options.copy(previewBackgroundColor = color)))
+    }
+
+    fun continueSplitEditing() = mutableState.update { state ->
+        if (isBusy() || state.screen != AppScreen.RESULT || state.split?.source == null) state
+        else state.copy(screen = AppScreen.SPLIT_EDIT)
+    }
+
+    private fun startSplit(input: InputItem, message: UiText? = null) {
+        discardSplit()
+        val generation = ++splitLoadGeneration
+        mutableState.value = freshState().copy(
+            screen = AppScreen.SPLIT_EDIT,
+            feature = Feature.IMAGE_SPLIT,
+            split = ImageSplitState(input),
+            errorMessage = message,
+        )
+        splitLoadJob = viewModelScope.launch {
+            try {
+                val loaded = withContext(Dispatchers.IO) {
+                    val work = currentCoroutineContext()
+                    imageSplitProcessor.load(input) { work.ensureActive() }
+                }
+                if (generation != splitLoadGeneration) return@launch
+                mutableState.update { state ->
+                    val current = state.split ?: return@update state
+                    val maxParts = ImageSplitGeometry.maxPartsFor(
+                        loaded.source.width,
+                        loaded.source.height,
+                        current.options.direction,
+                    ).coerceAtLeast(SplitOptions.MIN_PARTS)
+                    val clampedParts = current.options.parts.coerceIn(SplitOptions.MIN_PARTS, maxParts)
+                    state.copy(
+                        split = current.copy(
+                            source = loaded.source,
+                            preview = loaded.preview,
+                            options = current.options.copy(
+                                parts = clampedParts,
+                                freeDividers = ImageSplitGeometry.equalDividers(clampedParts),
+                            ),
+                        ),
+                    )
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Throwable) {
+                if (generation != splitLoadGeneration) return@launch
+                mutableState.update {
+                    it.copy(split = it.split?.copy(loadError = error.userMessage(R.string.backend_image_invalid)))
+                }
+            }
+        }
+    }
+
+    private fun discardSplit() {
+        splitLoadGeneration++
+        splitLoadJob?.cancel()
+        splitLoadJob = null
+    }
+
     override fun onCleared() {
         twitterSession = null
         twitterLoginDecision?.cancel()
@@ -1446,6 +1769,7 @@ class NatsukoViewModel @JvmOverloads constructor(
         stopObservingStorage()
         releaseLocationSources()
         discardAdjustment()
+        discardSplit()
         super.onCleared()
     }
 
@@ -1453,7 +1777,7 @@ class NatsukoViewModel @JvmOverloads constructor(
         val mime = item.mimeType.orEmpty().lowercase()
         val extension = item.displayName.substringAfterLast('.', "").lowercase()
         return when (feature) {
-            Feature.CROP_BLACK_BORDER, Feature.IMAGE_MERGE, Feature.IMAGES_TO_PDF, Feature.IMAGE_ADJUSTMENT ->
+            Feature.CROP_BLACK_BORDER, Feature.IMAGE_MERGE, Feature.IMAGES_TO_PDF, Feature.IMAGE_ADJUSTMENT, Feature.IMAGE_SPLIT ->
                 mime.startsWith("image/") || extension in IMAGE_EXTENSIONS
             Feature.PDF_TO_IMAGES -> mime == "application/pdf" || extension == "pdf"
             Feature.VIDEO_TO_GIF -> mime.startsWith("video/") || extension in VIDEO_EXTENSIONS

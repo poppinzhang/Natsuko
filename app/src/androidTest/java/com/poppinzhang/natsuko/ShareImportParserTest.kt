@@ -53,6 +53,19 @@ class ShareImportParserTest {
     }
 
     @Test
+    fun routesSharedImagesToImageSplitWithoutDuplicates() {
+        val first = Uri.parse("content://tests/banner.png")
+        val second = Uri.parse("content://tests/poster.jpg")
+        val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
+            .setComponent(ComponentName("com.poppinzhang.natsuko", "com.poppinzhang.natsuko.share.ImageSplitShare"))
+            .putParcelableArrayListExtra(Intent.EXTRA_STREAM, arrayListOf(first, second, first))
+        intent.clipData = ClipData.newRawUri("Images", second)
+
+        assertEquals(Feature.IMAGE_SPLIT, ShareImportParser.feature(intent))
+        assertEquals(listOf(second, first), ShareImportParser.uris(intent))
+    }
+
+    @Test
     fun routesLocationSourceShareIncludingRawFiles() {
         val first = Uri.parse("content://tests/source.cr3")
         val second = Uri.parse("content://tests/source.nef")

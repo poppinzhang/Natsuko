@@ -151,6 +151,9 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
     val adjustmentPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         uri?.let { viewModel.acceptSelection(Feature.IMAGE_ADJUSTMENT, listOf(it)) }
     }
+    val splitPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri?.let { viewModel.acceptSelection(Feature.IMAGE_SPLIT, listOf(it)) }
+    }
     val locationSourcePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { viewModel.importLocationSources(listOf(it)) }
     }
@@ -202,6 +205,7 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
             Feature.DOWNLOAD_TWITTER_IMAGES -> viewModel.openTwitterDownload(Feature.DOWNLOAD_TWITTER_IMAGES)
             Feature.COPY_LOCATION -> viewModel.openCopyLocation()
             Feature.IMAGE_ADJUSTMENT -> adjustmentPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            Feature.IMAGE_SPLIT -> splitPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
     }
 
@@ -291,6 +295,7 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
             onConvertToGif = viewModel::convertDownloadedVideoToGif,
             onMergeImages = viewModel::mergeDownloadedImages,
             onContinueEditing = viewModel::continueAdjustmentEditing,
+            onContinueSplitEditing = viewModel::continueSplitEditing,
         )
         AppScreen.ADJUST_CHOOSE -> ImageAdjustmentChooserScreen(
             choices = state.adjustmentChoices,
@@ -302,6 +307,52 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
         }
         AppScreen.ADJUST_EXPORT -> state.adjustment?.let {
             ImageAdjustmentExportScreen(it, isBusy = state.isProcessing || state.isSavingToUserStorage, viewModel = viewModel)
+        }
+        AppScreen.SPLIT_CHOOSE -> ImageSplitChooserScreen(
+            choices = state.splitChoices,
+            onBack = viewModel::back,
+            onChoose = viewModel::chooseSplitImage,
+        )
+        AppScreen.SPLIT_EDIT -> state.split?.let {
+            ImageSplitEditorScreen(
+                split = it,
+                isBusy = state.isProcessing || state.isSavingToUserStorage,
+                onBack = viewModel::back,
+                onRepick = { pick(Feature.IMAGE_SPLIT) },
+                onDirection = viewModel::updateSplitDirection,
+                onParts = viewModel::updateSplitParts,
+                onDividerWidth = viewModel::updateSplitDividerWidth,
+                onMode = viewModel::updateSplitMode,
+                onSelectDivider = viewModel::selectSplitDivider,
+                onMoveDivider = viewModel::moveSplitDivider,
+                onNudgeDivider = viewModel::nudgeSplitDivider,
+                onResetDividers = viewModel::resetSplitDividers,
+                onOpenFullscreen = viewModel::openSplitFullscreen,
+                onOpenPreview = viewModel::openSplitPreview,
+                onProcess = viewModel::process,
+            )
+        }
+        AppScreen.SPLIT_FULLSCREEN -> state.split?.let {
+            ImageSplitFullscreenScreen(
+                split = it,
+                onExit = viewModel::exitSplitFullscreen,
+                onMode = viewModel::updateSplitMode,
+                onSelectDivider = viewModel::selectSplitDivider,
+                onMoveDivider = viewModel::moveSplitDivider,
+                onResetDividers = viewModel::resetSplitDividers,
+                onOpenPreview = viewModel::openSplitPreview,
+            )
+        }
+        AppScreen.SPLIT_PREVIEW -> state.split?.let {
+            ImageSplitPreviewScreen(
+                split = it,
+                isBusy = state.isProcessing || state.isSavingToUserStorage,
+                onBack = viewModel::closeSplitPreview,
+                onDividerWidth = viewModel::updateSplitDividerWidth,
+                onSpacing = viewModel::updateSplitPreviewSpacing,
+                onBackground = viewModel::updateSplitPreviewBackground,
+                onProcess = viewModel::process,
+            )
         }
     }
 
@@ -406,7 +457,7 @@ private fun ConfigurationScreen(
             }
             item { HorizontalDivider() }
             when (feature) {
-                Feature.CROP_BLACK_BORDER, Feature.DOWNLOAD_TWITTER_VIDEO, Feature.DOWNLOAD_TWITTER_IMAGES, Feature.IMAGE_ADJUSTMENT, Feature.COPY_LOCATION -> Unit
+                Feature.CROP_BLACK_BORDER, Feature.DOWNLOAD_TWITTER_VIDEO, Feature.DOWNLOAD_TWITTER_IMAGES, Feature.IMAGE_ADJUSTMENT, Feature.COPY_LOCATION, Feature.IMAGE_SPLIT -> Unit
                 Feature.IMAGE_MERGE -> item { MergeSettings(state.mergeOptions, onMergeDirection, onMergeColor, onMergeSpacing) }
                 Feature.IMAGES_TO_PDF -> item {
                     PdfSettings(state.imagesToPdfOptions, onPdfMode, onPdfPage, onPdfOrientation, onPdfMargin)
@@ -943,6 +994,7 @@ private fun ResultScreen(
     onConvertToGif: ((OutputArtifact) -> Unit)? = null,
     onMergeImages: () -> Unit = {},
     onContinueEditing: () -> Unit = {},
+    onContinueSplitEditing: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val feature = state.feature
@@ -1013,6 +1065,15 @@ private fun ResultScreen(
                         enabled = !state.isSavingToUserStorage,
                         modifier = Modifier.testTag("adjust-continue"),
                     ) { Text(stringResource(R.string.adjust_continue_editing)) }
+                }
+            }
+            if (feature == Feature.IMAGE_SPLIT && state.split?.source != null) {
+                item {
+                    OutlinedButton(
+                        onClick = onContinueSplitEditing,
+                        enabled = !state.isSavingToUserStorage,
+                        modifier = Modifier.testTag("split-continue"),
+                    ) { Text(stringResource(R.string.split_continue_editing)) }
                 }
             }
             if (isTwitterImages && outputs.isNotEmpty()) {

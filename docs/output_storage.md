@@ -26,6 +26,7 @@
 | 下载推特视频（GIF） | `Pictures/Natsuko/DownloadTwitterVideo/<时间戳>/` | `Download/Natsuko/DownloadTwitterVideo/` |
 | 下载推特图片 | `Pictures/Natsuko/DownloadTwitterImages/<时间戳>/` | `Download/Natsuko/DownloadTwitterImages/` |
 | 图片调整 | `Pictures/Natsuko/ImageAdjustment/<时间戳>/` | `Download/Natsuko/ImageAdjustment/` |
+| 图片分割 | `Pictures/Natsuko/ImageSplit/<时间戳>/` | `Download/Natsuko/ImageSplit/` |
 
 图片调整每次保存都在新的应用专属批次目录中生成 `<原文件名>_adjusted.<扩展名>`；用户目录遇到同名文件时由系统分配唯一名称，不覆盖原图或先前成品。导出前的试编码只存放在应用缓存中，不出现在上述目录或结果列表中。
 
