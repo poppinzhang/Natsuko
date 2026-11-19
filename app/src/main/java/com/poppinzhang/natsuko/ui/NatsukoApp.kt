@@ -34,11 +34,15 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ExitToApp
+import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Home
@@ -50,6 +54,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -59,6 +64,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -70,7 +76,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -81,10 +90,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -185,7 +198,8 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
             Feature.IMAGES_TO_PDF -> pdfImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             Feature.PDF_TO_IMAGES -> pdfPicker.launch(arrayOf("application/pdf"))
             Feature.VIDEO_TO_GIF -> videoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
-            Feature.DOWNLOAD_TWITTER_VIDEO -> viewModel.openTwitterDownload()
+            Feature.DOWNLOAD_TWITTER_VIDEO -> viewModel.openTwitterDownload(Feature.DOWNLOAD_TWITTER_VIDEO)
+            Feature.DOWNLOAD_TWITTER_IMAGES -> viewModel.openTwitterDownload(Feature.DOWNLOAD_TWITTER_IMAGES)
             Feature.COPY_LOCATION -> viewModel.openCopyLocation()
             Feature.IMAGE_ADJUSTMENT -> adjustmentPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
@@ -218,10 +232,11 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
             onCheckUpdate = viewModel.appUpdate::check,
         )
         AppScreen.TWITTER_DOWNLOAD -> TwitterDownloadScreen(
+            feature = state.feature ?: Feature.DOWNLOAD_TWITTER_VIDEO,
             link = state.twitterLink,
             isBusy = state.isProcessing || state.isSavingToUserStorage,
             onLinkChange = viewModel::updateTwitterLink,
-            onDownload = viewModel::downloadTwitterVideo,
+            onDownload = viewModel::downloadTwitterMedia,
             onBack = viewModel::back,
             sessionActive = state.twitterSessionActive,
             onSignOut = viewModel::forgetTwitterSession,
@@ -251,6 +266,7 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
             onRemove = viewModel::removeInput,
             onMergeDirection = viewModel::updateMergeDirection,
             onMergeColor = viewModel::updateMergeColor,
+            onMergeSpacing = viewModel::updateMergeSpacing,
             onPdfMode = viewModel::updatePdfOutputMode,
             onPdfPage = viewModel::updatePdfPagePreset,
             onPdfOrientation = viewModel::updatePdfOrientation,
@@ -262,6 +278,7 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
             onGifInterval = viewModel::updateGifInterval,
             onGifWidth = viewModel::updateGifWidth,
             onGifLoop = viewModel::updateGifLoop,
+            onDeleteChainedOriginalsChange = viewModel::updateDeleteChainedOriginals,
             onProcess = viewModel::process,
         )
         AppScreen.RESULT -> ResultScreen(
@@ -270,8 +287,9 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
             onStorageEnabledChange = viewModel::setSaveToUserStorage,
             onRetrySave = viewModel::retryUserStorageSave,
             onSettings = viewModel::openSettings,
-            onDownloadAgain = viewModel::openTwitterDownload,
+            onDownloadAgain = { viewModel.openTwitterDownload(state.feature ?: Feature.DOWNLOAD_TWITTER_VIDEO) },
             onConvertToGif = viewModel::convertDownloadedVideoToGif,
+            onMergeImages = viewModel::mergeDownloadedImages,
             onContinueEditing = viewModel::continueAdjustmentEditing,
         )
         AppScreen.ADJUST_CHOOSE -> ImageAdjustmentChooserScreen(
@@ -309,7 +327,11 @@ fun NatsukoApp(viewModel: NatsukoViewModel) {
         TwitterVideoSelectionDialog(selection, viewModel::chooseTwitterDownloadScope, viewModel::cancelProcessing)
     }
     when (state.twitterLoginStep) {
-        TwitterLoginStep.CONSENT -> TwitterLoginConsentDialog(viewModel::acceptTwitterLogin, viewModel::cancelProcessing)
+        TwitterLoginStep.CONSENT -> TwitterLoginConsentDialog(
+            feature = state.feature ?: Feature.DOWNLOAD_TWITTER_VIDEO,
+            onLogin = viewModel::acceptTwitterLogin,
+            onCancel = viewModel::cancelProcessing,
+        )
         TwitterLoginStep.SIGN_IN -> TwitterLoginDialog(viewModel::completeTwitterLogin, viewModel::cancelProcessing)
         null -> Unit
     }
@@ -327,6 +349,7 @@ private fun ConfigurationScreen(
     onRemove: (Int) -> Unit,
     onMergeDirection: (MergeDirection) -> Unit,
     onMergeColor: (Int) -> Unit,
+    onMergeSpacing: (Int) -> Unit,
     onPdfMode: (PdfOutputMode) -> Unit,
     onPdfPage: (PdfPagePreset) -> Unit,
     onPdfOrientation: (PdfOrientation) -> Unit,
@@ -338,6 +361,7 @@ private fun ConfigurationScreen(
     onGifInterval: (Long) -> Unit,
     onGifWidth: (Int) -> Unit,
     onGifLoop: (Int) -> Unit,
+    onDeleteChainedOriginalsChange: (Boolean) -> Unit,
     onProcess: () -> Unit,
 ) {
     val feature = state.feature ?: return
@@ -365,7 +389,7 @@ private fun ConfigurationScreen(
         },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier.fillMaxSize().padding(padding).testTag("configure-list"),
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
@@ -382,8 +406,8 @@ private fun ConfigurationScreen(
             }
             item { HorizontalDivider() }
             when (feature) {
-                Feature.CROP_BLACK_BORDER, Feature.DOWNLOAD_TWITTER_VIDEO, Feature.IMAGE_ADJUSTMENT, Feature.COPY_LOCATION -> Unit
-                Feature.IMAGE_MERGE -> item { MergeSettings(state.mergeOptions, onMergeDirection, onMergeColor) }
+                Feature.CROP_BLACK_BORDER, Feature.DOWNLOAD_TWITTER_VIDEO, Feature.DOWNLOAD_TWITTER_IMAGES, Feature.IMAGE_ADJUSTMENT, Feature.COPY_LOCATION -> Unit
+                Feature.IMAGE_MERGE -> item { MergeSettings(state.mergeOptions, onMergeDirection, onMergeColor, onMergeSpacing) }
                 Feature.IMAGES_TO_PDF -> item {
                     PdfSettings(state.imagesToPdfOptions, onPdfMode, onPdfPage, onPdfOrientation, onPdfMargin)
                 }
@@ -393,6 +417,54 @@ private fun ConfigurationScreen(
                 Feature.VIDEO_TO_GIF -> item {
                     GifSettings(state.gifOptions.framesPerSecond, state.gifOptions.sampleIntervalMs, state.gifOptions.maxWidth, state.gifOptions.loopCount, onGifFps, onGifInterval, onGifWidth, onGifLoop)
                 }
+            }
+            if (state.canDeleteChainedOriginals && (feature == Feature.VIDEO_TO_GIF || feature == Feature.IMAGE_MERGE)) {
+                item {
+                    DeleteChainedOriginalsOption(
+                        feature = feature,
+                        checked = state.deleteChainedOriginals,
+                        onCheckedChange = onDeleteChainedOriginalsChange,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeleteChainedOriginalsOption(
+    feature: Feature,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    val isVideo = feature == Feature.VIDEO_TO_GIF
+    val title = stringResource(
+        if (isVideo) R.string.main_delete_original_video_after_gif
+        else R.string.main_delete_original_images_after_merge,
+    )
+    val description = stringResource(
+        if (isVideo) R.string.main_delete_original_video_after_gif_hint
+        else R.string.main_delete_original_images_after_merge_hint,
+    )
+    val tag = if (isVideo) "delete-original-video-checkbox" else "delete-original-images-checkbox"
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = checked,
+                    onValueChange = onCheckedChange,
+                    role = Role.Checkbox,
+                )
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .testTag(tag),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Checkbox(checked = checked, onCheckedChange = null)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -644,7 +716,12 @@ private fun <T> ChoiceChips(options: List<Pair<T, String>>, selected: T, onSelec
 }
 
 @Composable
-private fun MergeSettings(options: MergeOptions, onDirection: (MergeDirection) -> Unit, onColor: (Int) -> Unit) {
+private fun MergeSettings(
+    options: MergeOptions,
+    onDirection: (MergeDirection) -> Unit,
+    onColor: (Int) -> Unit,
+    onSpacing: (Int) -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SettingsTitle(stringResource(R.string.main_merge_settings), stringResource(R.string.main_merge_settings_hint))
         Text(stringResource(R.string.main_layout), fontWeight = FontWeight.Medium)
@@ -660,6 +737,8 @@ private fun MergeSettings(options: MergeOptions, onDirection: (MergeDirection) -
         if (options.direction == MergeDirection.GRID) {
             Text(stringResource(R.string.main_grid_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        Text(stringResource(R.string.main_merge_spacing), fontWeight = FontWeight.Medium)
+        MergeSpacingControl(options.spacingPx, onSpacing)
         Text(stringResource(R.string.main_fill_color), fontWeight = FontWeight.Medium)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             listOf(
@@ -682,6 +761,84 @@ private fun MergeSettings(options: MergeOptions, onDirection: (MergeDirection) -
                     border = androidx.compose.foundation.BorderStroke(if (isSelected) 3.dp else 1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
                 ) {}
             }
+        }
+    }
+}
+
+@Composable
+private fun MergeSpacingControl(spacingPx: Int, onSpacing: (Int) -> Unit) {
+    var text by remember { mutableStateOf(spacingPx.toString()) }
+    val currentTyped = text.toIntOrNull() ?: 0
+    if (spacingPx != currentTyped) {
+        text = spacingPx.toString()
+    }
+    val decreaseDescription = stringResource(R.string.main_merge_spacing_decrease)
+    val increaseDescription = stringResource(R.string.main_merge_spacing_increase)
+    val inputDescription = stringResource(R.string.main_merge_spacing)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        OutlinedButton(
+            onClick = {
+                val next = (spacingPx - 1).coerceIn(MergeOptions.MIN_SPACING_PX, MergeOptions.MAX_SPACING_PX)
+                text = next.toString()
+                onSpacing(next)
+            },
+            enabled = spacingPx > MergeOptions.MIN_SPACING_PX,
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier
+                .size(48.dp)
+                .semantics { contentDescription = decreaseDescription }
+                .testTag("merge-spacing-decrease"),
+        ) {
+            Text("-", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
+        OutlinedTextField(
+            value = text,
+            onValueChange = { raw ->
+                val digits = raw.filter(Char::isDigit).take(4)
+                if (digits.isEmpty()) {
+                    text = ""
+                    onSpacing(0)
+                } else {
+                    val clamped = digits.toInt().coerceIn(MergeOptions.MIN_SPACING_PX, MergeOptions.MAX_SPACING_PX)
+                    text = clamped.toString()
+                    onSpacing(clamped)
+                }
+            },
+            singleLine = true,
+            suffix = { Text(stringResource(R.string.main_merge_spacing_unit)) },
+            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.SemiBold,
+            ),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Done,
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = { if (text.isEmpty()) text = "0" },
+            ),
+            modifier = Modifier
+                .width(128.dp)
+                .semantics { contentDescription = inputDescription }
+                .testTag("merge-spacing-input"),
+        )
+        OutlinedButton(
+            onClick = {
+                val next = (spacingPx + 1).coerceIn(MergeOptions.MIN_SPACING_PX, MergeOptions.MAX_SPACING_PX)
+                text = next.toString()
+                onSpacing(next)
+            },
+            enabled = spacingPx < MergeOptions.MAX_SPACING_PX,
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier
+                .size(48.dp)
+                .semantics { contentDescription = increaseDescription }
+                .testTag("merge-spacing-increase"),
+        ) {
+            Text("+", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -784,13 +941,16 @@ private fun ResultScreen(
     onSettings: () -> Unit,
     onDownloadAgain: () -> Unit = {},
     onConvertToGif: ((OutputArtifact) -> Unit)? = null,
+    onMergeImages: () -> Unit = {},
     onContinueEditing: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val feature = state.feature
     val outcome = state.outcome
     val outputs = outcome?.outputs.orEmpty()
-    val isTwitterDownload = feature == Feature.DOWNLOAD_TWITTER_VIDEO
+    val isTwitterVideo = feature == Feature.DOWNLOAD_TWITTER_VIDEO
+    val isTwitterImages = feature == Feature.DOWNLOAD_TWITTER_IMAGES
+    val isTwitterDownload = isTwitterVideo || isTwitterImages
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(feature?.titleRes ?: R.string.main_results)) }) },
         bottomBar = {
@@ -836,7 +996,11 @@ private fun ResultScreen(
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            if (isTwitterDownload) pluralStringResource(R.plurals.main_videos_downloaded, outputs.size, outputs.size) else pluralStringResource(R.plurals.main_files_created, outputs.size, outputs.size),
+                            when {
+                                isTwitterVideo -> pluralStringResource(R.plurals.main_videos_downloaded, outputs.size, outputs.size)
+                                isTwitterImages -> pluralStringResource(R.plurals.main_images_downloaded, outputs.size, outputs.size)
+                                else -> pluralStringResource(R.plurals.main_files_created, outputs.size, outputs.size)
+                            },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -849,6 +1013,19 @@ private fun ResultScreen(
                         enabled = !state.isSavingToUserStorage,
                         modifier = Modifier.testTag("adjust-continue"),
                     ) { Text(stringResource(R.string.adjust_continue_editing)) }
+                }
+            }
+            if (isTwitterImages && outputs.isNotEmpty()) {
+                item {
+                    Button(
+                        onClick = onMergeImages,
+                        enabled = !state.isSavingToUserStorage,
+                        modifier = Modifier.fillMaxWidth().testTag("twitter-merge-images"),
+                    ) {
+                        Icon(Icons.AutoMirrored.Outlined.List, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.main_merge_downloaded_images))
+                    }
                 }
             }
             if (isTwitterDownload) {
@@ -864,7 +1041,7 @@ private fun ResultScreen(
                 OutputRow(
                     output = output,
                     context = context,
-                    onConvertToGif = onConvertToGif?.takeIf { isTwitterDownload && output.mimeType.startsWith("video/") },
+                    onConvertToGif = onConvertToGif?.takeIf { isTwitterVideo && output.mimeType.startsWith("video/") },
                     conversionEnabled = !state.isSavingToUserStorage,
                     conversionTag = "twitter-convert-gif-$index",
                 )
@@ -895,6 +1072,33 @@ private fun ResultScreen(
                     }
                 }
             }
+            if (state.originalDeletionFailures.isNotEmpty()) {
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        modifier = Modifier.testTag("result-originals-delete-failures"),
+                    ) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                pluralStringResource(
+                                    R.plurals.main_originals_delete_failed,
+                                    state.originalDeletionFailures.size,
+                                    state.originalDeletionFailures.size,
+                                ),
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                            )
+                            state.originalDeletionFailures.forEach {
+                                Text(
+                                    stringResource(R.string.main_failure_detail, it.source.asString(), it.reason.asString()),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             if (outputs.isNotEmpty()) {
                 item {
                     val locations = outputs.map { it.userStorage?.directoryLabel ?: it.file.parentFile?.absolutePath.orEmpty() }.distinct()
@@ -915,6 +1119,24 @@ private fun ResultScreen(
                     val savedCount = outputs.count { it.userStorage != null }
                     if (savedCount > 0) {
                         item { Text(pluralStringResource(R.plurals.main_results_saved, savedCount, savedCount), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
+                    }
+                }
+                if (state.deletedOriginalsCount > 0) {
+                    item {
+                        Text(
+                            text = when (feature) {
+                                Feature.VIDEO_TO_GIF -> stringResource(R.string.main_original_video_deleted)
+                                Feature.IMAGE_MERGE -> pluralStringResource(
+                                    R.plurals.main_original_images_deleted,
+                                    state.deletedOriginalsCount,
+                                    state.deletedOriginalsCount,
+                                )
+                                else -> ""
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.testTag("result-originals-deleted"),
+                        )
                     }
                 }
                 if (state.storageFailures.isNotEmpty()) {

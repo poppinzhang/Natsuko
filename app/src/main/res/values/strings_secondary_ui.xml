@@ -19,9 +19,12 @@
     <string name="twitter_download_start">Start download</string>
     <string name="twitter_link_title">Paste a post link</string>
     <string name="twitter_link_description">Download videos or GIFs from an X / Twitter post link. If X requires sign-in, you can sign in and retry.</string>
+    <string name="twitter_images_link_description">Batch download all images in order from an X / Twitter post link. If X requires sign-in, you can sign in and retry.</string>
     <string name="twitter_link_label">Post link</string>
     <string name="twitter_link_placeholder">https://x.com/username/status/post_id</string>
     <string name="twitter_gif_title">Convert downloads to GIF</string>
     <string name="twitter_gif_description">GIFs on X are delivered as MP4 videos. After downloading, select “Video to GIF” on the results screen to convert.</string>
+    <string name="twitter_merge_title">Combine downloads in Merge images</string>
+    <string name="twitter_merge_description">All images in the post are downloaded in their original order. After downloading, select “Merge images” on the results screen to combine them.</string>
     <string name="twitter_storage_description">Saved locations follow your output storage settings.</string>
 </resources>

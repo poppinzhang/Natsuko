@@ -422,6 +422,7 @@ private fun Feature.homeStyle(): HomeFeatureStyle = when (this) {
     Feature.CROP_BLACK_BORDER -> HomeFeatureStyle(Icons.Outlined.Create, Color(0xFF3F7D55), R.string.main_images)
     Feature.IMAGE_ADJUSTMENT -> HomeFeatureStyle(AdjustmentIcons.Crop, Color(0xFF5C5A8E), R.string.main_images)
     Feature.COPY_LOCATION -> HomeFeatureStyle(Icons.Outlined.Share, Color(0xFF3D7564), R.string.main_images)
+    Feature.DOWNLOAD_TWITTER_IMAGES -> HomeFeatureStyle(Icons.Outlined.KeyboardArrowDown, Color(0xFF43648A), R.string.main_images)
     Feature.PDF_TO_IMAGES -> HomeFeatureStyle(Icons.Outlined.AccountBox, Color(0xFF3E6F78), R.string.main_documents)
     Feature.VIDEO_TO_GIF -> HomeFeatureStyle(Icons.Outlined.PlayArrow, Color(0xFF6C6534), R.string.main_video_animation)
 }

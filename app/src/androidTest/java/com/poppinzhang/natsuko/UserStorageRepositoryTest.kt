@@ -277,6 +277,84 @@ class UserStorageRepositoryTest {
         assertTrue(inputs.all { it.file.isFile })
     }
 
+    @Test
+    fun deleteOutputsRemovesMediaStoreCopiesAndEmptyRunDirectory() = runBlocking {
+        val inputs = sampleOutputs(Feature.DOWNLOAD_TWITTER_IMAGES)
+        val exported = repository.export(inputs, OutputStorageSettings(enabled = true)) { _, _, _ -> }
+        assertTrue(exported.failures.isEmpty())
+        val first = exported.outputs.first()
+        val rest = exported.outputs.drop(1)
+        downloads += exported.outputs.mapNotNull { it.userStorage?.uri }
+        val runDirectory = checkNotNull(first.file.parentFile)
+
+        // Deleting one sibling removes its copies while preserving the shared run directory and siblings.
+        val partial = repository.deleteOutputs(listOf(first))
+        assertEquals(setOf(first.file), partial.deletedPrivateFiles)
+        assertEquals(1, partial.fullyDeletedCount)
+        assertTrue(partial.failures.isEmpty())
+        assertFalse(first.file.exists())
+        assertTrue(runDirectory.isDirectory)
+        assertTrue(rest.all { it.file.isFile })
+        assertFalse(mediaStoreExists(first.userStorage!!.uri))
+
+        // Deleting the remaining siblings also removes the now-empty run directory.
+        val finalDelete = repository.deleteOutputs(rest)
+        assertEquals(rest.map { it.file }.toSet(), finalDelete.deletedPrivateFiles)
+        assertEquals(rest.size, finalDelete.fullyDeletedCount)
+        assertTrue(finalDelete.failures.isEmpty())
+        assertTrue(rest.none { it.file.exists() })
+        assertFalse(runDirectory.exists())
+        assertTrue(rest.none { mediaStoreExists(it.userStorage!!.uri) })
+    }
+
+    private fun mediaStoreExists(uri: Uri): Boolean = runCatching {
+        resolver.query(uri, arrayOf(MediaStore.MediaColumns._ID), null, null, null)?.use { it.moveToFirst() } == true
+    }.getOrDefault(false)
+
+    @Test
+    fun deleteOutputsRemovesSafCopiesAndReportsRevokedSafFailure() = runBlocking {
+        val settings = grantTestDirectory()
+        val inputs = sampleOutputs(Feature.DOWNLOAD_TWITTER_VIDEO).take(2)
+        val exported = repository.export(inputs, settings) { _, _, _ -> }
+        assertTrue(exported.failures.isEmpty())
+        val first = exported.outputs[0]
+        val second = exported.outputs[1]
+
+        // Normal SAF deletion removes both private and SAF document copies.
+        val firstDelete = repository.deleteOutputs(listOf(first))
+        assertEquals(1, firstDelete.fullyDeletedCount)
+        assertTrue(firstDelete.failures.isEmpty())
+        assertFalse(first.file.exists())
+        assertEquals(listOf(second.file.name), listSavedNames(second))
+
+        // Revoking the SAF grant causes SAF deletion to fail while removing the private file.
+        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        runCatching { resolver.releasePersistableUriPermission(treeUri, flags) }
+        launchGrantActivity(revoke = true)
+        withTimeout(10_000) { while (hasTemporaryGrant()) delay(10) }
+
+        val revokedDelete = repository.deleteOutputs(listOf(second))
+        assertEquals(setOf(second.file), revokedDelete.deletedPrivateFiles)
+        assertEquals(0, revokedDelete.fullyDeletedCount)
+        assertEquals(1, revokedDelete.failures.size)
+        assertFalse(second.file.exists())
+    }
+
+    @Test
+    fun deleteOutputsSucceedsWhenPublicCopyWasAlreadyRemovedExternally() = runBlocking {
+        val inputs = sampleOutputs(Feature.DOWNLOAD_TWITTER_VIDEO).take(1)
+        val exported = repository.export(inputs, OutputStorageSettings(enabled = true)) { _, _, _ -> }
+        val artifact = exported.outputs.single()
+        val publicUri = checkNotNull(artifact.userStorage).uri
+        assertEquals(1, resolver.delete(publicUri, null, null))
+
+        val deletion = repository.deleteOutputs(listOf(artifact))
+        assertEquals(setOf(artifact.file), deletion.deletedPrivateFiles)
+        assertEquals(1, deletion.fullyDeletedCount)
+        assertTrue(deletion.failures.isEmpty())
+        assertFalse(artifact.file.exists())
+    }
+
     private suspend fun grantTestDirectory(): OutputStorageSettings {
         launchGrantActivity(revoke = false)
         withTimeout(10_000) { while (!hasTemporaryGrant()) delay(10) }

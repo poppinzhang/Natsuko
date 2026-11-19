@@ -2,6 +2,8 @@
 <resources>
     <string name="twitter_auth_consent_title">ログインしてこの動画を表示しますか？</string>
     <string name="twitter_auth_consent_message">この投稿を表示するにはXへのログインが必要です。Xの公式ページでログインし、Natsukoが動画を取得できるようにします。パスワードはXのページに直接入力します。Natsukoはログイン情報をこの端末に暗号化して保存し、アプリを再起動しても、接続を解除するかXがログイン情報の失効を確認するまで保持します。ログインしても年齢やアカウントの制限は解除されません。</string>
+    <string name="twitter_auth_consent_images_title">ログインしてこれらの画像を表示しますか？</string>
+    <string name="twitter_auth_consent_images_message">この投稿を表示するにはXへのログインが必要です。Xの公式ページでログインし、Natsukoが画像を取得できるようにします。パスワードはXのページに直接入力します。Natsukoはログイン情報をこの端末に暗号化して保存し、アプリを再起動しても、接続を解除するかXがログイン情報の失効を確認するまで保持します。ログインしても年齢やアカウントの制限は解除されません。</string>
     <string name="twitter_auth_sign_in">Xにログイン</string>
     <string name="twitter_auth_session_active">Xのログイン情報はこの端末に保存され、アプリを再起動しても利用できます。</string>
     <string name="twitter_auth_sign_out">Xのログイン接続を解除</string>

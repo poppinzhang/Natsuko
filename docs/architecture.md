@@ -31,9 +31,9 @@
 
 ## 分享入口
 
-Manifest 定义八个带独立名称与 MIME 过滤器的 `activity-alias`：图片拼接、去除黑边、图片转 PDF、PDF 转图片、视频转 GIF、下载推特视频（GIF）、图片调整、复制图片位置。入口组件名决定功能，URI 同时从 `ClipData` 和 extras 读取，以兼容不同发送方。`CropBlackBorderShare` 接收 `image/*` 的 `ACTION_SEND` 和 `ACTION_SEND_MULTIPLE`，支持单张截图和多图分享导入。
+Manifest 定义九个带独立名称与 MIME 过滤器的 `activity-alias`：图片拼接、去除黑边、图片转 PDF、PDF 转图片、视频转 GIF、下载推特视频（GIF）、下载推特图片、图片调整、复制图片位置。入口组件名决定功能，URI 同时从 `ClipData` 和 extras 读取，以兼容不同发送方。`CropBlackBorderShare` 接收 `image/*` 的 `ACTION_SEND` 和 `ACTION_SEND_MULTIPLE`，支持单张截图和多图分享导入。
 
-分享导入会自动进入所选功能的处理流程。“去除黑边”使用固定的保守检测规则，导入后直接开始自动处理；四项文件配置功能在正式处理前保留配置确认。`ImageAdjustmentShare` 接收单张或多张 `image/*`，进入同一编辑页，不触发自动处理；存在未导出编辑时，新的导入需先确认放弃。`DownloadTwitterVideoShare` 只接收 `text/plain` 的 `ACTION_SEND`，从 `EXTRA_TEXT` 与 `ClipData.text` 提取唯一推文链接，进入链接页后由用户点击下载，不解引用分享方提供的文件 URI。
+分享导入会自动进入所选功能的处理流程。“去除黑边”使用固定的保守检测规则，导入后直接开始自动处理；四项文件配置功能在正式处理前保留配置确认。`ImageAdjustmentShare` 接收单张或多张 `image/*`，进入同一编辑页，不触发自动处理；存在未导出编辑时，新的导入需先确认放弃。`DownloadTwitterVideoShare` 与 `DownloadTwitterImagesShare` 只接收 `text/plain` 的 `ACTION_SEND`，从 `EXTRA_TEXT` 与 `ClipData.text` 提取唯一推文链接，进入对应链接页后由用户点击下载，不解引用分享方提供的文件 URI。
 
 一次分享只导入一次。活动因配置变化重建时沿用已有工作流；用户按返回键结束分享任务后，再从最近任务打开它，系统会重新投递创建该任务的分享 Intent，并带上 `FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY`。`ShareImportParser.isNewShare` 将它识别为已经处理过的分享，应用直接显示首页，不重复导入或自动处理。此行为自 1.3.5 起提供，记录于 [CHANGELOG 的 1.3.5 条目](../CHANGELOG.md#135)。
 
@@ -53,7 +53,7 @@ Manifest 定义八个带独立名称与 MIME 过滤器的 `activity-alias`：图
 
 链接解析保留 `/video/序号` 的原始媒体附件位置。多视频推文通过可挂起回调等待用户选择当前视频或全部视频；决策状态保存在 ViewModel，等待时不下载、不创建输出目录，取消仍保留输入链接。图片参与媒体位置编号，输出文件名则沿用原有视频序号。
 
-成品交由原有用户存储层自动保存。结果页可将任一下载视频的应用专属 FileProvider URI 直接交给视频转 GIF 配置流程，使用原有参数、进度、取消和存储逻辑。返回配置页上一级时恢复原下载结果；源视频始终保留。接口支持范围与限制见 [下载推特视频](download_twitter_video.md)。
+成品交由原有用户存储层自动保存。视频下载结果页可将任一下载视频的应用专属 FileProvider URI 直接交给视频转 GIF 配置流程，使用原有参数、进度、取消和存储逻辑；图片下载结果页可将全部已下载图片按原顺序直接交给图片拼接配置流程。串联配置页额外提供“转换完成后删除原视频”／“拼接完成后删除原图片”选择框（默认不勾选，重新选择本地文件后隐藏）；仅当勾选且处理成功后，才由 `UserStorageRepository` 删除实际参与转换／拼接的原下载文件及其已保存的用户目录副本，并从保留的下载结果中移除已删除条目。配置页或完成页返回时，若原下载结果仍有剩余文件则恢复原下载结果，否则返回首页；未勾选或处理失败、取消时源视频与源图片始终保留。接口支持范围与限制分别见 [下载推特视频](download_twitter_video.md) 和 [下载推特图片](download_twitter_images.md)。
 
 ## 应用图标
 

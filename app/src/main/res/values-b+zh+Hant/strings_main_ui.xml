@@ -30,6 +30,10 @@
     <string name="main_horizontal">橫向</string>
     <string name="main_grid">網格</string>
     <string name="main_grid_hint">自動排列為接近正方形的網格（4 張為 2×2，9 張為 3×3）</string>
+    <string name="main_merge_spacing">圖片間距</string>
+    <string name="main_merge_spacing_unit">px</string>
+    <string name="main_merge_spacing_decrease">減小圖片間距</string>
+    <string name="main_merge_spacing_increase">增大圖片間距</string>
     <string name="main_fill_color">留白顏色</string>
     <string name="main_pdf_settings">PDF 設定</string>
     <string name="main_output_mode">輸出方式</string>
@@ -62,6 +66,12 @@
     <string name="main_open">開啟</string>
     <string name="main_share">分享</string>
     <string name="main_video_to_gif">影片轉 GIF</string>
+    <string name="main_merge_downloaded_images">轉圖片拼接</string>
+    <string name="main_delete_original_video_after_gif">轉換完成後刪除原影片</string>
+    <string name="main_delete_original_video_after_gif_hint">轉換成功後刪除本次下載的原影片，包括已儲存至使用者儲存資料夾的副本。</string>
+    <string name="main_delete_original_images_after_merge">拼接完成後刪除原圖片</string>
+    <string name="main_delete_original_images_after_merge_hint">拼接成功後刪除本次參與拼接的原圖片，包括已儲存至使用者儲存資料夾的副本。</string>
+    <string name="main_original_video_deleted">已刪除原影片</string>
     <string name="main_merge_select_preview">請選擇圖片以預覽拼接效果</string>
     <string name="main_merge_preview_unavailable">所選圖片均無法預覽</string>
     <string name="main_move_earlier">向前移動</string>
@@ -102,6 +112,8 @@
     <string name="feature_video_to_gif_description">控制影格率、取樣與尺寸</string>
     <string name="feature_download_twitter_video">下載推特影片（GIF）</string>
     <string name="feature_download_twitter_video_description">從 X / Twitter 推文連結下載影片與動畫圖片</string>
+    <string name="feature_download_twitter_images">下載推特圖片</string>
+    <string name="feature_download_twitter_images_description">從 X / Twitter 貼文連結依序批次下載全部圖片</string>
     <plurals name="main_images_added">
         <item quantity="other">已加入 %1$d 張圖片</item>
     </plurals>
@@ -113,6 +125,9 @@
     </plurals>
     <plurals name="main_videos_downloaded">
         <item quantity="other">成功下載 %1$d 部影片</item>
+    </plurals>
+    <plurals name="main_images_downloaded">
+        <item quantity="other">成功下載 %1$d 張圖片</item>
     </plurals>
     <plurals name="main_files_created">
         <item quantity="other">成功產生 %1$d 個檔案</item>
@@ -131,6 +146,12 @@
     </plurals>
     <plurals name="main_previews_failed">
         <item quantity="other">%1$d 張圖片無法預覽，已從預覽中跳過；可選取後移除</item>
+    </plurals>
+    <plurals name="main_original_images_deleted">
+        <item quantity="other">已刪除 %1$d 張原圖片</item>
+    </plurals>
+    <plurals name="main_originals_delete_failed">
+        <item quantity="other">%1$d 個原檔案未能刪除</item>
     </plurals>
     <string name="main_portrait">直向</string>
     <string name="main_landscape">橫向</string>

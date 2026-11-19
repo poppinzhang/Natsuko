@@ -92,4 +92,90 @@ class MergeLayoutTest {
         assertTrue(maxOf(plan.width, plan.height) <= 8192)
         assertTrue(plan.width.toLong() * plan.height <= 40_000_000)
     }
+
+    @Test
+    fun horizontalSpacingInsertsGapsBetweenAdjacentImagesOnly() {
+        val plan = MergeLayout.calculate(
+            listOf(ImageSize(100, 50), ImageSize(80, 100), ImageSize(60, 40)),
+            MergeDirection.HORIZONTAL,
+            spacingPx = 15,
+        )
+
+        assertEquals(270, plan.width)
+        assertEquals(100, plan.height)
+        assertEquals(
+            listOf(
+                ImagePlacement(0, 25, 100, 50),
+                ImagePlacement(115, 0, 80, 100),
+                ImagePlacement(210, 30, 60, 40),
+            ),
+            plan.placements,
+        )
+    }
+
+    @Test
+    fun verticalSpacingInsertsGapsBetweenAdjacentImagesOnly() {
+        val plan = MergeLayout.calculate(
+            listOf(ImageSize(50, 100), ImageSize(100, 80), ImageSize(40, 60)),
+            MergeDirection.VERTICAL,
+            spacingPx = 12,
+        )
+
+        assertEquals(100, plan.width)
+        assertEquals(264, plan.height)
+        assertEquals(
+            listOf(
+                ImagePlacement(25, 0, 50, 100),
+                ImagePlacement(0, 112, 100, 80),
+                ImagePlacement(30, 204, 40, 60),
+            ),
+            plan.placements,
+        )
+    }
+
+    @Test
+    fun gridSpacingInsertsGapsBetweenColumnsAndRows() {
+        val plan = MergeLayout.calculate(
+            List(4) { ImageSize(100, 100) },
+            MergeDirection.GRID,
+            spacingPx = 20,
+        )
+
+        assertEquals(220, plan.width)
+        assertEquals(220, plan.height)
+        assertEquals(
+            listOf(
+                ImagePlacement(0, 0, 100, 100),
+                ImagePlacement(120, 0, 100, 100),
+                ImagePlacement(0, 120, 100, 100),
+                ImagePlacement(120, 120, 100, 100),
+            ),
+            plan.placements,
+        )
+    }
+
+    @Test
+    fun singleImageDoesNotAddOuterPaddingWhenSpacingIsSet() {
+        for (direction in MergeDirection.entries) {
+            val plan = MergeLayout.calculate(
+                listOf(ImageSize(120, 80)),
+                direction,
+                spacingPx = 40,
+            )
+            val expectedWidth = if (direction == MergeDirection.GRID) 120 else 120
+            val expectedHeight = if (direction == MergeDirection.GRID) 120 else 80
+            assertEquals(expectedWidth, plan.width)
+            assertEquals(expectedHeight, plan.height)
+            assertEquals(1, plan.placements.size)
+        }
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun negativeSpacingIsRejected() {
+        MergeLayout.calculate(
+            listOf(ImageSize(100, 100)),
+            MergeDirection.HORIZONTAL,
+            spacingPx = -1,
+        )
+    }
 }

@@ -1,11 +1,13 @@
 package com.poppinzhang.natsuko.data.twitter
 
 import com.poppinzhang.natsuko.R
-import com.poppinzhang.natsuko.model.text
-import com.poppinzhang.natsuko.model.userMessage
+import com.poppinzhang.natsuko.model.LocalizedFailure
+import com.poppinzhang.natsuko.model.LocalizedIOException
+import com.poppinzhang.natsuko.model.UiText
 import com.poppinzhang.natsuko.model.checkText
 import com.poppinzhang.natsuko.model.errorText
-import com.poppinzhang.natsuko.model.LocalizedIOException
+import com.poppinzhang.natsuko.model.text
+import com.poppinzhang.natsuko.model.userMessage
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -27,13 +29,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 
-/** Restricted HTTPS transport: tweet metadata from X's embed service, media from its video CDN. */
+internal class TwitterHttpStatusException(
+    val status: Int,
+    override val userMessage: UiText,
+) : IllegalStateException(userMessage.toString()), LocalizedFailure
+
+/** Restricted HTTPS transport: tweet metadata from X's embed service, media from its video/image CDNs. */
 class TwitterHttpClient internal constructor(
     private val openConnection: (URL) -> HttpURLConnection = { it.openConnection() as HttpURLConnection },
     private val maxVideoBytes: Long = MAX_VIDEO_BYTES,
     private val transferTimeoutMs: Long = 10 * 60 * 1000L,
+    private val maxImageBytes: Long = MAX_IMAGE_BYTES,
 ) {
     internal data class WebResponse(val status: Int, val body: String)
+    private enum class RequestKind { METADATA, VIDEO, IMAGE }
 
     /** Credentials are allowed only on the fixed X GraphQL operation, which never follows redirects. */
     internal suspend fun webMetadata(
@@ -124,7 +133,7 @@ class TwitterHttpClient internal constructor(
 
     suspend fun metadata(link: TwitterStatusLink): String = timedRequest(60_000) {
         val url = "https://cdn.syndication.twimg.com/tweet-result?id=${link.id}&lang=en&token=${TwitterSyndicationToken.create(link.id)}"
-        request(url, media = false) { connection ->
+        request(url, RequestKind.METADATA) { connection ->
             val length = connection.contentLengthLong
             checkText(length <= MAX_METADATA_BYTES) { text(R.string.backend_metadata_too_large) }
             val result = ByteArrayOutputStream()
@@ -133,23 +142,60 @@ class TwitterHttpClient internal constructor(
         }
     }
 
-    suspend fun download(url: String, destination: File, onBytes: (Long, Long?) -> Unit) {
+    suspend fun download(url: String, destination: File, onBytes: (Long, Long?) -> Unit) =
+        downloadToFile(
+            url = url,
+            destination = destination,
+            kind = RequestKind.VIDEO,
+            maxBytes = maxVideoBytes,
+            timeoutMs = transferTimeoutMs,
+            allowedTypes = ALLOWED_VIDEO_CONTENT_TYPES,
+            sizeLimitMessage = { text(R.string.backend_video_download_size_limit, maxVideoBytes / 1024 / 1024) },
+            wrongTypeMessage = { text(R.string.backend_download_not_mp4) },
+            emptyFileMessage = { text(R.string.backend_download_video_empty) },
+            onBytes = onBytes,
+        )
+
+    suspend fun downloadImage(url: String, destination: File, onBytes: (Long, Long?) -> Unit) =
+        downloadToFile(
+            url = url,
+            destination = destination,
+            kind = RequestKind.IMAGE,
+            maxBytes = maxImageBytes,
+            timeoutMs = minOf(transferTimeoutMs, IMAGE_TRANSFER_TIMEOUT_MS),
+            allowedTypes = ALLOWED_IMAGE_CONTENT_TYPES,
+            sizeLimitMessage = { text(R.string.backend_image_download_size_limit, maxImageBytes / 1024 / 1024) },
+            wrongTypeMessage = { text(R.string.backend_download_not_image) },
+            emptyFileMessage = { text(R.string.backend_download_image_empty) },
+            onBytes = onBytes,
+        )
+
+    private suspend fun downloadToFile(
+        url: String,
+        destination: File,
+        kind: RequestKind,
+        maxBytes: Long,
+        timeoutMs: Long,
+        allowedTypes: Set<String>,
+        sizeLimitMessage: () -> UiText,
+        wrongTypeMessage: () -> UiText,
+        emptyFileMessage: () -> UiText,
+        onBytes: (Long, Long?) -> Unit,
+    ) {
         var completed = false
         try {
-            timedRequest(transferTimeoutMs) {
-                request(url, media = true) { connection ->
+            timedRequest(timeoutMs) {
+                request(url, kind) { connection ->
                     val length = connection.contentLengthLong
-                    checkText(length <= maxVideoBytes) { text(R.string.backend_video_download_size_limit, maxVideoBytes / 1024 / 1024) }
+                    checkText(length <= maxBytes, sizeLimitMessage)
                     val type = connection.contentType.orEmpty().substringBefore(';').trim().lowercase()
-                    checkText(type in setOf("", "video/mp4", "application/octet-stream", "binary/octet-stream")) {
-                        text(R.string.backend_download_not_mp4)
-                    }
+                    checkText(type in allowedTypes, wrongTypeMessage)
                     connection.inputStream.use { input ->
                         destination.outputStream().use { output ->
-                            copyBounded(input, output, maxVideoBytes, length.takeIf { it >= 0 }, onBytes)
+                            copyBounded(input, output, maxBytes, length.takeIf { it >= 0 }, onBytes)
                         }
                     }
-                    checkText(destination.length() > 0) { text(R.string.backend_download_video_empty) }
+                    checkText(destination.length() > 0, emptyFileMessage)
                 }
             }
             currentCoroutineContext().ensureActive()
@@ -181,17 +227,21 @@ class TwitterHttpClient internal constructor(
 
     private suspend fun <T> request(
         initialUrl: String,
-        media: Boolean,
+        kind: RequestKind,
         read: suspend (HttpURLConnection) -> T,
     ): T = withContext(Dispatchers.IO) {
         var url = initialUrl
         repeat(4) { redirectIndex ->
             currentCoroutineContext().ensureActive()
-            val allowed = if (media) TwitterMediaUrl.isAllowed(url) else runCatching {
-                val uri = URI(url)
-                uri.scheme == "https" && uri.host == "cdn.syndication.twimg.com" &&
-                    uri.port in listOf(-1, 443) && uri.userInfo == null
-            }.getOrDefault(false)
+            val allowed = when (kind) {
+                RequestKind.VIDEO -> TwitterMediaUrl.isAllowed(url)
+                RequestKind.IMAGE -> TwitterImageUrl.isAllowed(url)
+                RequestKind.METADATA -> runCatching {
+                    val uri = URI(url)
+                    uri.scheme == "https" && uri.host == "cdn.syndication.twimg.com" &&
+                        uri.port in listOf(-1, 443) && uri.userInfo == null
+                }.getOrDefault(false)
+            }
             checkText(allowed) { text(R.string.backend_download_url_unsupported) }
             val connection = openConnection(URL(url)).apply {
                 connectTimeout = 15_000
@@ -200,7 +250,14 @@ class TwitterHttpClient internal constructor(
                 useCaches = false
                 requestMethod = "GET"
                 setRequestProperty("User-Agent", "Googlebot")
-                setRequestProperty("Accept", if (media) "video/mp4,application/octet-stream" else "application/json")
+                setRequestProperty(
+                    "Accept",
+                    when (kind) {
+                        RequestKind.VIDEO -> "video/mp4,application/octet-stream"
+                        RequestKind.IMAGE -> "image/png,image/jpeg,image/webp,image/*;q=0.8,application/octet-stream;q=0.5"
+                        RequestKind.METADATA -> "application/json"
+                    },
+                )
                 setRequestProperty("Accept-Encoding", "identity")
             }
             // Cancelling the coroutine disconnects an active blocking read as well as the next copy iteration.
@@ -215,18 +272,19 @@ class TwitterHttpClient internal constructor(
                     val location = connection.getHeaderField("Location") ?: errorText(text(R.string.backend_download_redirect_invalid))
                     url = URL(URL(url), location).toString()
                 } else {
-                    if (!media && status in setOf(401, 403, 404, 410)) {
+                    if (kind == RequestKind.METADATA && status in setOf(401, 403, 404, 410)) {
                         // Embed/CDN HTTP status does not establish whether a post was deleted or needs login.
                         throw TwitterAccessException(TwitterAccessFailure.UNKNOWN)
                     }
-                    checkText(status == HttpURLConnection.HTTP_OK) {
-                        when (status) {
+                    if (status != HttpURLConnection.HTTP_OK) {
+                        val message = when (status) {
                             401, 403 -> text(R.string.backend_x_access_denied)
-                            404, 410 -> text(R.string.backend_x_media_missing)
+                            404, 410 -> text(if (kind == RequestKind.IMAGE) R.string.backend_x_image_missing else R.string.backend_x_media_missing)
                             429 -> text(R.string.backend_x_rate_limited)
                             in 500..599 -> text(R.string.backend_x_server_error, status)
                             else -> text(R.string.backend_x_http_error, status)
                         }
+                        throw TwitterHttpStatusException(status, message)
                     }
                     return@withContext read(connection)
                 }
@@ -262,7 +320,14 @@ class TwitterHttpClient internal constructor(
 
     companion object {
         const val MAX_VIDEO_BYTES = 512 * 1024 * 1024L
+        const val MAX_IMAGE_BYTES = 64 * 1024 * 1024L
+        private const val IMAGE_TRANSFER_TIMEOUT_MS = 2 * 60 * 1000L
         private const val MAX_METADATA_BYTES = 2 * 1024 * 1024L
+        private val ALLOWED_VIDEO_CONTENT_TYPES = setOf("", "video/mp4", "application/octet-stream", "binary/octet-stream")
+        private val ALLOWED_IMAGE_CONTENT_TYPES = setOf(
+            "", "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
+            "image/avif", "image/heic", "image/heif", "application/octet-stream", "binary/octet-stream",
+        )
         private const val WEB_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 " +
             "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     }

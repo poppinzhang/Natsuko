@@ -30,6 +30,10 @@
     <string name="main_horizontal">横並び</string>
     <string name="main_grid">グリッド</string>
     <string name="main_grid_hint">できるだけ正方形に近いグリッドに並べます（4枚は2×2、9枚は3×3）。</string>
+    <string name="main_merge_spacing">画像の間隔</string>
+    <string name="main_merge_spacing_unit">px</string>
+    <string name="main_merge_spacing_decrease">画像の間隔を狭くする</string>
+    <string name="main_merge_spacing_increase">画像の間隔を広くする</string>
     <string name="main_fill_color">余白の色</string>
     <string name="main_pdf_settings">PDF設定</string>
     <string name="main_output_mode">出力方法</string>
@@ -62,6 +66,12 @@
     <string name="main_open">開く</string>
     <string name="main_share">共有</string>
     <string name="main_video_to_gif">動画をGIFに変換</string>
+    <string name="main_merge_downloaded_images">画像を結合</string>
+    <string name="main_delete_original_video_after_gif">変換完了後に元の動画を削除</string>
+    <string name="main_delete_original_video_after_gif_hint">GIFの作成が完了したら、ユーザーの保存先フォルダに保存されたコピーを含め、ダウンロードした元の動画を削除します。</string>
+    <string name="main_delete_original_images_after_merge">結合完了後に元の画像を削除</string>
+    <string name="main_delete_original_images_after_merge_hint">画像の結合が完了したら、ユーザーの保存先フォルダに保存されたコピーを含め、今回結合に使用した元の画像を削除します。</string>
+    <string name="main_original_video_deleted">元の動画を削除しました</string>
     <string name="main_merge_select_preview">画像を選択すると結合結果をプレビューできます</string>
     <string name="main_merge_preview_unavailable">選択した画像はどれもプレビューできません</string>
     <string name="main_move_earlier">前に移動</string>
@@ -102,6 +112,8 @@
     <string name="feature_video_to_gif_description">フレームレート、抽出間隔、サイズを調整</string>
     <string name="feature_download_twitter_video">Twitterの動画（GIF）をダウンロード</string>
     <string name="feature_download_twitter_video_description">X / Twitterの投稿リンクから動画やGIFをダウンロード</string>
+    <string name="feature_download_twitter_images">Twitterの画像をダウンロード</string>
+    <string name="feature_download_twitter_images_description">X / Twitterの投稿リンクからすべての画像を順番に一括ダウンロード</string>
     <plurals name="main_images_added">
         <item quantity="other">画像を%1$d枚追加しました</item>
     </plurals>
@@ -113,6 +125,9 @@
     </plurals>
     <plurals name="main_videos_downloaded">
         <item quantity="other">動画を%1$d本ダウンロードしました</item>
+    </plurals>
+    <plurals name="main_images_downloaded">
+        <item quantity="other">画像を%1$d枚ダウンロードしました</item>
     </plurals>
     <plurals name="main_files_created">
         <item quantity="other">ファイルを%1$d個作成しました</item>
@@ -131,6 +146,12 @@
     </plurals>
     <plurals name="main_previews_failed">
         <item quantity="other">%1$d枚の画像をプレビューできなかったためスキップしました。選択して取り除くことができます。</item>
+    </plurals>
+    <plurals name="main_original_images_deleted">
+        <item quantity="other">元の画像を%1$d枚削除しました</item>
+    </plurals>
+    <plurals name="main_originals_delete_failed">
+        <item quantity="other">元のファイルを%1$d件削除できませんでした</item>
     </plurals>
     <string name="main_portrait">縦向き</string>
     <string name="main_landscape">横向き</string>

@@ -19,9 +19,12 @@
     <string name="twitter_download_start">開始下載</string>
     <string name="twitter_link_title">貼上推文連結</string>
     <string name="twitter_link_description">支援下載推文中的影片或動圖；若受登入限制，可登入 X 後重試。</string>
+    <string name="twitter_images_link_description">從貼文連結依序批次下載全部圖片；若受登入限制，可登入 X 後重試。</string>
     <string name="twitter_link_label">推文連結</string>
     <string name="twitter_link_placeholder">https://x.com/使用者名稱/status/推文編號</string>
     <string name="twitter_gif_title">下載後可直接轉 GIF</string>
     <string name="twitter_gif_description">X 上的 GIF 實際為 MP4 影片，下載後可在結果頁直接選擇「影片轉 GIF」。</string>
+    <string name="twitter_merge_title">下載後可直接轉圖片拼接</string>
+    <string name="twitter_merge_description">貼文中的全部圖片會依原順序下載，完成後可在結果頁直接選擇「轉圖片拼接」，無需重新選擇。</string>
     <string name="twitter_storage_description">儲存位置遵循「設定」中的成品儲存規則。</string>
 </resources>

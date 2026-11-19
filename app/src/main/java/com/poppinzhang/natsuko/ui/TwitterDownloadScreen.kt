@@ -47,12 +47,21 @@ import com.poppinzhang.natsuko.data.twitter.TwitterVideoSelection
 import com.poppinzhang.natsuko.model.Feature
 
 @Composable
-internal fun TwitterLoginConsentDialog(onLogin: () -> Unit, onCancel: () -> Unit) {
+internal fun TwitterLoginConsentDialog(
+    feature: Feature = Feature.DOWNLOAD_TWITTER_VIDEO,
+    onLogin: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    val isImages = feature == Feature.DOWNLOAD_TWITTER_IMAGES
     AlertDialog(
         modifier = Modifier.testTag("twitter-login-consent"),
         onDismissRequest = onCancel,
-        title = { Text(stringResource(R.string.twitter_auth_consent_title)) },
-        text = { Text(stringResource(R.string.twitter_auth_consent_message)) },
+        title = {
+            Text(stringResource(if (isImages) R.string.twitter_auth_consent_images_title else R.string.twitter_auth_consent_title))
+        },
+        text = {
+            Text(stringResource(if (isImages) R.string.twitter_auth_consent_images_message else R.string.twitter_auth_consent_message))
+        },
         confirmButton = {
             TextButton(onClick = onLogin, modifier = Modifier.testTag("twitter-login-accept")) {
                 Text(stringResource(R.string.twitter_auth_sign_in))
@@ -100,6 +109,7 @@ internal fun TwitterVideoSelectionDialog(
 
 @Composable
 internal fun TwitterDownloadScreen(
+    feature: Feature = Feature.DOWNLOAD_TWITTER_VIDEO,
     link: String,
     isBusy: Boolean,
     onLinkChange: (String) -> Unit,
@@ -109,6 +119,7 @@ internal fun TwitterDownloadScreen(
     onSignOut: () -> Unit = {},
     onSignIn: () -> Unit = {},
 ) {
+    val isImages = feature == Feature.DOWNLOAD_TWITTER_IMAGES
     val keyboard = LocalSoftwareKeyboardController.current
     val canDownload = link.isNotBlank() && !isBusy
     val startDownload = {
@@ -121,7 +132,7 @@ internal fun TwitterDownloadScreen(
         modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Feature.DOWNLOAD_TWITTER_VIDEO.titleRes)) },
+                title = { Text(stringResource(feature.titleRes)) },
                 navigationIcon = {
                     IconButton(onClick = onBack, enabled = !isBusy) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.secondary_back))
@@ -150,7 +161,7 @@ internal fun TwitterDownloadScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.twitter_link_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Text(
-                        stringResource(R.string.twitter_link_description),
+                        stringResource(if (isImages) R.string.twitter_images_link_description else R.string.twitter_link_description),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -195,9 +206,12 @@ internal fun TwitterDownloadScreen(
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(stringResource(R.string.twitter_gif_title), fontWeight = FontWeight.SemiBold)
                         Text(
-                            stringResource(R.string.twitter_gif_description),
+                            stringResource(if (isImages) R.string.twitter_merge_title else R.string.twitter_gif_title),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            stringResource(if (isImages) R.string.twitter_merge_description else R.string.twitter_gif_description),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(

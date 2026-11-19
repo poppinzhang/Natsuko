@@ -9,6 +9,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -18,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.core.content.FileProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -123,6 +126,36 @@ class MergePreviewLayoutTest {
         val fillColor = 0xFF00BCD4.toInt()
         composeRule.runOnIdle { viewModel.updateMergeColor(fillColor) }
         assertPixelColor(capture("merge-preview-canvas"), 0.05f, 0.9f, fillColor)
+        assertCompleteImageEdges(1)
+    }
+
+    @Test
+    fun spacingStepperAndNumberInputUpdatePreviewAndOptions() {
+        val viewModel = showPreview(listOf(createImage("spacing-left.png", 120, 80), createImage("spacing-right.png", 120, 80)))
+        waitForItems(0, 1)
+        composeRule.runOnIdle { viewModel.updateMergeDirection(MergeDirection.HORIZONTAL) }
+
+        assertEquals(itemBounds(0).right, itemBounds(1).left, 2f)
+        composeRule.onNodeWithTag("merge-spacing-decrease").performScrollTo().assertIsNotEnabled()
+        composeRule.onNodeWithTag("merge-spacing-increase").performScrollTo().assertIsEnabled().performClick()
+        composeRule.runOnIdle {
+            assertEquals(1, viewModel.state.value.mergeOptions.spacingPx)
+        }
+        composeRule.onNodeWithTag("merge-spacing-decrease").assertIsEnabled().performClick()
+        composeRule.runOnIdle {
+            assertEquals(0, viewModel.state.value.mergeOptions.spacingPx)
+        }
+
+        composeRule.onNodeWithTag("merge-spacing-input").performScrollTo().performTextReplacement("40")
+        composeRule.runOnIdle {
+            assertEquals(40, viewModel.state.value.mergeOptions.spacingPx)
+        }
+        val first = itemBounds(0)
+        val second = itemBounds(1)
+        val canvas = bounds("merge-preview-canvas")
+        assertTrue(second.left > first.right)
+        assertEquals(40f / 280f * canvas.width, second.left - first.right, 2f)
+        assertCompleteImageEdges(0)
         assertCompleteImageEdges(1)
     }
 

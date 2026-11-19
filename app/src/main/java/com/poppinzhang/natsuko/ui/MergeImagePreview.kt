@@ -104,8 +104,8 @@ internal fun MergeImagePreview(
                     )
                 } else {
                     val sizes = loadedIndices.map { checkNotNull(previews[inputs[it].uri]).mergeSize }
-                    val plan = remember(sizes, options.direction, constraints.maxWidth, constraints.maxHeight) {
-                        mergePreviewLayout(sizes, options.direction, constraints.maxWidth, constraints.maxHeight)
+                    val plan = remember(sizes, options.direction, options.spacingPx, constraints.maxWidth, constraints.maxHeight) {
+                        mergePreviewLayout(sizes, options.direction, constraints.maxWidth, constraints.maxHeight, options.spacingPx)
                     }
                     val density = LocalDensity.current
                     var draggedPosition by remember(inputs, plan) { mutableStateOf<Int?>(null) }

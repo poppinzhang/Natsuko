@@ -30,6 +30,10 @@
     <string name="main_horizontal">Horizontal</string>
     <string name="main_grid">Grid</string>
     <string name="main_grid_hint">Images form a grid as close to square as possible (2×2 for 4 images, 3×3 for 9).</string>
+    <string name="main_merge_spacing">Image spacing</string>
+    <string name="main_merge_spacing_unit">px</string>
+    <string name="main_merge_spacing_decrease">Decrease image spacing</string>
+    <string name="main_merge_spacing_increase">Increase image spacing</string>
     <string name="main_fill_color">Fill color</string>
     <string name="main_pdf_settings">PDF settings</string>
     <string name="main_output_mode">Output mode</string>
@@ -62,6 +66,12 @@
     <string name="main_open">Open</string>
     <string name="main_share">Share</string>
     <string name="main_video_to_gif">Video to GIF</string>
+    <string name="main_merge_downloaded_images">Merge images</string>
+    <string name="main_delete_original_video_after_gif">Delete original video after conversion</string>
+    <string name="main_delete_original_video_after_gif_hint">Removes the downloaded video, including any copy saved to your storage folder, once the GIF is created.</string>
+    <string name="main_delete_original_images_after_merge">Delete original images after merge</string>
+    <string name="main_delete_original_images_after_merge_hint">Removes the downloaded images used in this merge, including any copies saved to your storage folder, once the merged image is created.</string>
+    <string name="main_original_video_deleted">Original video deleted</string>
     <string name="main_merge_select_preview">Select images to preview the merge</string>
     <string name="main_merge_preview_unavailable">None of the selected images can be previewed</string>
     <string name="main_move_earlier">Move earlier</string>
@@ -102,6 +112,8 @@
     <string name="feature_video_to_gif_description">Adjust frame rate, sampling, and dimensions</string>
     <string name="feature_download_twitter_video">Download Twitter videos (GIFs)</string>
     <string name="feature_download_twitter_video_description">Download videos and GIFs from X / Twitter post links</string>
+    <string name="feature_download_twitter_images">Download Twitter images</string>
+    <string name="feature_download_twitter_images_description">Batch download all images in order from X / Twitter post links</string>
     <plurals name="main_images_added">
         <item quantity="one">%1$d image added</item>
         <item quantity="other">%1$d images added</item>
@@ -117,6 +129,10 @@
     <plurals name="main_videos_downloaded">
         <item quantity="one">%1$d video downloaded</item>
         <item quantity="other">%1$d videos downloaded</item>
+    </plurals>
+    <plurals name="main_images_downloaded">
+        <item quantity="one">%1$d image downloaded</item>
+        <item quantity="other">%1$d images downloaded</item>
     </plurals>
     <plurals name="main_files_created">
         <item quantity="one">%1$d file created</item>
@@ -141,6 +157,14 @@
     <plurals name="main_previews_failed">
         <item quantity="one">%1$d image could not be previewed and was skipped. Select it to remove it.</item>
         <item quantity="other">%1$d images could not be previewed and were skipped. Select them to remove them.</item>
+    </plurals>
+    <plurals name="main_original_images_deleted">
+        <item quantity="one">%1$d original image deleted</item>
+        <item quantity="other">%1$d original images deleted</item>
+    </plurals>
+    <plurals name="main_originals_delete_failed">
+        <item quantity="one">%1$d original file could not be deleted</item>
+        <item quantity="other">%1$d original files could not be deleted</item>
     </plurals>
     <string name="main_portrait">Portrait</string>
     <string name="main_landscape">Landscape</string>

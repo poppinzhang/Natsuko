@@ -617,6 +617,31 @@ class ImageAdjustmentWorkflowTest {
     }
 
     @Test
+    fun confirmingImageLinkShareUsesDownloadTwitterImagesFeatureWithoutStartingDownload() = runBlocking {
+        val viewModel = newViewModel()
+        open(viewModel, fixtureUri(quadrantImage()))
+        onMain { viewModel.rotateAdjustment(clockwise = true) }
+        val sharedImagePost = "Photos https://x.com/example/status/789/photo/2"
+        onMain {
+            viewModel.handleShareIntent(
+                Intent(Intent.ACTION_SEND)
+                    .setComponent(ComponentName(context, "com.poppinzhang.natsuko.share.DownloadTwitterImagesShare"))
+                    .setType("text/plain")
+                    .putExtra(Intent.EXTRA_TEXT, sharedImagePost),
+            )
+        }
+        assertTrue(viewModel.state.value.adjustment!!.confirmDiscard)
+
+        onMain { viewModel.confirmDiscardAdjustment() }
+        val imported = viewModel.state.value
+        assertEquals(AppScreen.TWITTER_DOWNLOAD, imported.screen)
+        assertEquals(Feature.DOWNLOAD_TWITTER_IMAGES, imported.feature)
+        assertEquals(sharedImagePost, imported.twitterLink)
+        assertNull(imported.adjustment)
+        assertFalse(imported.isProcessing)
+    }
+
+    @Test
     fun invalidLinkSharesLeaveUnexportedEditsWithoutADiscardPrompt() = runBlocking {
         val viewModel = newViewModel()
         open(viewModel, fixtureUri(quadrantImage()))

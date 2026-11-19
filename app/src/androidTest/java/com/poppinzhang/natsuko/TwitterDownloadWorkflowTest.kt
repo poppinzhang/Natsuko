@@ -9,11 +9,13 @@ import android.graphics.ImageDecoder
 import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -40,6 +42,7 @@ import com.poppinzhang.natsuko.model.UiText
 import com.poppinzhang.natsuko.model.OutputArtifact
 import com.poppinzhang.natsuko.model.ProcessingFailure
 import com.poppinzhang.natsuko.model.ProcessingOutcome
+import com.poppinzhang.natsuko.model.SavedOutput
 import com.poppinzhang.natsuko.processing.DownloadTwitterVideoProcessor
 import com.poppinzhang.natsuko.ui.AppScreen
 import com.poppinzhang.natsuko.ui.NatsukoApp
@@ -306,6 +309,211 @@ class TwitterDownloadWorkflowTest {
         assertEquals(AppScreen.RESULT, viewModel.state.value.screen)
         assertEquals(Feature.DOWNLOAD_TWITTER_VIDEO, viewModel.state.value.feature)
         assertEquals(original.file, viewModel.state.value.outcome!!.outputs.single().file)
+    }
+
+    @Test
+    fun chainedGifDeleteCheckboxDeletesPrivateAndPublicVideoAndReturnsHome() = runBlocking {
+        preferences.setEnabled(true)
+        val viewModel = newViewModel()
+        composeRule.setContent { NatsukoTheme { NatsukoApp(viewModel) } }
+        val downloaded = download(viewModel, expectPublicCopy = true)
+        val original = downloaded.outcome!!.outputs.single()
+        val originalPublicUri = checkNotNull(original.userStorage).uri
+        val originalRunDirectory = checkNotNull(original.file.parentFile)
+        assertTrue(original.file.isFile)
+        assertTrue(mediaStoreExists(originalPublicUri))
+
+        composeRule.onNodeWithTag("result-list")
+            .performScrollToNode(hasTestTag("twitter-convert-gif-0"))
+        composeRule.onNodeWithTag("twitter-convert-gif-0").performClick()
+
+        composeRule.onNodeWithTag("configure-list")
+            .performScrollToNode(hasTestTag("delete-original-video-checkbox"))
+        composeRule.onNodeWithTag("delete-original-video-checkbox")
+            .assertIsDisplayed()
+            .assertIsOff()
+            .performClick()
+            .assertIsOn()
+        assertTrue(viewModel.state.value.deleteChainedOriginals)
+
+        viewModel.updateGifWidth(240)
+        viewModel.updateGifInterval(200)
+        viewModel.process()
+        val converted = awaitPublicCopy(viewModel)
+        val gif = converted.outcome!!.outputs.single()
+
+        assertEquals("image/gif", gif.mimeType)
+        assertTrue(ImageDecoder.decodeDrawable(ImageDecoder.createSource(gif.file)) is AnimatedImageDrawable)
+        assertPublicCopy(gif)
+        assertEquals(1, converted.deletedOriginalsCount)
+        assertTrue(converted.originalDeletionFailures.isEmpty())
+        assertFalse(original.file.exists())
+        assertFalse(originalRunDirectory.exists())
+        assertFalse(mediaStoreExists(originalPublicUri))
+        composeRule.onNodeWithTag("result-list")
+            .performScrollToNode(hasTestTag("result-originals-deleted"))
+        composeRule.onNodeWithText(context.getString(R.string.main_original_video_deleted)).assertIsDisplayed()
+
+        // When no original downloaded videos remain, Back returns cleanly to Home instead of an empty result screen.
+        viewModel.back()
+        assertEquals(AppScreen.HOME, viewModel.state.value.screen)
+        assertNull(viewModel.state.value.outcome)
+    }
+
+    @Test
+    fun multiVideoPartialDeleteKeepsSiblingVideoAndRestoresItOnBack() = runBlocking {
+        val viewModel = newViewModel { _, progress -> successfulDownloads(2, progress) }
+        composeRule.setContent { NatsukoTheme { NatsukoApp(viewModel) } }
+        val downloaded = download(viewModel)
+        val first = downloaded.outcome!!.outputs[0]
+        val second = downloaded.outcome.outputs[1]
+        val sharedDirectory = checkNotNull(first.file.parentFile)
+
+        composeRule.onNodeWithTag("result-list")
+            .performScrollToNode(hasTestTag("twitter-convert-gif-0"))
+        composeRule.onNodeWithTag("twitter-convert-gif-0").performClick()
+
+        composeRule.onNodeWithTag("configure-list")
+            .performScrollToNode(hasTestTag("delete-original-video-checkbox"))
+        composeRule.onNodeWithTag("delete-original-video-checkbox").performClick()
+        viewModel.updateGifWidth(240)
+        viewModel.updateGifInterval(200)
+        viewModel.process()
+        val converted = awaitOutcome(viewModel)
+        assertEquals(1, converted.deletedOriginalsCount)
+        assertFalse(first.file.exists())
+        assertTrue(second.file.isFile)
+        assertTrue(sharedDirectory.isDirectory)
+
+        viewModel.back()
+
+        val restored = viewModel.state.value
+        assertEquals(AppScreen.RESULT, restored.screen)
+        assertEquals(Feature.DOWNLOAD_TWITTER_VIDEO, restored.feature)
+        assertEquals(listOf(second.file), restored.outcome!!.outputs.map { it.file })
+    }
+
+    @Test
+    fun directVideoToGifAndRepickHideDeleteCheckboxAndKeepOriginal() = runBlocking {
+        val localFile = OutputRepository(context).createRunDirectory(Feature.VIDEO_TO_GIF).resolve("local.mp4")
+        instrumentation.context.assets.open("video/h264.mp4").use { input ->
+            localFile.outputStream().use { output -> input.copyTo(output) }
+        }
+        outputs.add(OutputArtifact(localFile, "video/mp4", "local"))
+        val localUri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.files", localFile)
+
+        val viewModel = newViewModel()
+        composeRule.setContent { NatsukoTheme { NatsukoApp(viewModel) } }
+
+        // Direct Video to GIF from Home never shows the Twitter delete-original checkbox.
+        viewModel.acceptSelection(Feature.VIDEO_TO_GIF, listOf(localUri))
+        awaitState(viewModel) { it.screen == AppScreen.CONFIGURE && it.feature == Feature.VIDEO_TO_GIF }
+        assertFalse(viewModel.state.value.canDeleteChainedOriginals)
+        composeRule.onNodeWithTag("delete-original-video-checkbox").assertDoesNotExist()
+
+        // Chaining shows the checkbox, and re-picking a local file hides it and preserves the downloaded video.
+        val downloaded = download(viewModel)
+        val original = downloaded.outcome!!.outputs.single()
+        viewModel.convertDownloadedVideoToGif(original)
+        awaitState(viewModel) { it.screen == AppScreen.CONFIGURE && it.canDeleteChainedOriginals }
+        viewModel.updateDeleteChainedOriginals(true)
+        assertTrue(viewModel.state.value.deleteChainedOriginals)
+
+        viewModel.acceptSelection(Feature.VIDEO_TO_GIF, listOf(localUri))
+        val repicked = awaitState(viewModel) {
+            it.screen == AppScreen.CONFIGURE && it.inputs.singleOrNull()?.displayName == "local.mp4"
+        }
+        assertFalse(repicked.canDeleteChainedOriginals)
+        assertFalse(repicked.deleteChainedOriginals)
+        composeRule.onNodeWithTag("delete-original-video-checkbox").assertDoesNotExist()
+        viewModel.updateGifWidth(240)
+        viewModel.updateGifInterval(200)
+        viewModel.process()
+        awaitOutcome(viewModel)
+
+        assertTrue(original.file.isFile)
+    }
+
+    @Test
+    fun failedAndCancelledGifConversionRetainOriginalVideoEvenWhenDeleteChecked() = runBlocking {
+        val viewModel = newViewModel()
+        composeRule.setContent { NatsukoTheme { NatsukoApp(viewModel) } }
+        val downloaded = download(viewModel)
+        val original = downloaded.outcome!!.outputs.single()
+        viewModel.convertDownloadedVideoToGif(original)
+        awaitState(viewModel) { it.screen == AppScreen.CONFIGURE && it.canDeleteChainedOriginals }
+        viewModel.updateDeleteChainedOriginals(true)
+
+        // Cancelling conversion mid-flight leaves the original video intact.
+        viewModel.process()
+        awaitState(viewModel) { it.isProcessing }
+        viewModel.cancelProcessing()
+        val cancelled = awaitState(viewModel) { !it.isProcessing }
+        assertEquals(AppScreen.CONFIGURE, cancelled.screen)
+        assertTrue(cancelled.deleteChainedOriginals)
+        assertTrue(original.file.isFile)
+
+        // Corrupting the video so FFmpeg conversion fails also leaves the original video intact.
+        original.file.writeText("corrupted video bytes")
+        viewModel.process()
+        val failed = awaitState(viewModel) { !it.isProcessing && it.errorMessage != null }
+
+        assertEquals(AppScreen.CONFIGURE, failed.screen)
+        assertTrue(original.file.isFile)
+        viewModel.dismissError()
+        viewModel.back()
+        assertEquals(AppScreen.RESULT, viewModel.state.value.screen)
+        assertEquals(original.file, viewModel.state.value.outcome!!.outputs.single().file)
+    }
+
+    @Test
+    fun originalDeleteFailureShowsWarningCardWhileKeepingProducedGif() = runBlocking {
+        val treeUri = DocumentsContract.buildTreeDocumentUri(StorageTestDocumentsProvider.AUTHORITY, "root")
+        val ungrantedDocumentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, "root/DownloadTwitterVideo/locked.mp4")
+        lateinit var privateFile: File
+        val viewModel = newViewModel { _, progress ->
+            val outcome = successfulDownloads(1, progress)
+            val base = outcome.outputs.single()
+            privateFile = base.file
+            // Swap out outputs entry tracked for MediaStore cleanup with ungranted SAF metadata.
+            outputs.remove(base)
+            outputs.add(base.copy(userStorage = null))
+            ProcessingOutcome(
+                listOf(
+                    base.copy(
+                        userStorage = SavedOutput(
+                            uri = ungrantedDocumentUri,
+                            directoryLabel = "Storage tests/DownloadTwitterVideo",
+                            destinationKey = treeUri.toString(),
+                        ),
+                    ),
+                ),
+            )
+        }
+        composeRule.setContent { NatsukoTheme { NatsukoApp(viewModel) } }
+        viewModel.openTwitterDownload()
+        viewModel.updateTwitterLink(LINK)
+        viewModel.downloadTwitterVideo()
+        val downloaded = awaitState(viewModel) { !it.isProcessing && it.screen == AppScreen.RESULT }
+        val original = downloaded.outcome!!.outputs.single()
+
+        viewModel.convertDownloadedVideoToGif(original)
+        awaitState(viewModel) { it.screen == AppScreen.CONFIGURE && it.canDeleteChainedOriginals }
+        viewModel.updateDeleteChainedOriginals(true)
+        viewModel.updateGifWidth(240)
+        viewModel.updateGifInterval(200)
+        viewModel.process()
+
+        val converted = awaitOutcome(viewModel)
+        val gif = converted.outcome!!.outputs.single()
+        assertTrue(gif.file.isFile)
+        assertFalse(privateFile.exists())
+        assertEquals(0, converted.deletedOriginalsCount)
+        assertEquals(1, converted.originalDeletionFailures.size)
+        composeRule.onNodeWithTag("result-list")
+            .performScrollToNode(hasTestTag("result-originals-delete-failures"))
+        composeRule.onNodeWithTag("result-originals-delete-failures").assertIsDisplayed()
+        composeRule.onNodeWithTag("result-originals-deleted").assertDoesNotExist()
     }
 
     @Test
@@ -620,18 +828,29 @@ class TwitterDownloadWorkflowTest {
         assertNotNull(it.twitterVideoSelection)
     }
 
-    private fun successfulDownload(progress: (Int, Int, UiText) -> Unit): ProcessingOutcome {
-        progress(0, 1, UiText.Literal("Downloading test video"))
+    private fun successfulDownload(progress: (Int, Int, UiText) -> Unit): ProcessingOutcome =
+        successfulDownloads(1, progress)
+
+    private fun successfulDownloads(count: Int, progress: (Int, Int, UiText) -> Unit): ProcessingOutcome {
+        progress(0, count, UiText.Literal("Downloading test video"))
         val directory = OutputRepository(context).createRunDirectory(Feature.DOWNLOAD_TWITTER_VIDEO)
-        val file = directory.resolve("twitter-${UUID.randomUUID()}.mp4")
-        instrumentation.context.assets.open("video/h264.mp4").use { input ->
-            file.outputStream().use { output -> input.copyTo(output) }
+        val artifacts = (1..count).map { index ->
+            val file = directory.resolve("twitter-${UUID.randomUUID()}-$index.mp4")
+            instrumentation.context.assets.open("video/h264.mp4").use { input ->
+                file.outputStream().use { output -> input.copyTo(output) }
+            }
+            OutputArtifact(file, "video/mp4", "推文视频 $index")
         }
-        val artifact = OutputArtifact(file, "video/mp4", "推文视频")
-        outputs.add(artifact)
-        progress(1, 1, UiText.Literal("Test download completed"))
-        return ProcessingOutcome(listOf(artifact))
+        outputs.addAll(artifacts)
+        progress(count, count, UiText.Literal("Test download completed"))
+        return ProcessingOutcome(artifacts)
     }
+
+    private fun mediaStoreExists(uri: Uri): Boolean = runCatching {
+        context.contentResolver.query(uri, arrayOf(MediaStore.MediaColumns._ID), null, null, null)?.use {
+            it.moveToFirst()
+        } == true
+    }.getOrDefault(false)
 
     private suspend fun download(
         viewModel: NatsukoViewModel,

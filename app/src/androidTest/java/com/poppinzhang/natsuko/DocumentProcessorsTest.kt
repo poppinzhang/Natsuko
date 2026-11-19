@@ -88,6 +88,34 @@ class DocumentProcessorsTest {
     }
 
     @Test
+    fun mergesImagesWithConfiguredSpacingAndFillColor() {
+        val inputs = listOf(
+            imageInput("spacing-red.png", Color.RED),
+            imageInput("spacing-blue.png", Color.BLUE),
+        )
+        val fillColor = 0xFF112233.toInt()
+        val result = ImageMergeProcessor(context, outputs).process(
+            inputs,
+            MergeOptions(
+                direction = MergeDirection.HORIZONTAL,
+                fillColor = fillColor,
+                spacingPx = 6,
+            ),
+        ) { _, _, _ -> }
+
+        val bitmap = BitmapFactory.decodeFile(result.outputs.single().file.absolutePath)
+        try {
+            assertEquals(38, bitmap.width)
+            assertEquals(12, bitmap.height)
+            assertEquals(Color.RED, bitmap.getPixel(8, 6))
+            assertEquals(fillColor, bitmap.getPixel(18, 6))
+            assertEquals(Color.BLUE, bitmap.getPixel(30, 6))
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    @Test
     fun mergedImageKeepsEveryShadeOfOpaqueInputs() {
         for (format in listOf(Bitmap.CompressFormat.PNG, Bitmap.CompressFormat.JPEG)) {
             val gradient = gradientInput("merge-gradient-$format", format, height = 64)

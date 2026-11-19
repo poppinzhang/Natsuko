@@ -28,6 +28,7 @@ import org.junit.rules.TemporaryFolder
 class TwitterHttpClientTest {
     @get:Rule val temporary = TemporaryFolder()
     private val url = "https://video.twimg.com/ext_tw_video/123/vid/640x360/sample.mp4?tag=12"
+    private val imageUrl = "https://pbs.twimg.com/media/SampleImage123?format=jpg&name=orig"
 
     @Test
     fun streamsBytesAndReportsProgressWithoutLoadingWholeVideo() = runBlocking {
@@ -157,6 +158,64 @@ class TwitterHttpClientTest {
         assertEquals(1, opened)
         assertEquals(null, redirect.getRequestProperty("Cookie"))
         assertEquals(null, redirect.getRequestProperty("Authorization"))
+    }
+
+    @Test
+    fun streamsImageBytesAndRejectsInvalidSizeTypeDomainAndMissingStatus() = runBlocking {
+        val body = ByteArray(140_000) { (it % 251).toByte() }
+        val connection = FakeConnection(body).apply { mime = "image/jpeg" }
+        val target = File(temporary.root, "image.part")
+        val progress = mutableListOf<Long>()
+        TwitterHttpClient({ connection }).downloadImage(imageUrl, target) { count, total ->
+            assertEquals(body.size.toLong(), total)
+            progress += count
+        }
+        assertTrue(body.contentEquals(target.readBytes()))
+        assertTrue(progress.size > 1)
+        assertEquals(body.size.toLong(), progress.last())
+        assertTrue(connection.disconnected)
+
+        for (bad in listOf(
+            FakeConnection(ByteArray(10)).apply { length = 200; mime = "image/png" },
+            FakeConnection(ByteArray(150)).apply { length = -1; mime = "image/png" },
+            FakeConnection(ByteArray(10)).apply { length = 20; mime = "image/png" },
+            FakeConnection(ByteArray(0)).apply { mime = "image/png" },
+            FakeConnection(ByteArray(10)).apply { mime = "text/html" },
+            FakeConnection(ByteArray(10)).apply { mime = "video/mp4" },
+        )) {
+            val badFile = File(temporary.root, "bad-image.part")
+            assertNotNull(runCatching { TwitterHttpClient({ bad }, maxImageBytes = 100).downloadImage(imageUrl, badFile) { _, _ -> } }.exceptionOrNull())
+            assertFalse(badFile.exists())
+            assertTrue(bad.disconnected)
+        }
+
+        val missing = FakeConnection(ByteArray(1)).apply { code = 404 }
+        val missingError = runCatching { TwitterHttpClient({ missing }).downloadImage(imageUrl, File(temporary.root, "missing.part")) { _, _ -> } }.exceptionOrNull()
+        assertEquals(404, (missingError as? TwitterHttpStatusException)?.status)
+        assertTrue(missing.disconnected)
+
+        var connections = 0
+        val redirect = FakeConnection(ByteArray(1)).apply { code = 302; location = "https://example.com/img.jpg" }
+        val redirectFailure = runCatching {
+            TwitterHttpClient({ connections++; redirect }).downloadImage(imageUrl, File(temporary.root, "redir.part")) { _, _ -> }
+        }.exceptionOrNull()
+        assertEquals(text(R.string.backend_download_url_unsupported), (redirectFailure as? LocalizedFailure)?.userMessage)
+        assertEquals(1, connections)
+
+        for (untrusted in listOf(
+            "http://pbs.twimg.com/media/a.jpg",
+            "https://pbs.twimg.com.evil.test/media/a.jpg",
+            "https://pbs.twimg.com/profile_images/1/avatar.jpg",
+            "https://video.twimg.com/ext_tw_video/1/v.mp4",
+        )) {
+            var connected = false
+            val failure = runCatching {
+                TwitterHttpClient({ connected = true; FakeConnection(ByteArray(1)) })
+                    .downloadImage(untrusted, File(temporary.root, "untrusted.part")) { _, _ -> }
+            }.exceptionOrNull()
+            assertNotNull(failure)
+            assertFalse(connected)
+        }
     }
 
     @Test

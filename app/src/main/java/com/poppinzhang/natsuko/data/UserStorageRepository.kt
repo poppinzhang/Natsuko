@@ -19,6 +19,7 @@ import com.poppinzhang.natsuko.model.OutputArtifact
 import com.poppinzhang.natsuko.model.ProcessingFailure
 import com.poppinzhang.natsuko.model.SavedOutput
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.OutputStream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,12 @@ import kotlinx.coroutines.withContext
 
 data class UserStorageExportResult(
     val outputs: List<OutputArtifact>,
+    val failures: List<ProcessingFailure> = emptyList(),
+)
+
+data class OriginalDeletionResult(
+    val deletedPrivateFiles: Set<File>,
+    val fullyDeletedCount: Int,
     val failures: List<ProcessingFailure> = emptyList(),
 )
 
@@ -109,6 +116,88 @@ class UserStorageRepository(context: Context) {
             onProgress(index + 1, outputs.size, text(R.string.backend_outputs_processed, index + 1, outputs.size))
         }
         UserStorageExportResult(exported, failures)
+    }
+
+    /** Deletes downloaded private outputs and any saved user-storage copies once chained work completes. */
+    suspend fun deleteOutputs(artifacts: List<OutputArtifact>): OriginalDeletionResult = withContext(Dispatchers.IO) {
+        val deletedPrivateFiles = mutableSetOf<File>()
+        var fullyDeletedCount = 0
+        val failures = mutableListOf<ProcessingFailure>()
+        artifacts.distinctBy { it.file to it.userStorage?.uri }.forEach { artifact ->
+            val privateDeleted = if (artifact.file.exists()) {
+                runCatching { artifact.file.delete() }.getOrDefault(false) && !artifact.file.exists()
+            } else {
+                true
+            }
+            if (privateDeleted) {
+                deletedPrivateFiles += artifact.file
+                // Remove the per-run timestamp directory only if no sibling downloads remain inside.
+                runCatching { artifact.file.parentFile?.delete() }
+            }
+            val publicDeleted = artifact.userStorage?.let { deleteSavedOutput(it.uri) } ?: true
+            if (privateDeleted && publicDeleted) {
+                fullyDeletedCount++
+            } else {
+                failures += ProcessingFailure(
+                    source = artifact.label,
+                    reason = text(R.string.backend_delete_original_failed),
+                )
+            }
+        }
+        OriginalDeletionResult(
+            deletedPrivateFiles = deletedPrivateFiles,
+            fullyDeletedCount = fullyDeletedCount,
+            failures = failures,
+        )
+    }
+
+    private fun deleteSavedOutput(uri: Uri): Boolean {
+        if (DocumentsContract.isDocumentUri(context, uri)) {
+            return try {
+                DocumentsContract.deleteDocument(resolver, uri) || !documentExists(uri)
+            } catch (_: SecurityException) {
+                false
+            } catch (_: FileNotFoundException) {
+                true
+            } catch (_: Exception) {
+                !documentExists(uri)
+            }
+        }
+        return try {
+            resolver.delete(uri, null, null) > 0 || !mediaExists(uri)
+        } catch (_: SecurityException) {
+            false
+        } catch (_: FileNotFoundException) {
+            true
+        } catch (_: Exception) {
+            !mediaExists(uri)
+        }
+    }
+
+    private fun documentExists(uri: Uri): Boolean = try {
+        resolver.query(uri, arrayOf(Document.COLUMN_DOCUMENT_ID), null, null, null)?.use { cursor ->
+            cursor.moveToFirst()
+        } ?: false
+    } catch (_: SecurityException) {
+        true
+    } catch (_: FileNotFoundException) {
+        false
+    } catch (_: Exception) {
+        true
+    }
+
+    private fun mediaExists(uri: Uri): Boolean = try {
+        resolver.query(uri, arrayOf(MediaStore.MediaColumns._ID), null, null, null)?.use { cursor ->
+            cursor.moveToFirst()
+        } ?: false
+    } catch (_: SecurityException) {
+        true
+    } catch (_: FileNotFoundException) {
+        false
+    } catch (_: IllegalArgumentException) {
+        false
+    } catch (_: Exception) {
+        true
     }
 
     private suspend fun saveToDownloads(output: OutputArtifact, subdirectory: String): Uri {

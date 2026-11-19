@@ -57,6 +57,7 @@ import com.poppinzhang.natsuko.processing.CropBlackBorderProcessor
 import com.poppinzhang.natsuko.processing.ImagesToPdfProcessor
 import com.poppinzhang.natsuko.processing.PdfToImagesProcessor
 import com.poppinzhang.natsuko.processing.VideoToGifProcessor
+import com.poppinzhang.natsuko.processing.DownloadTwitterImagesProcessor
 import com.poppinzhang.natsuko.processing.DownloadTwitterVideoProcessor
 import com.poppinzhang.natsuko.processing.AdjustmentEditing
 import com.poppinzhang.natsuko.processing.AdjustmentExportRequest
@@ -99,6 +100,10 @@ data class NatsukoUiState(
     val twitterVideoSelection: TwitterVideoSelection? = null,
     val twitterLoginStep: TwitterLoginStep? = null,
     val twitterSessionActive: Boolean = false,
+    val canDeleteChainedOriginals: Boolean = false,
+    val deleteChainedOriginals: Boolean = false,
+    val deletedOriginalsCount: Int = 0,
+    val originalDeletionFailures: List<ProcessingFailure> = emptyList(),
     val isProcessing: Boolean = false,
     val progress: ProcessingProgress = ProcessingProgress(0, 1, text(R.string.backend_preparing)),
     val outcome: ProcessingOutcome? = null,
@@ -120,6 +125,10 @@ class NatsukoViewModel @JvmOverloads constructor(
     application: Application,
     appUpdater: AppUpdater = GitHubAppUpdater(application),
     private val twitterSessions: TwitterSessionStore = EncryptedTwitterSessionStore(application),
+    private val downloadTwitterImages: (suspend (
+        String,
+        (Int, Int, UiText) -> Unit,
+    ) -> ProcessingOutcome)? = null,
     private val downloadTwitter: (suspend (
         String,
         suspend (TwitterVideoSelection) -> TwitterDownloadScope,
@@ -146,9 +155,9 @@ class NatsukoViewModel @JvmOverloads constructor(
     private var locationImportGeneration = 0
     // Account credentials never enter UI/saved state, preferences, backups, or diagnostics.
     @Volatile private var twitterSession: TwitterSession? = null
-    private val twitterProcessor = DownloadTwitterVideoProcessor(
-        application, outputRepository, SyndicationTwitterVideoSource(session = { twitterSession }),
-    )
+    private val twitterSource = SyndicationTwitterVideoSource(session = { twitterSession })
+    private val twitterProcessor = DownloadTwitterVideoProcessor(application, outputRepository, twitterSource)
+    private val twitterImagesProcessor = DownloadTwitterImagesProcessor(application, outputRepository, twitterSource)
     private var twitterLoginDecision: CompletableDeferred<TwitterSession>? = null
     private val mutableState = MutableStateFlow(freshState())
     val state: StateFlow<NatsukoUiState> = mutableState.asStateFlow()
@@ -169,13 +178,14 @@ class NatsukoViewModel @JvmOverloads constructor(
     private var settingsReturnScreen = AppScreen.HOME
     private var enableAfterDirectorySelection = false
     private var twitterDownloadResult: NatsukoUiState? = null
+    private var chainedOriginalOutputs: Map<Uri, OutputArtifact> = emptyMap()
     private var twitterScopeDecision: CompletableDeferred<TwitterDownloadScope>? = null
     private var adjustmentSession: ImageAdjustmentSession? = null
     private var adjustmentLoadJob: Job? = null
     private var estimateJob: Job? = null
     private sealed interface PendingImport {
         data class Files(val feature: Feature, val uris: List<Uri>) : PendingImport
-        data class TwitterLink(val text: String) : PendingImport
+        data class TwitterLink(val feature: Feature, val text: String) : PendingImport
         data object CopyLocation : PendingImport
     }
 
@@ -230,7 +240,7 @@ class NatsukoViewModel @JvmOverloads constructor(
             importLocationSources(uris)
             return
         }
-        if (feature == Feature.DOWNLOAD_TWITTER_VIDEO) {
+        if (feature == Feature.DOWNLOAD_TWITTER_VIDEO || feature == Feature.DOWNLOAD_TWITTER_IMAGES) {
             mutableState.update { it.copy(errorMessage = text(R.string.backend_provide_post_link)) }
             return
         }
@@ -241,7 +251,7 @@ class NatsukoViewModel @JvmOverloads constructor(
         }
         if (deferImportForAdjustment(PendingImport.Files(feature, uris))) return
         importJob?.cancel()
-        twitterDownloadResult = null
+        clearTwitterChaining()
         importJob = viewModelScope.launch {
             val items = withContext(Dispatchers.IO) { resolver.resolveAll(uris) }
             if (isBusy()) return@launch
@@ -290,7 +300,7 @@ class NatsukoViewModel @JvmOverloads constructor(
         if (deferImportForAdjustment(PendingImport.CopyLocation)) return
         importJob?.cancel()
         releaseLocationSources()
-        twitterDownloadResult = null
+        clearTwitterChaining()
         discardAdjustment()
         mutableState.value = freshState().copy(
             screen = AppScreen.COPY_LOCATION_SOURCE,
@@ -423,7 +433,7 @@ class NatsukoViewModel @JvmOverloads constructor(
 
     fun handleShareIntent(intent: Intent) {
         val feature = ShareImportParser.feature(intent)
-        if (feature == Feature.DOWNLOAD_TWITTER_VIDEO) {
+        if (feature == Feature.DOWNLOAD_TWITTER_VIDEO || feature == Feature.DOWNLOAD_TWITTER_IMAGES) {
             if (isBusy()) {
                 mutableState.update { it.copy(errorMessage = text(R.string.backend_wait_before_link_import)) }
                 return
@@ -435,7 +445,7 @@ class NatsukoViewModel @JvmOverloads constructor(
             }
             try {
                 TwitterStatusLink.parse(text)
-                openTwitterDownload(text)
+                openTwitterDownload(feature, text)
             } catch (error: IllegalArgumentException) {
                 mutableState.update { it.copy(errorMessage = error.userMessage(R.string.backend_share_valid_post_link)) }
             }
@@ -449,18 +459,23 @@ class NatsukoViewModel @JvmOverloads constructor(
         }
     }
 
-    fun openTwitterDownload() = openTwitterDownload(mutableState.value.twitterLink)
+    fun openTwitterDownload(feature: Feature = Feature.DOWNLOAD_TWITTER_VIDEO) {
+        require(feature == Feature.DOWNLOAD_TWITTER_VIDEO || feature == Feature.DOWNLOAD_TWITTER_IMAGES)
+        val current = mutableState.value
+        val link = if (current.feature == feature) current.twitterLink else ""
+        openTwitterDownload(feature, link)
+    }
 
-    private fun openTwitterDownload(link: String) {
+    private fun openTwitterDownload(feature: Feature, link: String) {
         if (isBusy()) return
-        if (deferImportForAdjustment(PendingImport.TwitterLink(link))) return
+        if (deferImportForAdjustment(PendingImport.TwitterLink(feature, link))) return
         releaseLocationSources()
         importJob?.cancel()
-        twitterDownloadResult = null
+        clearTwitterChaining()
         discardAdjustment()
         mutableState.value = freshState().copy(
             screen = AppScreen.TWITTER_DOWNLOAD,
-            feature = Feature.DOWNLOAD_TWITTER_VIDEO,
+            feature = feature,
             twitterLink = link,
         )
     }
@@ -472,6 +487,17 @@ class NatsukoViewModel @JvmOverloads constructor(
 
     fun downloadTwitterVideo() {
         if (mutableState.value.feature != Feature.DOWNLOAD_TWITTER_VIDEO) return
+        process()
+    }
+
+    fun downloadTwitterImages() {
+        if (mutableState.value.feature != Feature.DOWNLOAD_TWITTER_IMAGES) return
+        process()
+    }
+
+    fun downloadTwitterMedia() {
+        val feature = mutableState.value.feature
+        if (feature != Feature.DOWNLOAD_TWITTER_VIDEO && feature != Feature.DOWNLOAD_TWITTER_IMAGES) return
         process()
     }
 
@@ -565,16 +591,14 @@ class NatsukoViewModel @JvmOverloads constructor(
     }
 
     private suspend fun downloadTwitterWithLogin(
-        link: String,
-        progress: (Int, Int, UiText) -> Unit,
+        action: suspend () -> ProcessingOutcome,
     ): ProcessingOutcome {
         awaitTwitterSession()
         var loginAttempted = false
         while (true) {
             currentCoroutineContext().ensureActive()
             try {
-                return downloadTwitter?.invoke(link, ::requestTwitterDownloadScope, progress)
-                    ?: twitterProcessor.process(link, ::requestTwitterDownloadScope, progress)
+                return action()
             } catch (error: TwitterAccessException) {
                 if (error.reason == TwitterAccessFailure.SESSION_EXPIRED && twitterSession != null) {
                     clearTwitterSession()
@@ -614,17 +638,47 @@ class NatsukoViewModel @JvmOverloads constructor(
         try {
             checkText(output.file.isFile) { text(R.string.backend_downloaded_video_missing) }
             // Chain from the retained private copy even if the public directory grant later expires.
-            val input = InputItem(outputRepository.shareUri(output.copy(userStorage = null)), output.file.name, output.mimeType)
+            val inputUri = outputRepository.shareUri(output.copy(userStorage = null))
+            val input = InputItem(inputUri, output.file.name, output.mimeType)
             importJob?.cancel()
             twitterDownloadResult = snapshot
+            chainedOriginalOutputs = mapOf(inputUri to output)
             mutableState.value = freshState().copy(
                 screen = AppScreen.CONFIGURE,
                 feature = Feature.VIDEO_TO_GIF,
                 inputs = listOf(input),
                 twitterLink = snapshot.twitterLink,
+                canDeleteChainedOriginals = true,
             )
         } catch (error: Exception) {
             mutableState.update { it.copy(errorMessage = error.userMessage(R.string.backend_downloaded_video_unreadable)) }
+        }
+    }
+
+    fun mergeDownloadedImages() {
+        val snapshot = mutableState.value
+        val outputs = snapshot.outcome?.outputs.orEmpty()
+        if (isBusy() || snapshot.feature != Feature.DOWNLOAD_TWITTER_IMAGES || outputs.isEmpty()) return
+        try {
+            val pairs = outputs.map { output ->
+                checkText(output.mimeType.startsWith("image/")) { text(R.string.backend_downloaded_image_unreadable) }
+                checkText(output.file.isFile) { text(R.string.backend_downloaded_image_missing) }
+                // Chain from the retained private copy even if the public directory grant later expires.
+                val inputUri = outputRepository.shareUri(output.copy(userStorage = null))
+                InputItem(inputUri, output.file.name, output.mimeType) to output
+            }
+            importJob?.cancel()
+            twitterDownloadResult = snapshot
+            chainedOriginalOutputs = pairs.associate { (input, output) -> input.uri to output }
+            mutableState.value = freshState().copy(
+                screen = AppScreen.CONFIGURE,
+                feature = Feature.IMAGE_MERGE,
+                inputs = pairs.map { it.first },
+                twitterLink = snapshot.twitterLink,
+                canDeleteChainedOriginals = true,
+            )
+        } catch (error: Exception) {
+            mutableState.update { it.copy(errorMessage = error.userMessage(R.string.backend_downloaded_image_unreadable)) }
         }
     }
 
@@ -639,7 +693,22 @@ class NatsukoViewModel @JvmOverloads constructor(
     }
 
     fun removeInput(index: Int) {
-        mutableState.update { state -> state.copy(inputs = state.inputs.filterIndexed { itemIndex, _ -> itemIndex != index }) }
+        mutableState.update { state ->
+            val remaining = state.inputs.filterIndexed { itemIndex, _ -> itemIndex != index }
+            val hasChained = remaining.any { it.uri in chainedOriginalOutputs }
+            state.copy(
+                inputs = remaining,
+                canDeleteChainedOriginals = hasChained,
+                deleteChainedOriginals = if (hasChained) state.deleteChainedOriginals else false,
+            )
+        }
+    }
+
+    fun updateDeleteChainedOriginals(delete: Boolean) {
+        if (isBusy()) return
+        mutableState.update { state ->
+            if (!state.canDeleteChainedOriginals) state else state.copy(deleteChainedOriginals = delete)
+        }
     }
 
     fun updateMergeDirection(value: MergeDirection) = mutableState.update {
@@ -648,6 +717,14 @@ class NatsukoViewModel @JvmOverloads constructor(
 
     fun updateMergeColor(value: Int) = mutableState.update {
         it.copy(mergeOptions = it.mergeOptions.copy(fillColor = value))
+    }
+
+    fun updateMergeSpacing(value: Int) = mutableState.update {
+        it.copy(
+            mergeOptions = it.mergeOptions.copy(
+                spacingPx = value.coerceIn(MergeOptions.MIN_SPACING_PX, MergeOptions.MAX_SPACING_PX),
+            ),
+        )
     }
 
     fun updatePdfOutputMode(value: PdfOutputMode) = mutableState.update {
@@ -704,7 +781,7 @@ class NatsukoViewModel @JvmOverloads constructor(
             saveAdjustment()
             return
         }
-        if (feature == Feature.DOWNLOAD_TWITTER_VIDEO) {
+        if (feature == Feature.DOWNLOAD_TWITTER_VIDEO || feature == Feature.DOWNLOAD_TWITTER_IMAGES) {
             try {
                 TwitterStatusLink.parse(snapshot.twitterLink)
             } catch (error: IllegalArgumentException) {
@@ -729,9 +806,17 @@ class NatsukoViewModel @JvmOverloads constructor(
                 unpublishedDownload = null
             }
             mutableState.update {
-                    it.copy(isProcessing = true, progress = ProcessingProgress(0, 1, text(R.string.backend_preparing_processing)), errorMessage = null, storageFailures = emptyList())
+                it.copy(
+                    isProcessing = true,
+                    progress = ProcessingProgress(0, 1, text(R.string.backend_preparing_processing)),
+                    errorMessage = null,
+                    storageFailures = emptyList(),
+                    deletedOriginalsCount = 0,
+                    originalDeletionFailures = emptyList(),
+                )
             }
             try {
+                var mergedInputUris: Set<Uri>? = null
                 val result = withContext(Dispatchers.IO) {
                     val workContext = currentCoroutineContext()
                     val progress: (Int, Int, UiText) -> Unit = { completed, total, message ->
@@ -742,11 +827,23 @@ class NatsukoViewModel @JvmOverloads constructor(
                     }
                     when (feature) {
                         Feature.CROP_BLACK_BORDER -> cropBlackBorderProcessor.process(snapshot.inputs, progress)
-                        Feature.IMAGE_MERGE -> mergeProcessor.process(snapshot.inputs, snapshot.mergeOptions, progress)
+                        Feature.IMAGE_MERGE -> mergeProcessor.processWithMergedInputs(snapshot.inputs, snapshot.mergeOptions, progress).also {
+                            mergedInputUris = it.mergedInputs.mapTo(mutableSetOf()) { input -> input.uri }
+                        }.outcome
                         Feature.IMAGES_TO_PDF -> imagesToPdfProcessor.process(snapshot.inputs, snapshot.imagesToPdfOptions, progress)
                         Feature.PDF_TO_IMAGES -> pdfToImagesProcessor.process(snapshot.inputs, snapshot.pdfToImagesOptions, progress)
                         Feature.VIDEO_TO_GIF -> videoToGifProcessor.process(snapshot.inputs.first(), snapshot.gifOptions, progress)
-                        Feature.DOWNLOAD_TWITTER_VIDEO -> downloadTwitterWithLogin(snapshot.twitterLink, progress).also {
+                        Feature.DOWNLOAD_TWITTER_VIDEO -> downloadTwitterWithLogin {
+                            downloadTwitter?.invoke(snapshot.twitterLink, ::requestTwitterDownloadScope, progress)
+                                ?: twitterProcessor.process(snapshot.twitterLink, ::requestTwitterDownloadScope, progress)
+                        }.also {
+                            // Retain ownership across withContext's cancellable dispatch back to Main.
+                            unpublishedDownload = it
+                        }
+                        Feature.DOWNLOAD_TWITTER_IMAGES -> downloadTwitterWithLogin {
+                            downloadTwitterImages?.invoke(snapshot.twitterLink, progress)
+                                ?: twitterImagesProcessor.process(snapshot.twitterLink, progress)
+                        }.also {
                             // Retain ownership across withContext's cancellable dispatch back to Main.
                             unpublishedDownload = it
                         }
@@ -755,12 +852,43 @@ class NatsukoViewModel @JvmOverloads constructor(
                     }
                 }
                 val outcome = result.copy(failures = snapshot.importFailures + result.failures)
+                val originalsToDelete = if (snapshot.deleteChainedOriginals && outcome.outputs.isNotEmpty()) {
+                    when (feature) {
+                        Feature.VIDEO_TO_GIF -> listOfNotNull(chainedOriginalOutputs[snapshot.inputs.first().uri])
+                        Feature.IMAGE_MERGE -> {
+                            val merged = mergedInputUris.orEmpty()
+                            snapshot.inputs
+                                .filter { it.uri in merged }
+                                .mapNotNull { chainedOriginalOutputs[it.uri] }
+                        }
+                        else -> emptyList()
+                    }
+                } else {
+                    emptyList()
+                }
+                var deletedOriginalsCount = 0
+                var originalDeletionFailures = emptyList<ProcessingFailure>()
+                if (originalsToDelete.isNotEmpty()) {
+                    currentCoroutineContext().ensureActive()
+                    mutableState.update {
+                        it.copy(progress = ProcessingProgress(0, 0, text(R.string.backend_deleting_originals)))
+                    }
+                    val deletion = withContext(NonCancellable + Dispatchers.IO) {
+                        userStorageRepository.deleteOutputs(originalsToDelete)
+                    }
+                    deletedOriginalsCount = deletion.fullyDeletedCount
+                    originalDeletionFailures = deletion.failures
+                    pruneDeletedOriginalsFromTwitterResult(deletion.deletedPrivateFiles)
+                }
                 val automaticSuccess = feature == Feature.CROP_BLACK_BORDER && outcome.failures.isEmpty() && outcome.outputs.isNotEmpty()
+                chainedOriginalOutputs = emptyMap()
                 mutableState.update {
                     it.copy(
                         screen = if (automaticSuccess) AppScreen.HOME else AppScreen.RESULT,
                         isProcessing = false,
                         outcome = outcome,
+                        deletedOriginalsCount = deletedOriginalsCount,
+                        originalDeletionFailures = originalDeletionFailures,
                         successMessage = if (automaticSuccess) text(R.string.backend_crop_success, outcome.outputs.size) else null,
                     )
                 }
@@ -921,11 +1049,11 @@ class NatsukoViewModel @JvmOverloads constructor(
         } else if (screen == AppScreen.ADJUST_EDIT && hasUnexportedAdjustment()) {
             pendingImport = null
             mutableState.update { it.copy(adjustment = it.adjustment?.copy(confirmDiscard = true, gesture = null)) }
-        } else if (twitterDownloadResult != null && mutableState.value.feature == Feature.VIDEO_TO_GIF) {
+        } else if (twitterDownloadResult != null && mutableState.value.feature in setOf(Feature.VIDEO_TO_GIF, Feature.IMAGE_MERGE)) {
             mutableState.value = checkNotNull(twitterDownloadResult).copy(storageSettings = storagePreferences.read())
-            twitterDownloadResult = null
+            clearTwitterChaining()
         } else {
-            twitterDownloadResult = null
+            clearTwitterChaining()
             discardAdjustment()
             releaseLocationSources()
             mutableState.value = freshState()
@@ -938,7 +1066,7 @@ class NatsukoViewModel @JvmOverloads constructor(
         releaseLocationSources()
         importJob?.cancel()
         processingJob?.cancel()
-        twitterDownloadResult = null
+        clearTwitterChaining()
         discardAdjustment()
         mutableState.value = freshState()
     }
@@ -1120,15 +1248,38 @@ class NatsukoViewModel @JvmOverloads constructor(
     fun confirmDiscardAdjustment() {
         val pending = pendingImport
         pendingImport = null
-        twitterDownloadResult = null
+        clearTwitterChaining()
         discardAdjustment()
         mutableState.value = freshState()
         when (pending) {
             is PendingImport.Files -> acceptSelection(pending.feature, pending.uris)
-            is PendingImport.TwitterLink -> openTwitterDownload(pending.text)
+            is PendingImport.TwitterLink -> openTwitterDownload(pending.feature, pending.text)
             PendingImport.CopyLocation -> openCopyLocation()
             null -> Unit
         }
+    }
+
+    private fun clearTwitterChaining() {
+        twitterDownloadResult = null
+        chainedOriginalOutputs = emptyMap()
+    }
+
+    private fun pruneDeletedOriginalsFromTwitterResult(deletedPrivateFiles: Set<File>) {
+        if (deletedPrivateFiles.isEmpty()) return
+        val previous = twitterDownloadResult ?: return
+        val previousOutcome = previous.outcome ?: return
+        val deletedOutputs = previousOutcome.outputs.filter { it.file in deletedPrivateFiles }
+        val remainingOutputs = previousOutcome.outputs.filterNot { it.file in deletedPrivateFiles }
+        if (remainingOutputs.isEmpty()) {
+            clearTwitterChaining()
+            return
+        }
+        val deletedLabels = deletedOutputs.mapTo(mutableSetOf()) { it.label }
+        val remainingStorageFailures = previous.storageFailures.filterNot { it.source in deletedLabels }
+        twitterDownloadResult = previous.copy(
+            outcome = previousOutcome.copy(outputs = remainingOutputs),
+            storageFailures = remainingStorageFailures,
+        )
     }
 
     fun dismissDiscardAdjustment() {
@@ -1306,7 +1457,7 @@ class NatsukoViewModel @JvmOverloads constructor(
                 mime.startsWith("image/") || extension in IMAGE_EXTENSIONS
             Feature.PDF_TO_IMAGES -> mime == "application/pdf" || extension == "pdf"
             Feature.VIDEO_TO_GIF -> mime.startsWith("video/") || extension in VIDEO_EXTENSIONS
-            Feature.DOWNLOAD_TWITTER_VIDEO -> false
+            Feature.DOWNLOAD_TWITTER_VIDEO, Feature.DOWNLOAD_TWITTER_IMAGES -> false
             Feature.COPY_LOCATION -> true // Content validation is performed by the metadata engine.
         }
     }

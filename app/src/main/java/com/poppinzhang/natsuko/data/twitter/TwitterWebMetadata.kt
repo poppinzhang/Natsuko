@@ -37,7 +37,18 @@ internal object TwitterWebMetadata {
         ).joinToString("&") { (key, value) -> "$key=${URLEncoder.encode(value.toString(), "UTF-8")}" }
     }
 
-    fun parseGraphql(json: String, expectedId: String, authenticated: Boolean): List<TwitterVideo> {
+    fun parseGraphql(json: String, expectedId: String, authenticated: Boolean): List<TwitterVideo> =
+        parseGraphql(json, expectedId, authenticated, TwitterVideoMetadata::parse)
+
+    fun parseImagesGraphql(json: String, expectedId: String, authenticated: Boolean): List<TwitterImage> =
+        parseGraphql(json, expectedId, authenticated, TwitterImageMetadata::parse)
+
+    private fun <T> parseGraphql(
+        json: String,
+        expectedId: String,
+        authenticated: Boolean,
+        parseNormalized: (String, String) -> T,
+    ): T {
         val document = runCatching { JSONObject(json) }.getOrNull() ?: fail(TwitterAccessFailure.UNKNOWN)
         val data = document.optJSONObject("data")
         val wrapper = data?.optJSONObject("tweetResult") ?: data?.optJSONObject("tweet_result_by_rest_id")
@@ -45,7 +56,7 @@ internal object TwitterWebMetadata {
             fail(TwitterAccessFailure.UNKNOWN)
         }
         val result = wrapper?.optJSONObject("result")
-        if (result != null) return parseResult(result, expectedId, authenticated)
+        if (result != null) return parseResult(result, expectedId, authenticated, parseNormalized)
         val errors = document.optJSONArray("errors")
         for (index in 0 until (errors?.length() ?: 0)) {
             val error = errors?.optJSONObject(index) ?: continue
@@ -61,7 +72,17 @@ internal object TwitterWebMetadata {
     }
 
     /** Read only JSON string values in the server-rendered payload; never evaluate page JavaScript. */
-    fun parsePublicPage(html: String, expectedId: String): List<TwitterVideo> {
+    fun parsePublicPage(html: String, expectedId: String): List<TwitterVideo> =
+        parsePublicPage(html, expectedId, TwitterVideoMetadata::parse)
+
+    fun parseImagesPublicPage(html: String, expectedId: String): List<TwitterImage> =
+        parsePublicPage(html, expectedId, TwitterImageMetadata::parse)
+
+    private fun <T> parsePublicPage(
+        html: String,
+        expectedId: String,
+        parseNormalized: (String, String) -> T,
+    ): T {
         var pageOffset = 0
         while (pageOffset < html.length) {
             val scriptStart = html.indexOf("<script", pageOffset)
@@ -95,7 +116,7 @@ internal object TwitterWebMetadata {
                 val wrapper = json.optJSONObject("data")?.optJSONObject("tweet_result_by_rest_id") ?: continue
                 if (wrapper.optString("rest_id") != expectedId) continue
                 val result = wrapper.optJSONObject("result") ?: continue
-                return parseResult(result, expectedId, authenticated = false)
+                return parseResult(result, expectedId, authenticated = false, parseNormalized = parseNormalized)
             }
         }
         fail(TwitterAccessFailure.UNKNOWN)
@@ -103,7 +124,12 @@ internal object TwitterWebMetadata {
 
     private val SSR_RESULT = Regex("""result:\${'$'}R\[[0-9]+\]=\{kind:"Result\.Ok",value:""")
 
-    private fun parseResult(raw: JSONObject, expectedId: String, authenticated: Boolean): List<TwitterVideo> {
+    private fun <T> parseResult(
+        raw: JSONObject,
+        expectedId: String,
+        authenticated: Boolean,
+        parseNormalized: (String, String) -> T,
+    ): T {
         if (raw.has("rest_id") && raw.optString("rest_id") != expectedId) fail(TwitterAccessFailure.UNKNOWN)
         val type = raw.optString("__typename")
         val reason = raw.optString("reason")
@@ -144,7 +170,7 @@ internal object TwitterWebMetadata {
             ?: legacy.optJSONObject("entities")?.optJSONArray("media") ?: JSONArray()
         // Normalize only this post's attached media. Do not traverse quoted/retweeted content or external cards.
         val normalized = JSONObject().put("id_str", actualId).put("mediaDetails", media)
-        return TwitterVideoMetadata.parse(normalized.toString(), expectedId)
+        return parseNormalized(normalized.toString(), expectedId)
     }
 
     private fun fail(reason: TwitterAccessFailure): Nothing = throw TwitterAccessException(reason)

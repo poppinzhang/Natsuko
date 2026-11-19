@@ -7,5 +7,6 @@
     <string name="share_pdf_to_images">PDF 轉圖片 · Natsuko</string>
     <string name="share_video_to_gif">影片轉 GIF · Natsuko</string>
     <string name="share_download_twitter_video">下載推特影片（GIF） · Natsuko</string>
+    <string name="share_download_twitter_images">下載推特圖片 · Natsuko</string>
     <string name="share_image_adjustment">圖片調整 · Natsuko</string>
 </resources>

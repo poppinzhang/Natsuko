@@ -19,9 +19,12 @@
     <string name="twitter_download_start">ダウンロードを開始</string>
     <string name="twitter_link_title">投稿のリンクを貼り付け</string>
     <string name="twitter_link_description">X / Twitterの投稿リンクから動画やGIFをダウンロードします。ログインが必要な場合は、ログイン後に再試行できます。</string>
+    <string name="twitter_images_link_description">X / Twitterの投稿リンクからすべての画像を順番に一括ダウンロードします。ログインが必要な場合は、ログイン後に再試行できます。</string>
     <string name="twitter_link_label">投稿リンク</string>
     <string name="twitter_link_placeholder">https://x.com/username/status/post_id</string>
     <string name="twitter_gif_title">ダウンロードした動画をGIFに変換</string>
     <string name="twitter_gif_description">XのGIFはMP4動画として保存されます。ダウンロード後、結果画面の「動画をGIFに変換」から変換できます。</string>
+    <string name="twitter_merge_title">ダウンロード後に画像を結合</string>
+    <string name="twitter_merge_description">投稿内のすべての画像を元の順番でダウンロードします。ダウンロード後、結果画面の「画像を結合」からそのまま結合できます。</string>
     <string name="twitter_storage_description">保存先は「設定」の出力先設定に従います。</string>
 </resources>

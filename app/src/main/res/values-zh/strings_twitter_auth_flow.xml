@@ -2,6 +2,8 @@
 <resources>
     <string name="twitter_auth_consent_title">登录后查看此视频？</string>
     <string name="twitter_auth_consent_message">X 要求登录后才能查看此推文。你将在 X 官方页面直接输入密码登录，以便 Natsuko 获取视频。登录态仅在本机加密保存，重启后仍可使用，可随时清除。登录无法解除年龄或账号权限限制。</string>
+    <string name="twitter_auth_consent_images_title">登录后查看这些图片？</string>
+    <string name="twitter_auth_consent_images_message">X 要求登录后才能查看此推文。你将在 X 官方页面直接输入密码登录，以便 Natsuko 获取图片。登录态仅在本机加密保存，重启后仍可使用，可随时清除。登录无法解除年龄或账号权限限制。</string>
     <string name="twitter_auth_sign_in">登录 X</string>
     <string name="twitter_auth_session_active">X 登录态已保存在本机，重启应用后仍可复用。</string>
     <string name="twitter_auth_sign_out">清除 X 登录态</string>

@@ -126,6 +126,7 @@ Read the relevant feature document before changing behavior. Keep parameter limi
 | Batch PDF rendering, PNG/JPEG output, and resolution limits | [PDF to images](docs/pdf2image.md) |
 | Video formats, palette, dithering, sampling, looping, and the frame limit | [Video to GIF](docs/video2gif.md) |
 | Post URL validation, access-error classification, optional X sign-in, download boundaries, and conversion of downloaded MP4 files to GIF | [Download Twitter video](docs/download_twitter_video.md) |
+| Ordered batch Twitter image extraction, original-quality URL rewriting, image validation, and chaining to Image Merge | [Download Twitter images](docs/download_twitter_images.md) |
 | Source GPS validation, metadata formats, conflict decisions, and same-format output copies | [Copy image location](docs/copy_location.md) |
 | App-specific output, user-directory saving, permissions, and per-file retries | [Output storage](docs/output_storage.md) |
 | Persistent feature ordering, cross-category dragging, and TalkBack actions | [Home feature order](docs/home_feature_order.md) |

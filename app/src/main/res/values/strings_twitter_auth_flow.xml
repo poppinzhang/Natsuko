@@ -2,6 +2,8 @@
 <resources>
     <string name="twitter_auth_consent_title">Sign in to view this video?</string>
     <string name="twitter_auth_consent_message">X requires login to view this post. Sign in on the official X page to let Natsuko retrieve its videos. Your password is entered directly on X. Natsuko encrypts the login session on this device and keeps it across app restarts until you disconnect or X reports it expired. Signing in does not remove age or account restrictions.</string>
+    <string name="twitter_auth_consent_images_title">Sign in to view these images?</string>
+    <string name="twitter_auth_consent_images_message">X requires login to view this post. Sign in on the official X page to let Natsuko retrieve its images. Your password is entered directly on X. Natsuko encrypts the login session on this device and keeps it across app restarts until you disconnect or X reports it expired. Signing in does not remove age or account restrictions.</string>
     <string name="twitter_auth_sign_in">Sign in to X</string>
     <string name="twitter_auth_session_active">Your X login is saved on this device and will be reused after restarting the app.</string>
     <string name="twitter_auth_sign_out">Disconnect X login</string>

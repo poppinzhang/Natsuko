@@ -24,11 +24,12 @@
 | PDF 转图片 | `Pictures/Natsuko/PdfToImages/<时间戳>/` | `Download/Natsuko/PdfToImages/` |
 | 视频转 GIF | `Pictures/Natsuko/VideoToGif/<时间戳>/` | `Download/Natsuko/VideoToGif/` |
 | 下载推特视频（GIF） | `Pictures/Natsuko/DownloadTwitterVideo/<时间戳>/` | `Download/Natsuko/DownloadTwitterVideo/` |
+| 下载推特图片 | `Pictures/Natsuko/DownloadTwitterImages/<时间戳>/` | `Download/Natsuko/DownloadTwitterImages/` |
 | 图片调整 | `Pictures/Natsuko/ImageAdjustment/<时间戳>/` | `Download/Natsuko/ImageAdjustment/` |
 
 图片调整每次保存都在新的应用专属批次目录中生成 `<原文件名>_adjusted.<扩展名>`；用户目录遇到同名文件时由系统分配唯一名称，不覆盖原图或先前成品。导出前的试编码只存放在应用缓存中，不出现在上述目录或结果列表中。
 
-推特视频下载完成后，沿用自动保存、结果页补存和逐文件重试规则。点击“视频转 GIF”时直接读取保留的应用专属视频，生成的新 GIF 独立写入 `VideoToGif` 功能目录并沿用当时的保存设置；源视频及其用户目录副本继续保留。
+推特视频与图片下载完成后，均沿用自动保存、结果页补存和逐文件重试规则。点击“视频转 GIF”时直接读取保留的应用专属视频，生成的新 GIF 独立写入 `VideoToGif` 功能目录；点击“转图片拼接”时直接读取保留的应用专属图片列表，生成的 `merged.png` 独立写入 `ImageMerge` 功能目录并沿用当时的保存设置。默认情况下源视频、源图片及其用户目录副本继续保留；若用户在串联后的配置页勾选“转换完成后删除原视频”或“拼接完成后删除原图片”，则在对应处理成功后同时删除相应原下载文件的应用专属副本与已保存的用户目录副本（权限失效等原因导致个别副本未能删除时，在结果页按文件提示，不影响已生成的 GIF 或拼接图片）。
 
 自定义目录作为输出根目录，直接在其中建立 `<功能>/`，不额外添加 `Natsuko` 或时间戳层级。自动保存、结果页补存和失败重试均使用这一结构。此前已经保存的时间戳目录及其中的成品保留原位，不自动迁移或删除。表中应用专属路径位于 Android 为 Natsuko 管理的外部存储空间，并非用户可见的公共 Pictures 或 Documents 根目录。
 

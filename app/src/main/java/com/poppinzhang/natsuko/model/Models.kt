@@ -71,7 +71,13 @@ object MergeGridLayout {
 data class MergeOptions(
     val direction: MergeDirection = MergeDirection.VERTICAL,
     val fillColor: Int = 0xFFFFFFFF.toInt(),
-)
+    val spacingPx: Int = 0,
+) {
+    companion object {
+        const val MIN_SPACING_PX = 0
+        const val MAX_SPACING_PX = 500
+    }
+}
 
 enum class PdfOutputMode { COMBINED, SEPARATE }
 enum class PdfPagePreset { A4, FIT_IMAGE }

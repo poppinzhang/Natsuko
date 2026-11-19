@@ -30,6 +30,10 @@
     <string name="main_horizontal">가로</string>
     <string name="main_grid">격자</string>
     <string name="main_grid_hint">정사각형에 최대한 가까운 격자로 배치합니다(4장은 2×2, 9장은 3×3).</string>
+    <string name="main_merge_spacing">이미지 간격</string>
+    <string name="main_merge_spacing_unit">px</string>
+    <string name="main_merge_spacing_decrease">이미지 간격 줄이기</string>
+    <string name="main_merge_spacing_increase">이미지 간격 늘리기</string>
     <string name="main_fill_color">채우기 색상</string>
     <string name="main_pdf_settings">PDF 설정</string>
     <string name="main_output_mode">출력 방식</string>
@@ -62,6 +66,12 @@
     <string name="main_open">열기</string>
     <string name="main_share">공유</string>
     <string name="main_video_to_gif">동영상을 GIF로</string>
+    <string name="main_merge_downloaded_images">이미지 합치기</string>
+    <string name="main_delete_original_video_after_gif">변환 완료 후 원본 동영상 삭제</string>
+    <string name="main_delete_original_video_after_gif_hint">GIF 생성이 완료되면 사용자 저장 폴더에 저장된 사본을 포함해 다운로드한 원본 동영상을 삭제합니다.</string>
+    <string name="main_delete_original_images_after_merge">합치기 완료 후 원본 이미지 삭제</string>
+    <string name="main_delete_original_images_after_merge_hint">이미지 합치기가 완료되면 사용자 저장 폴더에 저장된 사본을 포함해 이번 합치기에 사용된 원본 이미지를 삭제합니다.</string>
+    <string name="main_original_video_deleted">원본 동영상을 삭제했습니다</string>
     <string name="main_merge_select_preview">이미지를 선택하여 합친 결과를 미리 확인하세요</string>
     <string name="main_merge_preview_unavailable">선택한 이미지를 하나도 미리 볼 수 없습니다</string>
     <string name="main_move_earlier">앞으로 이동</string>
@@ -102,6 +112,8 @@
     <string name="feature_video_to_gif_description">프레임 속도, 샘플링 간격 및 크기 조정</string>
     <string name="feature_download_twitter_video">Twitter 동영상(GIF) 다운로드</string>
     <string name="feature_download_twitter_video_description">X / Twitter 게시물 링크에서 동영상과 GIF 다운로드</string>
+    <string name="feature_download_twitter_images">Twitter 이미지 다운로드</string>
+    <string name="feature_download_twitter_images_description">X / Twitter 게시물 링크에서 모든 이미지를 순서대로 일괄 다운로드</string>
     <plurals name="main_images_added">
         <item quantity="other">이미지 %1$d장 추가됨</item>
     </plurals>
@@ -113,6 +125,9 @@
     </plurals>
     <plurals name="main_videos_downloaded">
         <item quantity="other">동영상 %1$d개 다운로드됨</item>
+    </plurals>
+    <plurals name="main_images_downloaded">
+        <item quantity="other">이미지 %1$d장 다운로드됨</item>
     </plurals>
     <plurals name="main_files_created">
         <item quantity="other">파일 %1$d개 생성됨</item>
@@ -131,6 +146,12 @@
     </plurals>
     <plurals name="main_previews_failed">
         <item quantity="other">이미지 %1$d장을 미리 볼 수 없어 건너뛰었습니다. 해당 이미지를 선택하여 제거하세요.</item>
+    </plurals>
+    <plurals name="main_original_images_deleted">
+        <item quantity="other">원본 이미지 %1$d장을 삭제했습니다</item>
+    </plurals>
+    <plurals name="main_originals_delete_failed">
+        <item quantity="other">원본 파일 %1$d개를 삭제하지 못했습니다</item>
     </plurals>
     <string name="main_portrait">세로</string>
     <string name="main_landscape">가로</string>

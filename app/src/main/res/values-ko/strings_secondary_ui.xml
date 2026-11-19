@@ -19,9 +19,12 @@
     <string name="twitter_download_start">다운로드 시작</string>
     <string name="twitter_link_title">게시물 링크 붙여넣기</string>
     <string name="twitter_link_description">X / Twitter 게시물 링크에서 동영상이나 GIF를 다운로드합니다. 로그인이 필요한 경우 로그인 후 다시 시도할 수 있습니다.</string>
+    <string name="twitter_images_link_description">X / Twitter 게시물 링크에서 모든 이미지를 순서대로 일괄 다운로드합니다. 로그인이 필요한 경우 로그인 후 다시 시도할 수 있습니다.</string>
     <string name="twitter_link_label">게시물 링크</string>
     <string name="twitter_link_placeholder">https://x.com/username/status/post_id</string>
     <string name="twitter_gif_title">다운로드한 파일을 GIF로 변환</string>
     <string name="twitter_gif_description">X의 GIF는 MP4 동영상으로 제공됩니다. 다운로드 후 결과 화면에서 “동영상을 GIF로”를 눌러 변환할 수 있습니다.</string>
+    <string name="twitter_merge_title">다운로드 후 이미지 합치기</string>
+    <string name="twitter_merge_description">게시물의 모든 이미지를 원래 순서대로 다운로드합니다. 다운로드 후 결과 화면에서 “이미지 합치기”를 눌러 바로 합칠 수 있습니다.</string>
     <string name="twitter_storage_description">저장 위치는 설정의 결과물 저장 규칙을 따릅니다.</string>
 </resources>

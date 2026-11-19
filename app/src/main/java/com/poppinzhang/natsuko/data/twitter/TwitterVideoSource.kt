@@ -33,28 +33,58 @@ interface TwitterVideoSource {
 class SyndicationTwitterVideoSource(
     private val http: TwitterHttpClient = TwitterHttpClient(),
     private val session: () -> TwitterSession? = { null },
-) : TwitterVideoSource {
-    override suspend fun resolve(link: TwitterStatusLink): List<TwitterVideo> = try {
+) : TwitterVideoSource, TwitterImageSource {
+    override suspend fun resolve(link: TwitterStatusLink): List<TwitterVideo> = resolveMedia(
+        link = link,
+        hasUsableMedia = { items -> items.any { it.url != null } },
+        parseSyndication = TwitterVideoMetadata::parse,
+        parseGraphql = TwitterWebMetadata::parseGraphql,
+        parsePublicPage = TwitterWebMetadata::parsePublicPage,
+    )
+
+    override suspend fun resolveImages(link: TwitterStatusLink): List<TwitterImage> = resolveMedia(
+        link = link,
+        hasUsableMedia = { items -> items.any { it.url != null } },
+        parseSyndication = TwitterImageMetadata::parse,
+        parseGraphql = TwitterWebMetadata::parseImagesGraphql,
+        parsePublicPage = TwitterWebMetadata::parseImagesPublicPage,
+    )
+
+    private suspend fun <T> resolveMedia(
+        link: TwitterStatusLink,
+        hasUsableMedia: (T) -> Boolean,
+        parseSyndication: (String, String) -> T,
+        parseGraphql: (String, String, Boolean) -> T,
+        parsePublicPage: (String, String) -> T,
+    ): T = try {
         // Includes every diagnostic request, rather than starting a new deadline for each fallback.
-        withTimeout(60_000) { resolveWithinDeadline(link) }
+        withTimeout(60_000) {
+            resolveWithinDeadline(link, hasUsableMedia, parseSyndication, parseGraphql, parsePublicPage)
+        }
     } catch (timeout: TimeoutCancellationException) {
         currentCoroutineContext().ensureActive()
         throw LocalizedIOException(text(R.string.backend_download_timeout), timeout)
     }
 
-    private suspend fun resolveWithinDeadline(link: TwitterStatusLink): List<TwitterVideo> {
+    private suspend fun <T> resolveWithinDeadline(
+        link: TwitterStatusLink,
+        hasUsableMedia: (T) -> Boolean,
+        parseSyndication: (String, String) -> T,
+        parseGraphql: (String, String, Boolean) -> T,
+        parsePublicPage: (String, String) -> T,
+    ): T {
         val publicMedia = try {
-            TwitterVideoMetadata.parse(http.metadata(link), link.id)
+            parseSyndication(http.metadata(link), link.id)
         } catch (failure: Exception) {
             if (!isIncompleteMetadata(failure)) throw failure
             null
         }
-        // Keep existing partial-batch behavior: a missing MP4 for one attachment must not
-        // discard other downloadable videos if a diagnostic endpoint is unavailable.
-        if (publicMedia != null && publicMedia.any { it.url != null }) return publicMedia
-        session()?.let { return resolveGraphql(link, it) }
+        // Keep existing partial-batch behavior: a missing asset for one attachment must not
+        // discard other downloadable items if a diagnostic endpoint is unavailable.
+        if (publicMedia != null && hasUsableMedia(publicMedia)) return publicMedia
+        session()?.let { return resolveGraphql(link, it, parseGraphql) }
         try {
-            return resolveGraphql(link, null)
+            return resolveGraphql(link, null, parseGraphql)
         } catch (failure: TwitterAccessException) {
             if (failure.reason != TwitterAccessFailure.UNKNOWN) throw failure
         }
@@ -62,14 +92,18 @@ class SyndicationTwitterVideoSource(
         // can still include its focal post's structured explanation (including the explicit login gate).
         val page = http.webMetadata("https://x.com/i/status/${link.id}", pagePostId = link.id)
         try {
-            return TwitterWebMetadata.parsePublicPage(page.body, link.id)
+            return parsePublicPage(page.body, link.id)
         } catch (failure: TwitterAccessException) {
             if (failure.reason == TwitterAccessFailure.UNKNOWN && publicMedia != null) return publicMedia
             throw failure
         }
     }
 
-    private suspend fun resolveGraphql(link: TwitterStatusLink, authenticated: TwitterSession?): List<TwitterVideo> {
+    private suspend fun <T> resolveGraphql(
+        link: TwitterStatusLink,
+        authenticated: TwitterSession?,
+        parseGraphql: (String, String, Boolean) -> T,
+    ): T {
         val guestToken = if (authenticated == null) {
             val response = http.webMetadata("https://api.x.com/1.1/guest/activate.json", activateGuest = true)
             val token = runCatching { JSONObject(response.body).optString("guest_token") }.getOrNull()
@@ -81,18 +115,32 @@ class SyndicationTwitterVideoSource(
         val response = http.webMetadata(TwitterWebMetadata.queryUrl(link.id), session = authenticated, guestToken = guestToken)
         // A generic HTTP failure does not prove that saved account credentials are invalid.
         // Only an explicit authentication failure in X's structured response expires a session.
-        return TwitterWebMetadata.parseGraphql(response.body, link.id, authenticated != null)
+        return parseGraphql(response.body, link.id, authenticated != null)
     }
 
     private fun isIncompleteMetadata(failure: Exception): Boolean =
         failure is TwitterAccessException && failure.reason == TwitterAccessFailure.UNKNOWN ||
             (failure as? LocalizedFailure)?.userMessage in setOf(
                 text(R.string.backend_post_unavailable), text(R.string.backend_post_invalid_response),
-                text(R.string.backend_post_no_media),
+                text(R.string.backend_post_no_media), text(R.string.backend_post_no_images),
             )
 
     override suspend fun download(video: TwitterVideo, destination: File, onBytes: (Long, Long?) -> Unit) {
         http.download(checkNotNullText(video.url) { video.unavailableReason ?: text(R.string.backend_no_downloadable_mp4) }, destination, onBytes)
+    }
+
+    override suspend fun downloadImage(image: TwitterImage, destination: File, onBytes: (Long, Long?) -> Unit) {
+        val primary = checkNotNullText(image.url) { image.unavailableReason ?: text(R.string.backend_no_downloadable_image) }
+        try {
+            http.downloadImage(primary, destination, onBytes)
+        } catch (error: TwitterHttpStatusException) {
+            val fallback = image.fallbackUrl
+            if (error.status in setOf(404, 410) && fallback != null && fallback != primary) {
+                http.downloadImage(fallback, destination, onBytes)
+            } else {
+                throw error
+            }
+        }
     }
 }
 

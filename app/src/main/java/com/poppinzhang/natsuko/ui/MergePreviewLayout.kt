@@ -13,9 +13,10 @@ internal fun mergePreviewLayout(
     direction: MergeDirection,
     maxWidth: Int,
     maxHeight: Int,
+    spacingPx: Int = 0,
 ): MergePlan {
     require(maxWidth > 0 && maxHeight > 0)
-    val output = MergeLayout.calculate(sizes, direction)
+    val output = MergeLayout.calculate(sizes, direction, spacingPx = spacingPx)
     val scale = minOf(maxWidth.toDouble() / output.width, maxHeight.toDouble() / output.height)
     val width = (output.width * scale).roundToInt().coerceIn(1, maxWidth)
     val height = (output.height * scale).roundToInt().coerceIn(1, maxHeight)

@@ -28,29 +28,33 @@ import kotlin.math.sqrt
 data class ImageSize(val width: Int, val height: Int)
 data class ImagePlacement(val left: Int, val top: Int, val width: Int, val height: Int)
 data class MergePlan(val width: Int, val height: Int, val placements: List<ImagePlacement>)
+data class ImageMergeResult(val outcome: ProcessingOutcome, val mergedInputs: List<InputItem>)
 
 object MergeLayout {
     fun calculate(
         sizes: List<ImageSize>,
         direction: MergeDirection,
+        spacingPx: Int = 0,
         maxLongSide: Int = 8192,
         maxPixels: Long = 40_000_000,
     ): MergePlan {
         require(sizes.isNotEmpty())
         require(sizes.all { it.width > 0 && it.height > 0 })
+        require(spacingPx >= 0)
+        val rawSpacing = spacingPx.coerceAtMost(MergeOptions.MAX_SPACING_PX).toLong()
 
         if (direction == MergeDirection.GRID) {
-            return calculateGrid(sizes, maxLongSide, maxPixels)
+            return calculateGrid(sizes, rawSpacing, maxLongSide, maxPixels)
         }
 
         val rawWidth = when (direction) {
-            MergeDirection.HORIZONTAL -> sizes.sumOf { it.width.toLong() }
+            MergeDirection.HORIZONTAL -> sizes.sumOf { it.width.toLong() } + rawSpacing * (sizes.size - 1)
             MergeDirection.VERTICAL -> sizes.maxOf { it.width }.toLong()
             MergeDirection.GRID -> error("Grid layout is handled separately")
         }
         val rawHeight = when (direction) {
             MergeDirection.HORIZONTAL -> sizes.maxOf { it.height }.toLong()
-            MergeDirection.VERTICAL -> sizes.sumOf { it.height.toLong() }
+            MergeDirection.VERTICAL -> sizes.sumOf { it.height.toLong() } + rawSpacing * (sizes.size - 1)
             MergeDirection.GRID -> error("Grid layout is handled separately")
         }
         val edgeScale = maxLongSide.toDouble() / maxOf(rawWidth, rawHeight)
@@ -61,17 +65,19 @@ object MergeLayout {
         var rawCursor = 0L
         val placements = sizes.map { size ->
             if (direction == MergeDirection.HORIZONTAL) {
-                val left = (rawCursor * scale).roundToInt()
-                rawCursor += size.width
-                val right = (rawCursor * scale).roundToInt().coerceAtMost(width)
+                val left = (rawCursor * scale).roundToInt().coerceIn(0, width - 1)
+                val imageEnd = rawCursor + size.width
+                rawCursor = imageEnd + rawSpacing
+                val right = (imageEnd * scale).roundToInt().coerceIn(left + 1, width)
                 val scaledHeight = (size.height * scale).roundToInt().coerceIn(1, height)
-                ImagePlacement(left, (height - scaledHeight) / 2, (right - left).coerceAtLeast(1), scaledHeight)
+                ImagePlacement(left, (height - scaledHeight) / 2, right - left, scaledHeight)
             } else {
-                val top = (rawCursor * scale).roundToInt()
-                rawCursor += size.height
-                val bottom = (rawCursor * scale).roundToInt().coerceAtMost(height)
+                val top = (rawCursor * scale).roundToInt().coerceIn(0, height - 1)
+                val imageEnd = rawCursor + size.height
+                rawCursor = imageEnd + rawSpacing
+                val bottom = (imageEnd * scale).roundToInt().coerceIn(top + 1, height)
                 val scaledWidth = (size.width * scale).roundToInt().coerceIn(1, width)
-                ImagePlacement((width - scaledWidth) / 2, top, scaledWidth, (bottom - top).coerceAtLeast(1))
+                ImagePlacement((width - scaledWidth) / 2, top, scaledWidth, bottom - top)
             }
         }
         return MergePlan(width, height, placements)
@@ -79,14 +85,15 @@ object MergeLayout {
 
     private fun calculateGrid(
         sizes: List<ImageSize>,
+        rawSpacing: Long,
         maxLongSide: Int,
         maxPixels: Long,
     ): MergePlan {
         val columns = MergeGridLayout.columnCount(sizes.size)
         val rows = (sizes.size + columns - 1) / columns
         val rawCellSide = sizes.maxOf { maxOf(it.width, it.height) }.toLong()
-        val rawWidth = rawCellSide * columns
-        val rawHeight = rawCellSide * rows
+        val rawWidth = rawCellSide * columns + rawSpacing * (columns - 1)
+        val rawHeight = rawCellSide * rows + rawSpacing * (rows - 1)
         val edgeScale = maxLongSide.toDouble() / maxOf(rawWidth, rawHeight)
         val pixelScale = sqrt(maxPixels.toDouble() / (rawWidth * rawHeight).toDouble())
         val scale = minOf(1.0, edgeScale, pixelScale)
@@ -96,12 +103,14 @@ object MergeLayout {
         val placements = sizes.mapIndexed { index, size ->
             val column = index % columns
             val row = index / columns
-            val cellLeft = (column * rawCellSide * scale).roundToInt()
-            val cellTop = (row * rawCellSide * scale).roundToInt()
-            val cellRight = ((column + 1) * rawCellSide * scale).roundToInt().coerceAtMost(width)
-            val cellBottom = ((row + 1) * rawCellSide * scale).roundToInt().coerceAtMost(height)
-            val cellWidth = (cellRight - cellLeft).coerceAtLeast(1)
-            val cellHeight = (cellBottom - cellTop).coerceAtLeast(1)
+            val rawCellLeft = column * (rawCellSide + rawSpacing)
+            val rawCellTop = row * (rawCellSide + rawSpacing)
+            val cellLeft = (rawCellLeft * scale).roundToInt().coerceIn(0, width - 1)
+            val cellTop = (rawCellTop * scale).roundToInt().coerceIn(0, height - 1)
+            val cellRight = ((rawCellLeft + rawCellSide) * scale).roundToInt().coerceIn(cellLeft + 1, width)
+            val cellBottom = ((rawCellTop + rawCellSide) * scale).roundToInt().coerceIn(cellTop + 1, height)
+            val cellWidth = cellRight - cellLeft
+            val cellHeight = cellBottom - cellTop
             val fitScale = minOf(
                 cellWidth.toDouble() / size.width,
                 cellHeight.toDouble() / size.height,
@@ -129,7 +138,13 @@ class ImageMergeProcessor(
         inputs: List<InputItem>,
         options: MergeOptions,
         onProgress: (Int, Int, UiText) -> Unit,
-    ): ProcessingOutcome {
+    ): ProcessingOutcome = processWithMergedInputs(inputs, options, onProgress).outcome
+
+    fun processWithMergedInputs(
+        inputs: List<InputItem>,
+        options: MergeOptions,
+        onProgress: (Int, Int, UiText) -> Unit,
+    ): ImageMergeResult {
         requireText(inputs.isNotEmpty()) { text(R.string.backend_select_image) }
         val failures = mutableListOf<ProcessingFailure>()
         val steps = inputs.size + 1
@@ -144,9 +159,10 @@ class ImageMergeProcessor(
                 }
         }
 
+        val spacingPx = options.spacingPx.coerceIn(MergeOptions.MIN_SPACING_PX, MergeOptions.MAX_SPACING_PX)
         while (true) {
             checkText(remaining.isNotEmpty()) { text(R.string.backend_images_unreadable) }
-            val plan = MergeLayout.calculate(remaining.map { it.second }, options.direction)
+            val plan = MergeLayout.calculate(remaining.map { it.second }, options.direction, spacingPx = spacingPx)
             val output = createBitmap(plan.width, plan.height)
             try {
                 val canvas = Canvas(output)
@@ -190,9 +206,12 @@ class ImageMergeProcessor(
                         checkText(output.compress(Bitmap.CompressFormat.PNG, 100, stream)) { text(R.string.backend_merge_write_failed) }
                     }
                     onProgress(steps, steps, text(R.string.backend_merge_complete))
-                    return ProcessingOutcome(
-                        outputs = listOf(OutputArtifact(file, "image/png", text(R.string.backend_merged_image))),
-                        failures = failures,
+                    return ImageMergeResult(
+                        outcome = ProcessingOutcome(
+                            outputs = listOf(OutputArtifact(file, "image/png", text(R.string.backend_merged_image))),
+                            failures = failures,
+                        ),
+                        mergedInputs = remaining.map { it.first },
                     )
                 }
                 // A header can be intact while the pixel data is not. Such an image leaves the

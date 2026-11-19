@@ -74,6 +74,18 @@ class ShareImportParserTest {
     }
 
     @Test
+    fun routesTwitterImageTextShare() {
+        val text = "Look https://x.com/user/status/123456789/photo/1"
+        val intent = Intent(Intent.ACTION_SEND)
+            .setComponent(ComponentName("com.poppinzhang.natsuko", "com.poppinzhang.natsuko.share.DownloadTwitterImagesShare"))
+            .setType("text/plain")
+            .putExtra(Intent.EXTRA_TEXT, text)
+
+        assertEquals(Feature.DOWNLOAD_TWITTER_IMAGES, ShareImportParser.feature(intent))
+        assertEquals(text, ShareImportParser.twitterText(intent))
+    }
+
+    @Test
     fun onlySharesThatWereNotHandledBeforeAreNew() {
         val share = Intent(Intent.ACTION_SEND)
             .setComponent(ComponentName("com.poppinzhang.natsuko", "com.poppinzhang.natsuko.share.CropBlackBorderShare"))

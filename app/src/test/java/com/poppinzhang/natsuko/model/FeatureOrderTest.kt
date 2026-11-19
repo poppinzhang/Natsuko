@@ -14,6 +14,7 @@ class FeatureOrderTest {
                 Feature.CROP_BLACK_BORDER,
                 Feature.IMAGE_ADJUSTMENT,
                 Feature.COPY_LOCATION,
+                Feature.DOWNLOAD_TWITTER_IMAGES,
                 Feature.PDF_TO_IMAGES,
                 Feature.VIDEO_TO_GIF,
             ),
